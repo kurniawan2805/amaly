@@ -3,6 +3,7 @@ import { dailyHabits } from "@/data/app-data"
 export type AppLanguage = "en" | "id"
 export type AppTheme = "day" | "dark"
 export type HijriOffset = -2 | -1 | 0 | 1 | 2
+export type PartnerRole = "husband" | "wife"
 export type PrayerAnchor = "fajr" | "dzuhr" | "ashr" | "maghrib" | "isya"
 export type HabitTiming =
   | { mode: "fixed"; time: string }
@@ -22,6 +23,8 @@ export type AppSettings = {
   language: AppLanguage
   theme: AppTheme
   hijriOffset: HijriOffset
+  partnerRole: PartnerRole | null
+  shareCycleSupportStatus: boolean
   habits: HabitDefinition[]
 }
 
@@ -35,6 +38,8 @@ export const defaultAppSettings: AppSettings = {
   language: "en",
   theme: "day",
   hijriOffset: 0,
+  partnerRole: null,
+  shareCycleSupportStatus: false,
   habits: [
     ...dailyHabits.map((habit, index) => ({
       id: `daily-${slugify(habit.label) || index}`,
@@ -198,6 +203,11 @@ export function loadAppSettings(): AppSettings {
       language: isAppLanguage(parsed.language) ? parsed.language : defaultAppSettings.language,
       theme: isAppTheme(parsed.theme) ? parsed.theme : defaultAppSettings.theme,
       hijriOffset: isHijriOffset(parsed.hijriOffset) ? parsed.hijriOffset : defaultAppSettings.hijriOffset,
+      partnerRole: parsed.partnerRole === "husband" || parsed.partnerRole === "wife" ? parsed.partnerRole : defaultAppSettings.partnerRole,
+      shareCycleSupportStatus:
+        typeof parsed.shareCycleSupportStatus === "boolean"
+          ? parsed.shareCycleSupportStatus
+          : defaultAppSettings.shareCycleSupportStatus,
       habits: normalizeHabitCollection(parsed.habits),
     }
   } catch {

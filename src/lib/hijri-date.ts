@@ -1,3 +1,6 @@
+import umalqura from "@umalqura/core"
+
+import type { AppLanguage } from "@/lib/app-settings"
 import type { HijriOffset } from "@/lib/app-settings"
 
 export type HijriParts = {
@@ -6,35 +9,58 @@ export type HijriParts = {
   year: number
 }
 
+const englishHijriMonths = [
+  "Muharram",
+  "Safar",
+  "Rabi al-Awwal",
+  "Rabi al-Thani",
+  "Jumada al-Awwal",
+  "Jumada al-Thani",
+  "Rajab",
+  "Shaban",
+  "Ramadan",
+  "Shawwal",
+  "Dhu al-Qidah",
+  "Dhu al-Hijjah",
+]
+
+const indonesianHijriMonths = [
+  "Muharam",
+  "Safar",
+  "Rabiulawal",
+  "Rabiulakhir",
+  "Jumadilawal",
+  "Jumadilakhir",
+  "Rajab",
+  "Syakban",
+  "Ramadan",
+  "Syawal",
+  "Zulkaidah",
+  "Zulhijah",
+]
+
 export function applyHijriOffset(date: Date, offset: HijriOffset = 0) {
   const adjusted = new Date(date)
   adjusted.setDate(adjusted.getDate() + offset)
   return adjusted
 }
 
-export function formatHijriDate(date: Date, offset: HijriOffset = 0) {
-  return applyHijriOffset(date, offset)
-    .toLocaleDateString("en-SA-u-ca-islamic-umalqura", {
-      day: "numeric",
-      month: "long",
-      numberingSystem: "latn",
-      year: "numeric",
-    })
-    .replace(/\bAH\b/, "H")
+export function formatHijriDate(date: Date, offset: HijriOffset = 0, language: AppLanguage = "en") {
+  const parts = getHijriParts(date, offset)
+  const monthName = language === "id" ? indonesianHijriMonths[parts.month - 1] : englishHijriMonths[parts.month - 1]
+
+  return language === "id"
+    ? `${parts.day} ${monthName} ${parts.year} H`
+    : `${monthName} ${parts.day}, ${parts.year} H`
 }
 
 export function getHijriParts(date: Date, offset: HijriOffset = 0): HijriParts {
-  const parts = new Intl.DateTimeFormat("en-SA-u-ca-islamic-umalqura", {
-    day: "numeric",
-    month: "numeric",
-    numberingSystem: "latn",
-    year: "numeric",
-  }).formatToParts(applyHijriOffset(date, offset))
+  const hijri = umalqura(applyHijriOffset(date, offset))
 
   return {
-    day: Number(parts.find((part) => part.type === "day")?.value ?? 1),
-    month: Number(parts.find((part) => part.type === "month")?.value ?? 1),
-    year: Number(parts.find((part) => part.type === "year")?.value ?? 1),
+    day: hijri.hd,
+    month: hijri.hm,
+    year: hijri.hy,
   }
 }
 

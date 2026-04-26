@@ -202,7 +202,7 @@ function formatProjectedFinishDate(
   const finish = new Date()
   finish.setDate(finish.getDate() + Math.ceil(remainingPages / average))
 
-  return formatHijriDate(finish, hijriOffset)
+  return formatHijriDate(finish, hijriOffset, language)
 }
 
 function milestoneMessage(page: number, juzProgress: number, language: AppLanguage) {
@@ -470,6 +470,5 @@ export function shouldShowQuranEveningNudge(progress: QuranProgressState) {
 }
 
 export function formatQuranLogDate(dateKey: string, language: AppLanguage, hijriOffset: HijriOffset = 0) {
-  void language
-  return formatHijriDate(dateFromGregorianKey(dateKey), hijriOffset)
+  return formatHijriDate(dateFromGregorianKey(dateKey), hijriOffset, language)
 }

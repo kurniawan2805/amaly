@@ -22,7 +22,10 @@ export type FastingState = {
 export type SunnahFast = {
   dateKey: string
   date: Date
-  hijriDate: string
+  hijriDate: {
+    en: string
+    id: string
+  }
   labels: string[]
 }
 
@@ -191,7 +194,10 @@ function addSunnahLabel(map: Map<string, SunnahFast>, date: Date, offset: HijriO
   map.set(dateKey, {
     dateKey,
     date,
-    hijriDate: formatHijriDate(date, offset),
+    hijriDate: {
+      en: formatHijriDate(date, offset, "en"),
+      id: formatHijriDate(date, offset, "id"),
+    },
     labels: [label],
   })
 }

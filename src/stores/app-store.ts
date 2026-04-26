@@ -1,4 +1,5 @@
 import { create } from "zustand"
+import type { Session, User } from "@supabase/supabase-js"
 
 import {
   type AppLanguage,
@@ -7,6 +8,7 @@ import {
   type HabitDefinition,
   type HabitTiming,
   type HijriOffset,
+  type PartnerRole,
   type PrayerAnchor,
   loadAppSettings,
   saveAppSettings,
@@ -38,6 +40,28 @@ import {
   updateQuranDailyGoal,
   type QuranProgressState,
 } from "@/lib/quran-progress"
+import {
+  acceptPartnerInvite as acceptSupabasePartnerInvite,
+  createPartnerInvite as createSupabasePartnerInvite,
+  getAuthSnapshot,
+  isSupabaseConfigured,
+  loadOwnQuranProgress,
+  loadOwnProfile,
+  loadPartnerSnapshot,
+  sendPartnerEvent,
+  signInWithEmailPassword,
+  signInWithGoogle,
+  signUpWithEmailPassword,
+  signOutOfSupabase,
+  subscribeToPartnerEvents,
+  updateOwnDisplayName,
+  upsertQuranProgress,
+  type PartnerInvite,
+  type PartnerNotice,
+  type PartnerProfile,
+  type PartnerSnapshot,
+} from "@/lib/supabase-sync"
+import { supabase } from "@/lib/supabase"
 
 export type QuranBurst = { type: "juz"; juz: number } | { type: "goal" }
 
@@ -46,8 +70,31 @@ type StoreState = {
   quranProgress: QuranProgressState
   fastingState: FastingState
   cycleState: CycleState
+  session: Session | null
+  user: User | null
+  authLoading: boolean
+  syncLoading: boolean
+  authMessage: string | null
+  syncMessage: string | null
+  profile: PartnerProfile | null
+  partnerInvite: PartnerInvite | null
+  partnerSnapshot: PartnerSnapshot | null
+  partnerNotice: PartnerNotice | null
   settingsOpen: boolean
   quranBurst: QuranBurst | null
+  initializeAuth: () => Promise<void>
+  signInWithGoogle: () => Promise<void>
+  signInWithPassword: (email: string, password: string) => Promise<void>
+  signUpWithPassword: (email: string, password: string) => Promise<void>
+  signOut: () => Promise<void>
+  updateDisplayName: (displayName: string) => Promise<void>
+  clearPartnerNotice: () => void
+  hydrateFromSupabase: () => Promise<void>
+  syncQuranProgress: () => Promise<void>
+  createPartnerInvite: (role: PartnerRole) => Promise<void>
+  acceptPartnerInvite: (code: string, role: PartnerRole) => Promise<void>
+  loadPartnerSnapshot: () => Promise<void>
+  sendPartnerNudge: () => Promise<void>
   setSettingsOpen: (open: boolean) => void
   dismissQuranBurst: () => void
   setLanguage: (language: AppLanguage) => void
@@ -73,6 +120,8 @@ type StoreState = {
 }
 
 let burstTimer: number | null = null
+let authInitialized = false
+let partnerEventsChannel: ReturnType<typeof subscribeToPartnerEvents> = null
 
 function persistSettings(settings: AppSettings) {
   saveAppSettings(settings)
@@ -129,6 +178,32 @@ function maybeShowQuranBurst(set: (partial: Partial<StoreState>) => void, progre
   }
 }
 
+function persistPartnerRole(settings: AppSettings, partnerRole: PartnerRole) {
+  return persistSettings({ ...settings, partnerRole })
+}
+
+function senderName(user: User | null, profile: PartnerProfile | null) {
+  if (profile?.displayName) return profile.displayName
+  const metadataName = user?.user_metadata?.display_name
+  return typeof metadataName === "string" && metadataName ? metadataName : "Your partner"
+}
+
+function subscribeForUser(userId: string, set: (partial: Partial<StoreState>) => void) {
+  if (partnerEventsChannel && supabase) {
+    void supabase.removeChannel(partnerEventsChannel)
+  }
+
+  partnerEventsChannel = subscribeToPartnerEvents(userId, (notice) => set({ partnerNotice: notice }))
+}
+
+function unsubscribePartnerEvents() {
+  if (partnerEventsChannel && supabase) {
+    void supabase.removeChannel(partnerEventsChannel)
+  }
+
+  partnerEventsChannel = null
+}
+
 const initialSettings = loadAppSettings()
 const initialFastingState = loadFastingState()
 
@@ -137,8 +212,228 @@ export const useAppStore = create<StoreState>((set, get) => ({
   quranProgress: loadQuranProgress(initialSettings.language, initialSettings.hijriOffset),
   fastingState: initialFastingState,
   cycleState: loadCycleState(initialFastingState.cycleLogs),
+  session: null,
+  user: null,
+  authLoading: isSupabaseConfigured,
+  syncLoading: false,
+  authMessage: null,
+  syncMessage: isSupabaseConfigured ? null : "Cloud sync unavailable. Add Supabase env values to enable it.",
+  profile: null,
+  partnerInvite: null,
+  partnerSnapshot: null,
+  partnerNotice: null,
   settingsOpen: false,
   quranBurst: null,
+  initializeAuth: async () => {
+    if (authInitialized) {
+      return
+    }
+
+    authInitialized = true
+
+    if (!isSupabaseConfigured || !supabase) {
+      set({
+        authLoading: false,
+        syncMessage: "Cloud sync unavailable. Add Supabase env values to enable it.",
+      })
+      return
+    }
+
+    try {
+      const snapshot = await getAuthSnapshot()
+      set({ ...snapshot, authLoading: false })
+      if (snapshot.user) {
+        subscribeForUser(snapshot.user.id, set)
+        const profile = await loadOwnProfile(snapshot.user.id)
+        set({ profile })
+        await get().hydrateFromSupabase()
+      }
+    } catch (error) {
+      set({ authLoading: false, authMessage: error instanceof Error ? error.message : "Could not initialize Supabase auth." })
+    }
+
+    supabase.auth.onAuthStateChange((_event, session) => {
+      set({ session, user: session?.user ?? null, authLoading: false })
+      if (session?.user) {
+        subscribeForUser(session.user.id, set)
+        void loadOwnProfile(session.user.id).then((profile) => set({ profile }))
+        void get().hydrateFromSupabase()
+      } else {
+        set({ profile: null, partnerInvite: null, partnerSnapshot: null })
+        unsubscribePartnerEvents()
+      }
+    })
+  },
+  signInWithGoogle: async () => {
+    set({ authLoading: true, authMessage: null })
+    try {
+      await signInWithGoogle()
+      set({ authLoading: false })
+    } catch (error) {
+      set({ authLoading: false, authMessage: error instanceof Error ? error.message : "Could not sign in with Google." })
+    }
+  },
+  signInWithPassword: async (email, password) => {
+    if (!email.trim() || !password) {
+      set({ authMessage: "Enter an email address first." })
+      return
+    }
+
+    set({ authLoading: true, authMessage: null })
+    try {
+      await signInWithEmailPassword(email.trim(), password)
+      set({ authLoading: false, authMessage: null })
+    } catch (error) {
+      set({ authLoading: false, authMessage: error instanceof Error ? error.message : "Could not sign in." })
+    }
+  },
+  signUpWithPassword: async (email, password) => {
+    if (!email.trim() || password.length < 6) {
+      set({ authMessage: "Use an email and a password with at least 6 characters." })
+      return
+    }
+
+    set({ authLoading: true, authMessage: null })
+    try {
+      await signUpWithEmailPassword(email.trim(), password)
+      set({ authLoading: false, authMessage: "Account created. Check your email if confirmation is enabled." })
+    } catch (error) {
+      set({ authLoading: false, authMessage: error instanceof Error ? error.message : "Could not create account." })
+    }
+  },
+  signOut: async () => {
+    set({ authLoading: true, authMessage: null })
+    try {
+      await signOutOfSupabase()
+      set({
+        session: null,
+        user: null,
+        authLoading: false,
+        profile: null,
+        partnerInvite: null,
+        partnerSnapshot: null,
+        syncMessage: null,
+      })
+      unsubscribePartnerEvents()
+    } catch (error) {
+      set({ authLoading: false, authMessage: error instanceof Error ? error.message : "Could not sign out." })
+    }
+  },
+  updateDisplayName: async (displayName) => {
+    const current = get()
+    if (!current.user) {
+      set({ authMessage: "Sign in before editing your nickname." })
+      return
+    }
+
+    set({ authLoading: true, authMessage: null })
+    try {
+      const profile = await updateOwnDisplayName(current.user.id, displayName)
+      set({ profile, authLoading: false, authMessage: "Nickname updated." })
+    } catch (error) {
+      set({ authLoading: false, authMessage: error instanceof Error ? error.message : "Could not update nickname." })
+    }
+  },
+  clearPartnerNotice: () => set({ partnerNotice: null }),
+  hydrateFromSupabase: async () => {
+    const current = get()
+    if (!current.user) return
+
+    set({ syncLoading: true, syncMessage: null })
+    try {
+      const cloudProgress = await loadOwnQuranProgress(current.user.id, current.settings.language, current.settings.hijriOffset)
+      if (!cloudProgress) {
+        await upsertQuranProgress(current.quranProgress, current.user.id)
+      } else if (
+        cloudProgress.last_page_read >= current.quranProgress.last_page_read ||
+        cloudProgress.logs.length >= current.quranProgress.logs.length
+      ) {
+        saveQuranProgress(cloudProgress)
+        set({ quranProgress: cloudProgress })
+      } else {
+        await upsertQuranProgress(current.quranProgress, current.user.id)
+      }
+
+      await get().loadPartnerSnapshot()
+      set({ syncLoading: false })
+    } catch (error) {
+      set({ syncLoading: false, syncMessage: error instanceof Error ? error.message : "Could not sync with Supabase." })
+    }
+  },
+  syncQuranProgress: async () => {
+    const current = get()
+    if (!current.user) return
+
+    try {
+      await upsertQuranProgress(current.quranProgress, current.user.id)
+      await get().loadPartnerSnapshot()
+    } catch (error) {
+      set({ syncMessage: error instanceof Error ? error.message : "Could not save Quran progress to Supabase." })
+    }
+  },
+  createPartnerInvite: async (role) => {
+    const current = get()
+    if (!current.user) {
+      set({ syncMessage: "Sign in before creating a partner code." })
+      return
+    }
+
+    set({ syncLoading: true, syncMessage: null })
+    try {
+      const invite = await createSupabasePartnerInvite(current.user.id, role)
+      const settings = persistPartnerRole(current.settings, role)
+      set({ settings, partnerInvite: invite, syncLoading: false, syncMessage: "Partner code created." })
+    } catch (error) {
+      set({ syncLoading: false, syncMessage: error instanceof Error ? error.message : "Could not create partner code." })
+    }
+  },
+  acceptPartnerInvite: async (code, role) => {
+    const current = get()
+    if (!current.user) {
+      set({ syncMessage: "Sign in before accepting a partner code." })
+      return
+    }
+
+    set({ syncLoading: true, syncMessage: null })
+    try {
+      await acceptSupabasePartnerInvite(code.trim(), role)
+      const settings = persistPartnerRole(current.settings, role)
+      set({ settings, partnerInvite: null })
+      await get().loadPartnerSnapshot()
+      set({ syncLoading: false, syncMessage: "Partner connected." })
+    } catch (error) {
+      set({ syncLoading: false, syncMessage: error instanceof Error ? error.message : "Could not accept partner code." })
+    }
+  },
+  loadPartnerSnapshot: async () => {
+    const current = get()
+    if (!current.user) return
+
+    try {
+      const snapshot = await loadPartnerSnapshot(current.user.id, current.settings.language, current.settings.hijriOffset)
+      set({ partnerSnapshot: snapshot })
+    } catch (error) {
+      set({ syncMessage: error instanceof Error ? error.message : "Could not load partner progress." })
+    }
+  },
+  sendPartnerNudge: async () => {
+    const current = get()
+    const partnerId = current.partnerSnapshot?.profile.id
+
+    if (!current.user || !partnerId) {
+      set({ syncMessage: "Connect a partner before sending a nudge." })
+      return
+    }
+
+    try {
+      await sendPartnerEvent(current.user.id, partnerId, "nudge", {
+        senderName: senderName(current.user, current.profile),
+      })
+      set({ syncMessage: "Nudge sent." })
+    } catch (error) {
+      set({ syncMessage: error instanceof Error ? error.message : "Could not send nudge." })
+    }
+  },
   setSettingsOpen: (open) => set({ settingsOpen: open }),
   dismissQuranBurst: () => {
     if (burstTimer) {
@@ -213,6 +508,14 @@ export const useAppStore = create<StoreState>((set, get) => ({
     saveQuranProgress(progress)
     set({ quranProgress: progress })
     maybeShowQuranBurst(set, progress)
+    void get().syncQuranProgress()
+    if (progress.goal_burst && get().user && get().partnerSnapshot) {
+      void sendPartnerEvent(get().user!.id, get().partnerSnapshot!.profile.id, "quran_goal", {
+        senderName: senderName(get().user, get().profile),
+        pagesReadToday: progress.pages_read_today,
+        dailyGoal: progress.daily_goal,
+      })
+    }
   },
   setQuranPage: (page) => {
     const current = get()
@@ -227,12 +530,21 @@ export const useAppStore = create<StoreState>((set, get) => ({
     saveQuranProgress(progress)
     set({ quranProgress: progress })
     maybeShowQuranBurst(set, progress)
+    void get().syncQuranProgress()
+    if (progress.goal_burst && get().user && get().partnerSnapshot) {
+      void sendPartnerEvent(get().user!.id, get().partnerSnapshot!.profile.id, "quran_goal", {
+        senderName: senderName(get().user, get().profile),
+        pagesReadToday: progress.pages_read_today,
+        dailyGoal: progress.daily_goal,
+      })
+    }
   },
   setQuranDailyGoal: (goal) => {
     const current = get()
     const progress = updateQuranDailyGoal(current.quranProgress, goal, current.settings.language, current.settings.hijriOffset)
     saveQuranProgress(progress)
     set({ quranProgress: progress })
+    void get().syncQuranProgress()
   },
   addQadhaDebt: (days = 1) => {
     const fastingState = addQadhaDebt(get().fastingState, days)

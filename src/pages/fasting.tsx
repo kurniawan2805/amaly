@@ -3,13 +3,14 @@ import { Moon, Plus, Sun } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-import type { HijriOffset } from "@/lib/app-settings"
+import type { AppLanguage, HijriOffset } from "@/lib/app-settings"
 import { type FastingState, getUpcomingSunnahFasts, isNextRamadanWithinDays } from "@/lib/fasting-progress"
 import { formatHijriDate } from "@/lib/hijri-date"
 import { cn } from "@/lib/utils"
 
 type FastingPageProps = {
   fastingState: FastingState
+  language: AppLanguage
   hijriOffset: HijriOffset
   onAddQadhaDebt: (days?: number) => void
   onMarkQadhaPaid: () => void
@@ -33,6 +34,7 @@ function formatGregorian(date: Date) {
 
 export default function FastingPage({
   fastingState,
+  language,
   hijriOffset,
   onAddQadhaDebt,
   onMarkQadhaPaid,
@@ -49,7 +51,7 @@ export default function FastingPage({
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-10 px-6 py-8 pb-32">
       <section className="space-y-4">
         <div>
-          <p className="font-serif text-3xl font-semibold text-primary">{formatHijriDate(new Date(), hijriOffset)}</p>
+          <p className="font-serif text-3xl font-semibold text-primary">{formatHijriDate(new Date(), hijriOffset, language)}</p>
           <p className="mt-1 text-sm font-semibold text-muted-foreground">Umm al-Qura date with local correction</p>
         </div>
         <div>
@@ -148,7 +150,7 @@ export default function FastingPage({
                 <div className="min-w-0 flex-1">
                   <h3 className="text-base font-bold text-foreground">{fast.labels.join(" + ")}</h3>
                   <p className="mt-1 text-sm font-semibold text-muted-foreground">
-                    {formatGregorian(fast.date)} • {fast.hijriDate}
+                    {formatGregorian(fast.date)} • {fast.hijriDate[language]}
                   </p>
                 </div>
                 <Button

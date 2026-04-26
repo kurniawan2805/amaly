@@ -29,6 +29,7 @@ export type Database = {
           avatar_url?: string | null
           updated_at?: string
         }
+        Relationships: []
       }
       habit_completions: {
         Row: {
@@ -49,6 +50,7 @@ export type Database = {
           habit_key?: string
           completed_on?: string
         }
+        Relationships: []
       }
       quran_progress: {
         Row: {
@@ -58,6 +60,11 @@ export type Database = {
           ayah: number
           page: number | null
           pages_read_today: number
+          daily_goal: number
+          last_page_read: number
+          goal_completed_today: boolean
+          completed_juzs: Json
+          logs: Json
           updated_at: string
         }
         Insert: {
@@ -67,6 +74,11 @@ export type Database = {
           ayah: number
           page?: number | null
           pages_read_today?: number
+          daily_goal?: number
+          last_page_read?: number
+          goal_completed_today?: boolean
+          completed_juzs?: Json
+          logs?: Json
           updated_at?: string
         }
         Update: {
@@ -74,8 +86,14 @@ export type Database = {
           ayah?: number
           page?: number | null
           pages_read_today?: number
+          daily_goal?: number
+          last_page_read?: number
+          goal_completed_today?: boolean
+          completed_juzs?: Json
+          logs?: Json
           updated_at?: string
         }
+        Relationships: []
       }
       fasting_days: {
         Row: {
@@ -102,6 +120,7 @@ export type Database = {
           status?: "planned" | "completed" | "missed"
           notes?: string | null
         }
+        Relationships: []
       }
       cycle_entries: {
         Row: {
@@ -134,6 +153,7 @@ export type Database = {
           symptoms?: string[]
           notes?: string | null
         }
+        Relationships: []
       }
       user_settings: {
         Row: {
@@ -156,11 +176,109 @@ export type Database = {
           reminder_settings?: Json
           updated_at?: string
         }
+        Relationships: []
+      }
+      partner_invites: {
+        Row: {
+          id: string
+          code: string
+          created_by: string
+          creator_role: "husband" | "wife"
+          expires_at: string
+          accepted_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          code: string
+          created_by: string
+          creator_role: "husband" | "wife"
+          expires_at?: string
+          accepted_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          code?: string
+          creator_role?: "husband" | "wife"
+          expires_at?: string
+          accepted_at?: string | null
+        }
+        Relationships: []
+      }
+      partnerships: {
+        Row: {
+          id: string
+          husband_id: string
+          wife_id: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          husband_id: string
+          wife_id: string
+          created_at?: string
+        }
+        Update: {
+          husband_id?: string
+          wife_id?: string
+        }
+        Relationships: []
+      }
+      partner_events: {
+        Row: {
+          id: string
+          sender_id: string
+          receiver_id: string
+          event_type: "quran_goal" | "nudge"
+          payload: Json
+          created_at: string
+          read_at: string | null
+        }
+        Insert: {
+          id?: string
+          sender_id: string
+          receiver_id: string
+          event_type: "quran_goal" | "nudge"
+          payload?: Json
+          created_at?: string
+          read_at?: string | null
+        }
+        Update: {
+          event_type?: "quran_goal" | "nudge"
+          payload?: Json
+          read_at?: string | null
+        }
+        Relationships: []
       }
     }
     Views: Record<string, never>
-    Functions: Record<string, never>
-    Enums: Record<string, never>
+    Functions: {
+      accept_partner_invite: {
+        Args: {
+          invite_code: string
+          accepter_role: "husband" | "wife"
+        }
+        Returns: Database["public"]["Tables"]["partnerships"]["Row"]
+      }
+      are_partners: {
+        Args: {
+          target_user: string
+        }
+        Returns: boolean
+      }
+      partner_user_ids: {
+        Args: {
+          current_user?: string
+        }
+        Returns: {
+          user_id: string
+        }[]
+      }
+    }
+    Enums: {
+      partner_role: "husband" | "wife"
+      partner_event_type: "quran_goal" | "nudge"
+    }
     CompositeTypes: Record<string, never>
   }
 }

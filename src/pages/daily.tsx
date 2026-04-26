@@ -2,6 +2,7 @@ import { BookOpen, Check, Clock, Lock, MoreHorizontal, Moon, Play, Plus, Quote, 
 import { CSSProperties, PointerEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react"
 import { Link } from "react-router-dom"
 
+import { PartnerWidget } from "@/components/partner/partner-widget"
 import { QuickLogButtons } from "@/components/quran/quick-log-buttons"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -113,7 +114,7 @@ function FrequencyDots({ plannedDays }: { plannedDays: boolean[] }) {
 
 const copy = {
   en: {
-    morning: "Ahlan, Aghna",
+    morning: (name: string) => `Ahlan, ${name || "friend"}`,
     intro: "Embrace the tranquility of today. Your spiritual journey awaits.",
     prayerCheck: "Prayer Check",
     khobarEstimate: "Khobar estimate",
@@ -140,7 +141,7 @@ const copy = {
     quranNudge: "Salam! There's still time for a quick page tonight to keep your streak glowing.",
   },
   id: {
-    morning: "Ahlan, Aghna",
+    morning: (name: string) => `Ahlan, ${name || "sahabat"}`,
     intro: "Nikmati ketenangan hari ini. Perjalanan ibadahmu menanti.",
     prayerCheck: "Cek Shalat",
     khobarEstimate: "Perkiraan Khobar",
@@ -235,13 +236,14 @@ function PressAction({ children, className, disabled = false, onPress, onLongPre
 type DailyPageProps = {
   settings: AppSettings
   cycleState: CycleState
+  displayName?: string
   quranProgress: QuranProgressState
   onQuickLog: (increment: number) => void
   onSetQuranPage: (page: number) => void
   onOpenSettings: () => void
 }
 
-export default function DailyPage({ settings, cycleState, quranProgress, onQuickLog, onSetQuranPage, onOpenSettings }: DailyPageProps) {
+export default function DailyPage({ settings, cycleState, displayName = "", quranProgress, onQuickLog, onSetQuranPage, onOpenSettings }: DailyPageProps) {
   const [habits, setHabits] = useState<Habit[]>(() =>
     settings.habits.filter((habit) => habit.enabled && habit.plannedDays[new Date().getDay()]).map(toHabitState),
   )
@@ -252,7 +254,7 @@ export default function DailyPage({ settings, cycleState, quranProgress, onQuick
   const [now, setNow] = useState(() => new Date())
   const t = copy[settings.language]
   const gregorianDate = formatGregorianDate(now, settings.language)
-  const hijriDate = formatHijriDate(now, settings.hijriOffset)
+  const hijriDate = formatHijriDate(now, settings.hijriOffset, settings.language)
   const visibleHabitDefinitions = useMemo(() => {
     const todayIndex = now.getDay()
     return settings.habits.filter((habit) => habit.enabled && habit.plannedDays[todayIndex])
@@ -392,7 +394,7 @@ export default function DailyPage({ settings, cycleState, quranProgress, onQuick
           <span className="font-serif text-2xl font-semibold leading-tight text-sage sm:text-3xl">{hijriDate}</span>
           <span className="text-sm font-semibold text-muted-foreground">{gregorianDate}</span>
         </div>
-        <h2 className="font-serif text-4xl font-semibold leading-tight text-primary">{t.morning}</h2>
+        <h2 className="font-serif text-4xl font-semibold leading-tight text-primary">{t.morning(displayName)}</h2>
         <p className="max-w-lg text-lg leading-8 text-muted-foreground">{t.intro}</p>
       </section>
 
@@ -410,6 +412,8 @@ export default function DailyPage({ settings, cycleState, quranProgress, onQuick
             </div>
           ) : null}
         </div>
+
+        <PartnerWidget language={settings.language} />
 
         <Card
           className={cn(

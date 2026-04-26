@@ -41,13 +41,18 @@ const flowerConfetti = Array.from({ length: 56 }, (_, index) => ({
 export default function App() {
   const location = useLocation()
   const settings = useAppStore((state) => state.settings)
+  const user = useAppStore((state) => state.user)
+  const profile = useAppStore((state) => state.profile)
   const quranProgress = useAppStore((state) => state.quranProgress)
   const fastingState = useAppStore((state) => state.fastingState)
   const cycleState = useAppStore((state) => state.cycleState)
   const settingsOpen = useAppStore((state) => state.settingsOpen)
   const quranBurst = useAppStore((state) => state.quranBurst)
+  const partnerNotice = useAppStore((state) => state.partnerNotice)
+  const initializeAuth = useAppStore((state) => state.initializeAuth)
   const setSettingsOpen = useAppStore((state) => state.setSettingsOpen)
   const dismissQuranBurst = useAppStore((state) => state.dismissQuranBurst)
+  const clearPartnerNotice = useAppStore((state) => state.clearPartnerNotice)
   const quickLogQuran = useAppStore((state) => state.quickLogQuran)
   const setQuranPage = useAppStore((state) => state.setQuranPage)
   const setQuranDailyGoal = useAppStore((state) => state.setQuranDailyGoal)
@@ -63,10 +68,19 @@ export default function App() {
   const toggleCyclePrivacy = useAppStore((state) => state.toggleCyclePrivacy)
   const toggleCycleSymptom = useAppStore((state) => state.toggleCycleSymptom)
   const title = titles[settings.language][location.pathname] ?? "Amaly"
+  const displayName =
+    profile?.displayName ||
+    (typeof user?.user_metadata?.display_name === "string" ? user.user_metadata.display_name : "") ||
+    user?.email ||
+    ""
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", settings.theme === "dark")
   }, [settings.theme])
+
+  useEffect(() => {
+    void initializeAuth()
+  }, [initializeAuth])
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -80,6 +94,7 @@ export default function App() {
                 onQuickLog={quickLogQuran}
                 onSetQuranPage={setQuranPage}
                 cycleState={cycleState}
+                displayName={displayName}
                 quranProgress={quranProgress}
                 settings={settings}
               />
@@ -103,6 +118,7 @@ export default function App() {
             element={
               <FastingPage
                 fastingState={fastingState}
+                language={settings.language}
                 hijriOffset={settings.hijriOffset}
                 onAddQadhaDebt={addQadhaDebt}
                 onMarkQadhaPaid={markQadhaPaid}
@@ -131,6 +147,17 @@ export default function App() {
       </main>
       <BottomNav language={settings.language} />
       <SettingsPanel onClose={() => setSettingsOpen(false)} open={settingsOpen} />
+      {partnerNotice ? (
+        <div className="fixed inset-x-4 top-20 z-[75] mx-auto max-w-sm rounded-2xl border border-sage/20 bg-card p-4 text-card-foreground shadow-2xl">
+          <p className="text-xs font-bold uppercase tracking-wide text-primary">
+            {partnerNotice.type === "quran_goal" ? "Partner Progress" : "Partner Nudge"}
+          </p>
+          <p className="mt-1 text-sm font-semibold leading-6 text-foreground">{partnerNotice.message}</p>
+          <button className="mt-3 text-sm font-bold text-primary" onClick={clearPartnerNotice} type="button">
+            Close
+          </button>
+        </div>
+      ) : null}
       {quranBurst ? (
         <div className="pointer-events-none fixed inset-0 z-[80] overflow-hidden">
           {flowerConfetti.map((flower, index) => (

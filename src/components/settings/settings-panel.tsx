@@ -1,11 +1,12 @@
-import { BookOpen, ChevronDown, Moon, Plus, Sparkles, Sun, Trash2 } from "lucide-react"
-import { useState } from "react"
+import { BookOpen, ChevronDown, Cloud, LogOut, Moon, Plus, Sparkles, Sun, Trash2, Users } from "lucide-react"
+import { useEffect, useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { type AppLanguage, type AppTheme, type HabitDefinition, type HabitTiming, type HijriOffset, type PrayerAnchor } from "@/lib/app-settings"
+import { isSupabaseConfigured } from "@/lib/supabase-sync"
 import { cn } from "@/lib/utils"
 import { prayerAnchors, useAppStore } from "@/stores/app-store"
 
@@ -24,6 +25,25 @@ const copy = {
     day: "Day",
     dark: "Dark",
     habits: "Habits",
+    cloudSync: "Cloud Sync",
+    email: "Email",
+    password: "Password",
+    google: "Continue with Google",
+    signIn: "Sign In",
+    signUp: "Create Account",
+    signedIn: "Signed in",
+    nickname: "Nickname",
+    saveNickname: "Save Nickname",
+    signOut: "Sign Out",
+    unavailable: "Cloud sync unavailable. Add Supabase env values to enable it.",
+    partner: "Partner",
+    role: "My Role",
+    husband: "Husband",
+    wife: "Wife",
+    createCode: "Create Code",
+    enterCode: "Enter 6-digit code",
+    acceptCode: "Connect",
+    partnerConnected: "Connected with",
     addHabit: "Add Habit",
     label: "Name",
     category: "Category",
@@ -47,6 +67,25 @@ const copy = {
     day: "Terang",
     dark: "Gelap",
     habits: "Kebiasaan",
+    cloudSync: "Sinkron Cloud",
+    email: "Email",
+    password: "Password",
+    google: "Lanjut dengan Google",
+    signIn: "Masuk",
+    signUp: "Buat Akun",
+    signedIn: "Masuk sebagai",
+    nickname: "Nama Panggilan",
+    saveNickname: "Simpan Nama",
+    signOut: "Keluar",
+    unavailable: "Sinkron cloud belum tersedia. Tambahkan env Supabase untuk mengaktifkan.",
+    partner: "Pasangan",
+    role: "Peranku",
+    husband: "Suami",
+    wife: "Istri",
+    createCode: "Buat Kode",
+    enterCode: "Masukkan kode 6 digit",
+    acceptCode: "Hubungkan",
+    partnerConnected: "Terhubung dengan",
     addHabit: "Tambah Kebiasaan",
     label: "Nama",
     category: "Kategori",
@@ -132,8 +171,37 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
   const updateHabit = useAppStore((state) => state.updateHabit)
   const deleteHabit = useAppStore((state) => state.deleteHabit)
   const setHabitFrequency = useAppStore((state) => state.setHabitFrequency)
+  const user = useAppStore((state) => state.user)
+  const profile = useAppStore((state) => state.profile)
+  const authLoading = useAppStore((state) => state.authLoading)
+  const syncLoading = useAppStore((state) => state.syncLoading)
+  const authMessage = useAppStore((state) => state.authMessage)
+  const syncMessage = useAppStore((state) => state.syncMessage)
+  const partnerInvite = useAppStore((state) => state.partnerInvite)
+  const partnerSnapshot = useAppStore((state) => state.partnerSnapshot)
+  const signInWithGoogle = useAppStore((state) => state.signInWithGoogle)
+  const signInWithPassword = useAppStore((state) => state.signInWithPassword)
+  const signUpWithPassword = useAppStore((state) => state.signUpWithPassword)
+  const signOut = useAppStore((state) => state.signOut)
+  const updateDisplayName = useAppStore((state) => state.updateDisplayName)
+  const createPartnerInvite = useAppStore((state) => state.createPartnerInvite)
+  const acceptPartnerInvite = useAppStore((state) => state.acceptPartnerInvite)
   const [expandedHabitId, setExpandedHabitId] = useState<string | null>(null)
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [displayNameInput, setDisplayNameInput] = useState("")
+  const [inviteCode, setInviteCode] = useState("")
+  const [role, setRole] = useState<"husband" | "wife">(settings.partnerRole ?? "husband")
   const t = copy[settings.language]
+  const fallbackDisplayName =
+    profile?.displayName ||
+    (typeof user?.user_metadata?.display_name === "string" ? user.user_metadata.display_name : "") ||
+    user?.email ||
+    ""
+
+  useEffect(() => {
+    setDisplayNameInput(fallbackDisplayName)
+  }, [fallbackDisplayName])
 
   function close(openState: boolean) {
     setSettingsOpen(openState)
@@ -173,6 +241,158 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
 
         <div className="flex-1 overflow-y-auto px-6 py-6">
           <div className="flex flex-col gap-8">
+            <section className="rounded-2xl border border-sage/15 bg-card p-4">
+              <div className="mb-4 flex items-start gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sage-pale text-sage-deep dark:bg-sage/20 dark:text-sage-pale">
+                  <Cloud className="h-5 w-5" />
+                </span>
+                <div>
+                  <h3 className="font-serif text-2xl font-semibold text-primary">{t.cloudSync}</h3>
+                  <p className="mt-1 text-sm font-semibold text-muted-foreground">
+                    {isSupabaseConfigured ? "Google, email password, Quran sync, and partner progress." : t.unavailable}
+                  </p>
+                </div>
+              </div>
+
+              {isSupabaseConfigured ? (
+                user ? (
+                  <div className="space-y-4">
+                    <div className="rounded-xl bg-surface-container-low p-3">
+                      <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">{t.signedIn}</p>
+                      <p className="mt-1 truncate text-sm font-bold text-foreground">{user.email}</p>
+                    </div>
+                    <form
+                      className="grid gap-2"
+                      onSubmit={(event) => {
+                        event.preventDefault()
+                        void updateDisplayName(displayNameInput)
+                      }}
+                    >
+                      <label className="flex flex-col gap-1 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                        {t.nickname}
+                        <input
+                          className="h-10 rounded-xl border border-sage/15 bg-background px-3 text-sm font-semibold normal-case tracking-normal text-foreground outline-none focus:border-sage"
+                          onChange={(event) => setDisplayNameInput(event.target.value)}
+                          placeholder={user.email ?? ""}
+                          value={displayNameInput}
+                        />
+                      </label>
+                      <Button disabled={authLoading} type="submit" variant="outline">
+                        {t.saveNickname}
+                      </Button>
+                    </form>
+                    <Button disabled={authLoading} onClick={() => void signOut()} type="button" variant="outline">
+                      <LogOut className="h-4 w-4" />
+                      {t.signOut}
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-3">
+                    <Button disabled={authLoading} onClick={() => void signInWithGoogle()} type="button">
+                      {t.google}
+                    </Button>
+                    <form
+                      className="flex flex-col gap-3"
+                      onSubmit={(event) => {
+                        event.preventDefault()
+                        void signInWithPassword(email, password)
+                      }}
+                    >
+                      <label className="flex flex-col gap-1 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                        {t.email}
+                        <input
+                          className="h-10 rounded-xl border border-sage/15 bg-background px-3 text-sm font-semibold normal-case tracking-normal text-foreground outline-none focus:border-sage"
+                          onChange={(event) => setEmail(event.target.value)}
+                          type="email"
+                          value={email}
+                        />
+                      </label>
+                      <label className="flex flex-col gap-1 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                        {t.password}
+                        <input
+                          className="h-10 rounded-xl border border-sage/15 bg-background px-3 text-sm font-semibold normal-case tracking-normal text-foreground outline-none focus:border-sage"
+                          onChange={(event) => setPassword(event.target.value)}
+                          type="password"
+                          value={password}
+                        />
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button disabled={authLoading} type="submit">
+                          {t.signIn}
+                        </Button>
+                        <Button disabled={authLoading} onClick={() => void signUpWithPassword(email, password)} type="button" variant="outline">
+                          {t.signUp}
+                        </Button>
+                      </div>
+                    </form>
+                  </div>
+                )
+              ) : null}
+
+              {authMessage ? <p className="mt-3 text-sm font-semibold text-muted-foreground">{authMessage}</p> : null}
+            </section>
+
+            {user ? (
+              <section className="rounded-2xl border border-sage/15 bg-card p-4">
+                <div className="mb-4 flex items-start gap-3">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sage-pale text-sage-deep dark:bg-sage/20 dark:text-sage-pale">
+                    <Users className="h-5 w-5" />
+                  </span>
+                  <div>
+                    <h3 className="font-serif text-2xl font-semibold text-primary">{t.partner}</h3>
+                    <p className="mt-1 text-sm font-semibold text-muted-foreground">
+                      {partnerSnapshot ? `${t.partnerConnected} ${partnerSnapshot.profile.displayName}` : "Create or enter a partner code."}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">{t.role}</p>
+                    <Tabs value={role} onValueChange={(value) => setRole(value as "husband" | "wife")}>
+                      <TabsList className="mt-2 flex w-full">
+                        <TabsTrigger value="husband">{t.husband}</TabsTrigger>
+                        <TabsTrigger value="wife">{t.wife}</TabsTrigger>
+                      </TabsList>
+                    </Tabs>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <Button disabled={syncLoading || Boolean(partnerSnapshot)} onClick={() => void createPartnerInvite(role)} type="button" variant="outline">
+                      {t.createCode}
+                    </Button>
+                    <form
+                      className="flex gap-2"
+                      onSubmit={(event) => {
+                        event.preventDefault()
+                        void acceptPartnerInvite(inviteCode, role)
+                      }}
+                    >
+                      <input
+                        className="h-10 min-w-0 flex-1 rounded-xl border border-sage/15 bg-background px-3 text-sm font-semibold tracking-[0.2em] text-foreground outline-none focus:border-sage"
+                        inputMode="numeric"
+                        maxLength={6}
+                        onChange={(event) => setInviteCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
+                        placeholder={t.enterCode}
+                        value={inviteCode}
+                      />
+                      <Button disabled={syncLoading || inviteCode.length !== 6 || Boolean(partnerSnapshot)} type="submit">
+                        {t.acceptCode}
+                      </Button>
+                    </form>
+                  </div>
+
+                  {partnerInvite ? (
+                    <div className="rounded-xl border border-sage/20 bg-sage-pale/60 p-3 text-sage-deep dark:bg-sage/15 dark:text-sage-pale">
+                      <p className="text-xs font-bold uppercase tracking-wide">Partner Code</p>
+                      <p className="mt-1 font-serif text-3xl font-semibold tracking-[0.18em]">{partnerInvite.code}</p>
+                    </div>
+                  ) : null}
+                  {syncMessage ? <p className="text-sm font-semibold text-muted-foreground">{syncMessage}</p> : null}
+                </div>
+              </section>
+            ) : null}
+
             <section className="grid gap-4">
               <div>
                 <p className="text-sm font-bold uppercase tracking-wide text-muted-foreground">{t.language}</p>
