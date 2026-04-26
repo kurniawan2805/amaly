@@ -15,8 +15,8 @@ To manage obligatory fasts (Qadha) and upcoming Sunnah opportunities with high a
 * **Hardcoded Rules Engine:**
     * **Weekly:** Mondays and Thursdays.
     * **Monthly (Ayyam al-Bidh):** 13th, 14th, and 15th of every Hijri month.
-    * **Annual:** Day of Arafah (9 Dhu al-Hijjah), Ashura (10 Muharram), Tasu'a (9 Muharram).
-* **Display:** Show the next 3 relevant fasts in a "Sunnah Timeline."
+    * **Annual:** Day of Arafah (9 Dhu al-Hijjah), Ashura (10 Muharram), Tasu'a (9 Muharram), Shawwal 6 days.
+* **Display:** Show the next 5 relevant fasts in a "Sunnah Timeline."
 
 ### 2.3 Hijri Offset System (Global)
 * **Variable:** `globalHijriOffset` (Integer, default 0).
