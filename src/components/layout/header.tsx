@@ -59,7 +59,17 @@ export function Header({ language, onOpenSettings, title }: HeaderProps) {
           <h1 className="font-serif text-2xl font-medium tracking-normal">{title}</h1>
         </div>
         <Button aria-label={t.profile} onClick={onOpenSettings} size="icon" variant="ghost">
-          <UserRound className="h-5 w-5" />
+          {user ? (
+            avatarUrl ? (
+              <img alt="" className="h-8 w-8 rounded-full object-cover ring-2 ring-sage/25" src={avatarUrl} />
+            ) : (
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-sage text-sm font-bold text-white shadow-soft">
+                {initial}
+              </span>
+            )
+          ) : (
+            <UserRound className="h-5 w-5" />
+          )}
         </Button>
       </div>
     </header>

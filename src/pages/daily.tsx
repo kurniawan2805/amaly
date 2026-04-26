@@ -557,6 +557,15 @@ export default function DailyPage({
       ) : null}
         <PartnerWidget language={settings.language} />
 
+        <section className="flex flex-col gap-4">
+        <div className="flex flex-col gap-1">
+          <span className="font-serif text-2xl font-semibold leading-tight text-sage sm:text-3xl">{hijriDate}</span>
+          <span className="text-sm font-semibold text-muted-foreground">{gregorianDate}</span>
+        </div>
+        <h2 className="font-serif text-4xl font-semibold leading-tight text-primary">{t.morning(displayName)}</h2>
+        <p className="max-w-lg text-lg leading-8 text-muted-foreground">{t.intro}</p>
+        </section>
+
         <Card
           className={cn(
             "overflow-hidden p-8 transition-[border-color,box-shadow] duration-1000 md:col-span-12",
@@ -672,15 +681,6 @@ export default function DailyPage({
             })}
           </div>
         </Card>
-
-        <section className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1">
-          <span className="font-serif text-2xl font-semibold leading-tight text-sage sm:text-3xl">{hijriDate}</span>
-          <span className="text-sm font-semibold text-muted-foreground">{gregorianDate}</span>
-        </div>
-        <h2 className="font-serif text-4xl font-semibold leading-tight text-primary">{t.morning(displayName)}</h2>
-        <p className="max-w-lg text-lg leading-8 text-muted-foreground">{t.intro}</p>
-      </section>
 
       <section className="grid grid-cols-1 gap-6 md:grid-cols-12">
         <div className="md:col-span-12">
