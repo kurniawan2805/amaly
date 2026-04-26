@@ -1,5 +1,5 @@
-import { BookOpen, ChevronDown, Cloud, LogOut, Moon, Plus, Sparkles, Sun, Trash2, Users } from "lucide-react"
-import { useEffect, useState } from "react"
+import { BookOpen, ChevronDown, Cloud, LogOut, Mail, Moon, Plus, Sparkles, Sun, Trash2, UserRound, Users } from "lucide-react"
+import { useEffect, useRef, useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
@@ -26,12 +26,14 @@ const copy = {
     dark: "Dark",
     habits: "Habits",
     cloudSync: "Cloud Sync",
+    authIntro: "Sign in to sync Quran progress and connect with your partner.",
     email: "Email",
     password: "Password",
     google: "Continue with Google",
     signIn: "Sign In",
     signUp: "Create Account",
     signedIn: "Signed in",
+    localMode: "You can keep using Amaly locally without signing in.",
     nickname: "Nickname",
     saveNickname: "Save Nickname",
     signOut: "Sign Out",
@@ -68,12 +70,14 @@ const copy = {
     dark: "Gelap",
     habits: "Kebiasaan",
     cloudSync: "Sinkron Cloud",
+    authIntro: "Masuk untuk sinkron progres Quran dan terhubung dengan pasangan.",
     email: "Email",
     password: "Password",
     google: "Lanjut dengan Google",
     signIn: "Masuk",
     signUp: "Buat Akun",
     signedIn: "Masuk sebagai",
+    localMode: "Amaly tetap bisa dipakai lokal tanpa masuk akun.",
     nickname: "Nama Panggilan",
     saveNickname: "Simpan Nama",
     signOut: "Keluar",
@@ -107,10 +111,11 @@ const offsetOptions: HijriOffset[] = [-2, -1, 0, 1, 2]
 const categoryOptions = ["Spiritual", "Self-Care", "Family", "Household", "Learning"]
 const frequencyPresets = [
   { label: "Daily", days: [true, true, true, true, true, true, true] },
+  { label: "Friday", days: [false, false, false, false, false, true, false] },
   { label: "Weekdays", days: [true, true, true, true, true, false, false] },
   { label: "Weekend", days: [false, false, false, false, false, true, true] },
-  { label: "Friday", days: [false, false, false, false, false, true, false] },
 ]
+const prayerOffsetOptions = [-30, -15, -10, 0, 10, 15, 30]
 
 function formatOffset(offset: HijriOffset) {
   return offset > 0 ? `+${offset}` : String(offset)
@@ -118,6 +123,12 @@ function formatOffset(offset: HijriOffset) {
 
 function formatPrayer(prayer: PrayerAnchor) {
   return prayer.charAt(0).toUpperCase() + prayer.slice(1)
+}
+
+function formatPrayerOffset(offset: number, prayer: PrayerAnchor) {
+  const anchor = formatPrayer(prayer)
+  if (offset === 0) return `During ${anchor}`
+  return offset > 0 ? `${offset} mins after ${anchor}` : `${Math.abs(offset)} mins before ${anchor}`
 }
 
 function plannedDaysMatch(a: boolean[], b: boolean[]) {
@@ -161,6 +172,10 @@ function timingFromMode(mode: "fixed" | "prayer", current: HabitTiming): HabitTi
   return mode === "fixed" ? { mode: "fixed", time: "" } : { mode: "prayer", prayer: "fajr", offsetMinutes: 0 }
 }
 
+function prayerTiming(timing: HabitTiming) {
+  return timing.mode === "prayer" ? timing : { mode: "prayer" as const, prayer: "fajr" as const, offsetMinutes: 0 }
+}
+
 export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
   const settings = useAppStore((state) => state.settings)
   const setSettingsOpen = useAppStore((state) => state.setSettingsOpen)
@@ -187,28 +202,93 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
   const createPartnerInvite = useAppStore((state) => state.createPartnerInvite)
   const acceptPartnerInvite = useAppStore((state) => state.acceptPartnerInvite)
   const [expandedHabitId, setExpandedHabitId] = useState<string | null>(null)
+  const [creatingHabitId, setCreatingHabitId] = useState<string | null>(null)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [displayNameInput, setDisplayNameInput] = useState("")
   const [inviteCode, setInviteCode] = useState("")
   const [role, setRole] = useState<"husband" | "wife">(settings.partnerRole ?? "husband")
+  const habitInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
+  const creatingHabitRef = useRef<HTMLDivElement | null>(null)
   const t = copy[settings.language]
   const fallbackDisplayName =
     profile?.displayName ||
     (typeof user?.user_metadata?.display_name === "string" ? user.user_metadata.display_name : "") ||
     user?.email ||
     ""
+  const avatarUrl = profile?.avatarUrl || (typeof user?.user_metadata?.avatar_url === "string" ? user.user_metadata.avatar_url : "")
+  const profileInitial = (fallbackDisplayName || user?.email || "A").trim().charAt(0).toUpperCase()
 
   useEffect(() => {
     setDisplayNameInput(fallbackDisplayName)
   }, [fallbackDisplayName])
 
+  useEffect(() => {
+    if (!creatingHabitId) {
+      return
+    }
+
+    const input = habitInputRefs.current[creatingHabitId]
+    window.setTimeout(() => {
+      input?.focus()
+      input?.select()
+    }, 0)
+  }, [creatingHabitId])
+
+  useEffect(() => {
+    if (!creatingHabitId) {
+      return
+    }
+
+    const habitId = creatingHabitId
+
+    function handlePointerDown(event: PointerEvent) {
+      if (creatingHabitRef.current?.contains(event.target as Node)) {
+        return
+      }
+
+      deleteHabit(habitId)
+      setCreatingHabitId(null)
+      setExpandedHabitId(null)
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown)
+    return () => document.removeEventListener("pointerdown", handlePointerDown)
+  }, [creatingHabitId, deleteHabit])
+
   function close(openState: boolean) {
     setSettingsOpen(openState)
     if (!openState) {
+      if (creatingHabitId) {
+        deleteHabit(creatingHabitId)
+        setCreatingHabitId(null)
+      }
       onClose()
       setExpandedHabitId(null)
     }
+  }
+
+  function createHabit() {
+    const id = addHabit()
+    setExpandedHabitId(id)
+    setCreatingHabitId(id)
+  }
+
+  function saveCreatedHabit(habit: HabitDefinition) {
+    const label = habit.label.trim()
+    if (!label) {
+      deleteHabit(habit.id)
+      setExpandedHabitId(null)
+    } else {
+      updateHabit(habit.id, { label })
+    }
+    setCreatingHabitId(null)
+  }
+
+  function cancelCreatedHabit(id: string) {
+    deleteHabit(id)
+    setCreatingHabitId(null)
+    setExpandedHabitId(null)
   }
 
   function updateTiming(habit: HabitDefinition, timing: HabitTiming) {
@@ -249,17 +329,26 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
                 <div>
                   <h3 className="font-serif text-2xl font-semibold text-primary">{t.cloudSync}</h3>
                   <p className="mt-1 text-sm font-semibold text-muted-foreground">
-                    {isSupabaseConfigured ? "Google, email password, Quran sync, and partner progress." : t.unavailable}
+                    {isSupabaseConfigured ? t.authIntro : t.unavailable}
                   </p>
+                  {!user ? <p className="mt-1 text-xs font-semibold text-muted-foreground">{t.localMode}</p> : null}
                 </div>
               </div>
 
               {isSupabaseConfigured ? (
                 user ? (
                   <div className="space-y-4">
-                    <div className="rounded-xl bg-surface-container-low p-3">
-                      <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">{t.signedIn}</p>
-                      <p className="mt-1 truncate text-sm font-bold text-foreground">{user.email}</p>
+                    <div className="flex items-center gap-3 rounded-xl bg-surface-container-low p-3">
+                      <span className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-sage text-base font-bold text-white">
+                        {avatarUrl ? <img alt="" className="h-full w-full object-cover" src={avatarUrl} /> : profileInitial}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">{t.signedIn}</p>
+                        <p className="mt-1 truncate text-sm font-bold text-foreground">{fallbackDisplayName || user.email}</p>
+                        {fallbackDisplayName && fallbackDisplayName !== user.email ? (
+                          <p className="truncate text-xs font-semibold text-muted-foreground">{user.email}</p>
+                        ) : null}
+                      </div>
                     </div>
                     <form
                       className="grid gap-2"
@@ -272,6 +361,7 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
                         {t.nickname}
                         <input
                           className="h-10 rounded-xl border border-sage/15 bg-background px-3 text-sm font-semibold normal-case tracking-normal text-foreground outline-none focus:border-sage"
+                          autoComplete="nickname"
                           onChange={(event) => setDisplayNameInput(event.target.value)}
                           placeholder={user.email ?? ""}
                           value={displayNameInput}
@@ -288,33 +378,43 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
                   </div>
                 ) : (
                   <div className="flex flex-col gap-3">
-                    <Button disabled={authLoading} onClick={() => void signInWithGoogle()} type="button">
-                      {t.google}
-                    </Button>
                     <form
                       className="flex flex-col gap-3"
                       onSubmit={(event) => {
                         event.preventDefault()
                         void signInWithPassword(email, password)
                       }}
+                      aria-busy={authLoading}
                     >
                       <label className="flex flex-col gap-1 text-xs font-bold uppercase tracking-wide text-muted-foreground">
                         {t.email}
-                        <input
-                          className="h-10 rounded-xl border border-sage/15 bg-background px-3 text-sm font-semibold normal-case tracking-normal text-foreground outline-none focus:border-sage"
-                          onChange={(event) => setEmail(event.target.value)}
-                          type="email"
-                          value={email}
-                        />
+                        <span className="relative">
+                          <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                          <input
+                            autoComplete="email"
+                            className="h-10 w-full rounded-xl border border-sage/15 bg-background pl-9 pr-3 text-sm font-semibold normal-case tracking-normal text-foreground outline-none focus:border-sage"
+                            disabled={authLoading}
+                            inputMode="email"
+                            onChange={(event) => setEmail(event.target.value)}
+                            type="email"
+                            value={email}
+                          />
+                        </span>
                       </label>
                       <label className="flex flex-col gap-1 text-xs font-bold uppercase tracking-wide text-muted-foreground">
                         {t.password}
-                        <input
-                          className="h-10 rounded-xl border border-sage/15 bg-background px-3 text-sm font-semibold normal-case tracking-normal text-foreground outline-none focus:border-sage"
-                          onChange={(event) => setPassword(event.target.value)}
-                          type="password"
-                          value={password}
-                        />
+                        <span className="relative">
+                          <UserRound className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                          <input
+                            autoComplete="current-password"
+                            className="h-10 w-full rounded-xl border border-sage/15 bg-background pl-9 pr-3 text-sm font-semibold normal-case tracking-normal text-foreground outline-none focus:border-sage"
+                            disabled={authLoading}
+                            minLength={6}
+                            onChange={(event) => setPassword(event.target.value)}
+                            type="password"
+                            value={password}
+                          />
+                        </span>
                       </label>
                       <div className="grid grid-cols-2 gap-2">
                         <Button disabled={authLoading} type="submit">
@@ -325,11 +425,18 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
                         </Button>
                       </div>
                     </form>
+                    <Button disabled={authLoading} onClick={() => void signInWithGoogle()} type="button" variant="outline">
+                      {t.google}
+                    </Button>
                   </div>
                 )
               ) : null}
 
-              {authMessage ? <p className="mt-3 text-sm font-semibold text-muted-foreground">{authMessage}</p> : null}
+              {authMessage ? (
+                <p className="mt-3 rounded-xl border border-sage/15 bg-surface-container-low px-3 py-2 text-sm font-semibold text-muted-foreground">
+                  {authMessage}
+                </p>
+              ) : null}
             </section>
 
             {user ? (
@@ -442,10 +549,7 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
                 <h3 className="font-serif text-2xl font-semibold text-primary">{t.habits}</h3>
                 <Button
                   className="shrink-0"
-                  onClick={() => {
-                    addHabit()
-                    window.setTimeout(() => setExpandedHabitId(useAppStore.getState().settings.habits.at(-1)?.id ?? null), 0)
-                  }}
+                  onClick={createHabit}
                   size="sm"
                   type="button"
                   variant="outline"
@@ -460,6 +564,7 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
                   <div
                     className="overflow-hidden rounded-xl border border-sage/15 bg-card shadow-[0_8px_24px_rgba(0,0,0,0.03)]"
                     key={habit.id}
+                    ref={habit.id === creatingHabitId ? creatingHabitRef : null}
                   >
                     <button
                       className="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-sage-pale/15"
@@ -509,7 +614,20 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
                             {t.label}
                             <input
                               className="h-10 rounded-xl border border-sage/15 bg-background px-3 text-sm font-semibold normal-case tracking-normal text-foreground outline-none focus:border-sage"
+                              onKeyDown={(event) => {
+                                if (event.key === "Enter" && creatingHabitId === habit.id) {
+                                  event.preventDefault()
+                                  saveCreatedHabit(habit)
+                                }
+                                if (event.key === "Escape" && creatingHabitId === habit.id) {
+                                  event.preventDefault()
+                                  cancelCreatedHabit(habit.id)
+                                }
+                              }}
                               onChange={(event) => updateHabit(habit.id, { label: event.target.value })}
+                              ref={(element) => {
+                                habitInputRefs.current[habit.id] = element
+                              }}
                               value={habit.label}
                             />
                           </label>
@@ -580,15 +698,22 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
                               </label>
                               <label className="flex flex-col gap-1 text-xs font-bold uppercase tracking-wide text-muted-foreground">
                                 {t.offset}
-                                <input
+                                <select
                                   className="h-10 rounded-xl border border-sage/15 bg-background px-3 text-sm font-semibold normal-case tracking-normal text-foreground outline-none focus:border-sage"
-                                  max={120}
-                                  min={-120}
                                   onChange={(event) => updatePrayerOffset(habit, Number(event.target.value))}
-                                  step={5}
-                                  type="number"
-                                  value={habit.timing.offsetMinutes}
-                                />
+                                  value={prayerTiming(habit.timing).offsetMinutes}
+                                >
+                                  {!prayerOffsetOptions.includes(prayerTiming(habit.timing).offsetMinutes) ? (
+                                    <option value={prayerTiming(habit.timing).offsetMinutes}>
+                                      {formatPrayerOffset(prayerTiming(habit.timing).offsetMinutes, prayerTiming(habit.timing).prayer)}
+                                    </option>
+                                  ) : null}
+                                  {prayerOffsetOptions.map((offset) => (
+                                    <option key={offset} value={offset}>
+                                      {formatPrayerOffset(offset, prayerTiming(habit.timing).prayer)}
+                                    </option>
+                                  ))}
+                                </select>
                               </label>
                             </div>
                           )}
@@ -604,7 +729,12 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
                                   plannedDaysMatch(habit.plannedDays, preset.days) && "border-sage bg-sage text-white hover:bg-sage",
                                 )}
                                 key={preset.label}
-                                onClick={() => setHabitFrequency(habit.id, preset.days)}
+                                onClick={() => {
+                                  setHabitFrequency(habit.id, preset.days)
+                                  if (preset.label === "Friday") {
+                                    updateHabit(habit.id, { category: "Spiritual" })
+                                  }
+                                }}
                                 type="button"
                               >
                                 {preset.label}

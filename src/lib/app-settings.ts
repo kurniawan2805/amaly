@@ -34,46 +34,38 @@ function slugify(value: string) {
   return value.toLowerCase().replace(/\W+/g, "-").replace(/^-|-$/g, "")
 }
 
+function timingFromHabitSeed(habit: (typeof dailyHabits)[number]): HabitTiming {
+  const timing = habit.timing
+  const schedule = habit.scheduleLabel.toLowerCase()
+
+  if (schedule.includes("fajr")) return { mode: "prayer", prayer: "fajr", offsetMinutes: schedule.includes("after") ? 15 : 0 }
+  if (schedule.includes("dzuhr")) return { mode: "prayer", prayer: "dzuhr", offsetMinutes: schedule.includes("after") ? 15 : 0 }
+  if (schedule.includes("ashr")) return { mode: "prayer", prayer: "ashr", offsetMinutes: schedule.includes("after") ? 15 : 0 }
+  if (schedule.includes("maghrib")) return { mode: "prayer", prayer: "maghrib", offsetMinutes: schedule.includes("after") ? 15 : 0 }
+  if (schedule.includes("isya")) return { mode: "prayer", prayer: "isya", offsetMinutes: schedule.includes("after") ? 15 : 0 }
+
+  if (timing.mode === "fixed") {
+    return { mode: "fixed", time: typeof timing.time === "string" ? timing.time : "" }
+  }
+
+  return { mode: "fixed", time: "" }
+}
+
 export const defaultAppSettings: AppSettings = {
   language: "en",
   theme: "day",
   hijriOffset: 0,
   partnerRole: null,
   shareCycleSupportStatus: false,
-  habits: [
-    ...dailyHabits.map((habit, index) => ({
-      id: `daily-${slugify(habit.label) || index}`,
-      label: habit.label,
-      category: "Daily Routine",
-      scheduleLabel: index === 0 ? "06:00 AM" : index === 1 ? "07:30 AM" : "Anytime",
-      plannedDays: index === 1 ? [true, true, true, true, true, true, true] : [true, true, true, true, true, false, false],
-      enabled: true,
-      timing:
-        index === 0
-          ? ({ mode: "fixed", time: "06:00" } satisfies HabitTiming)
-          : index === 1
-            ? ({ mode: "fixed", time: "07:30" } satisfies HabitTiming)
-            : ({ mode: "fixed", time: "" } satisfies HabitTiming),
-    })),
-    {
-      id: "friday-surah-al-kahf",
-      label: "Surah Al-Kahf",
-      category: "Friday Specials",
-      scheduleLabel: "Anytime Friday",
-      plannedDays: [false, false, false, false, false, true, false],
-      enabled: true,
-      timing: { mode: "fixed", time: "" },
-    },
-    {
-      id: "friday-salawat",
-      label: "Salawat",
-      category: "Friday Specials",
-      scheduleLabel: "Evening",
-      plannedDays: [false, false, false, false, false, true, false],
-      enabled: true,
-      timing: { mode: "fixed", time: "" },
-    },
-  ],
+  habits: dailyHabits.map((habit, index) => ({
+    id: `habit-${slugify(habit.label) || index}`,
+    label: habit.label,
+    category: habit.category,
+    scheduleLabel: habit.scheduleLabel,
+    plannedDays: habit.plannedDays.map(Boolean),
+    enabled: true,
+    timing: timingFromHabitSeed(habit),
+  })),
 }
 
 function isAppLanguage(value: unknown): value is AppLanguage {

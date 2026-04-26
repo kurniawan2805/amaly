@@ -10,10 +10,12 @@ import {
   type HijriOffset,
   type PartnerRole,
   type PrayerAnchor,
+  APP_SETTINGS_STORAGE_KEY,
   loadAppSettings,
   saveAppSettings,
 } from "@/lib/app-settings"
 import {
+  CYCLE_STORAGE_KEY,
   endPeriod,
   loadCycleState,
   saveCycleRange,
@@ -25,6 +27,19 @@ import {
   type CycleState,
 } from "@/lib/cycle-progress"
 import {
+  DAILY_TRACKER_STORAGE_KEY,
+  defaultDailyTrackerState,
+  loadDailyTrackerState,
+  localDailyTrackerKey,
+  saveDailyTrackerState,
+  setHabitCompleted as setDailyHabitCompleted,
+  setHabitsCompleted as setDailyHabitsCompleted,
+  setPrayerCompleted as setDailyPrayerCompleted,
+  toggleSunnahSelection as toggleDailySunnahSelection,
+  type DailyTrackerState,
+} from "@/lib/daily-tracker"
+import {
+  FASTING_STORAGE_KEY,
   addQadhaDebt,
   loadFastingState,
   markQadhaPaid,
@@ -45,6 +60,7 @@ import {
   createPartnerInvite as createSupabasePartnerInvite,
   getAuthSnapshot,
   isSupabaseConfigured,
+  loadOwnCloudState,
   loadOwnQuranProgress,
   loadOwnProfile,
   loadPartnerSnapshot,
@@ -55,6 +71,7 @@ import {
   signOutOfSupabase,
   subscribeToPartnerEvents,
   updateOwnDisplayName,
+  upsertCloudState,
   upsertQuranProgress,
   type PartnerInvite,
   type PartnerNotice,
@@ -70,6 +87,7 @@ type StoreState = {
   quranProgress: QuranProgressState
   fastingState: FastingState
   cycleState: CycleState
+  dailyTrackerState: DailyTrackerState
   session: Session | null
   user: User | null
   authLoading: boolean
@@ -91,6 +109,7 @@ type StoreState = {
   clearPartnerNotice: () => void
   hydrateFromSupabase: () => Promise<void>
   syncQuranProgress: () => Promise<void>
+  syncCloudState: () => Promise<void>
   createPartnerInvite: (role: PartnerRole) => Promise<void>
   acceptPartnerInvite: (code: string, role: PartnerRole) => Promise<void>
   loadPartnerSnapshot: () => Promise<void>
@@ -100,7 +119,7 @@ type StoreState = {
   setLanguage: (language: AppLanguage) => void
   setTheme: (theme: AppTheme) => void
   setHijriOffset: (offset: HijriOffset) => void
-  addHabit: () => void
+  addHabit: () => string
   updateHabit: (id: string, patch: Partial<HabitDefinition>) => void
   deleteHabit: (id: string) => void
   setHabitFrequency: (id: string, plannedDays: boolean[]) => void
@@ -110,6 +129,10 @@ type StoreState = {
   addQadhaDebt: (days?: number) => void
   markQadhaPaid: () => void
   toggleSahurReminder: (dateKey: string) => void
+  setPrayerCompleted: (prayer: string, completed: boolean, dateKey?: string) => void
+  toggleSunnahSelection: (prayer: string, dateKey?: string) => void
+  setHabitCompleted: (habitId: string, completed: boolean, completedAt: string | null, dateKey?: string) => void
+  setHabitsCompleted: (habitIds: string[], completedAt: string, dateKey?: string) => void
   startPeriod: (date?: string) => void
   endPeriod: (date?: string) => void
   saveCycleRange: (input: { startDate: string; endDate: string }) => void
@@ -188,6 +211,20 @@ function senderName(user: User | null, profile: PartnerProfile | null) {
   return typeof metadataName === "string" && metadataName ? metadataName : "Your partner"
 }
 
+function isValidEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())
+}
+
+function hasLocalCloudStateSources() {
+  if (typeof window === "undefined") {
+    return true
+  }
+
+  return [APP_SETTINGS_STORAGE_KEY, FASTING_STORAGE_KEY, CYCLE_STORAGE_KEY, DAILY_TRACKER_STORAGE_KEY].some(
+    (key) => window.localStorage.getItem(key) !== null,
+  )
+}
+
 function subscribeForUser(userId: string, set: (partial: Partial<StoreState>) => void) {
   if (partnerEventsChannel && supabase) {
     void supabase.removeChannel(partnerEventsChannel)
@@ -212,6 +249,7 @@ export const useAppStore = create<StoreState>((set, get) => ({
   quranProgress: loadQuranProgress(initialSettings.language, initialSettings.hijriOffset),
   fastingState: initialFastingState,
   cycleState: loadCycleState(initialFastingState.cycleLogs),
+  dailyTrackerState: loadDailyTrackerState(),
   session: null,
   user: null,
   authLoading: isSupabaseConfigured,
@@ -274,29 +312,39 @@ export const useAppStore = create<StoreState>((set, get) => ({
     }
   },
   signInWithPassword: async (email, password) => {
-    if (!email.trim() || !password) {
-      set({ authMessage: "Enter an email address first." })
+    if (!isValidEmail(email)) {
+      set({ authMessage: "Enter a valid email address." })
+      return
+    }
+
+    if (!password) {
+      set({ authMessage: "Enter your password." })
       return
     }
 
     set({ authLoading: true, authMessage: null })
     try {
       await signInWithEmailPassword(email.trim(), password)
-      set({ authLoading: false, authMessage: null })
+      set({ authLoading: false, authMessage: "Signed in. Quran sync will run in the background." })
     } catch (error) {
       set({ authLoading: false, authMessage: error instanceof Error ? error.message : "Could not sign in." })
     }
   },
   signUpWithPassword: async (email, password) => {
-    if (!email.trim() || password.length < 6) {
-      set({ authMessage: "Use an email and a password with at least 6 characters." })
+    if (!isValidEmail(email)) {
+      set({ authMessage: "Enter a valid email address." })
+      return
+    }
+
+    if (password.length < 6) {
+      set({ authMessage: "Use a password with at least 6 characters." })
       return
     }
 
     set({ authLoading: true, authMessage: null })
     try {
       await signUpWithEmailPassword(email.trim(), password)
-      set({ authLoading: false, authMessage: "Account created. Check your email if confirmation is enabled." })
+      set({ authLoading: false, authMessage: "Account created. Check your email to confirm before signing in." })
     } catch (error) {
       set({ authLoading: false, authMessage: error instanceof Error ? error.message : "Could not create account." })
     }
@@ -341,17 +389,41 @@ export const useAppStore = create<StoreState>((set, get) => ({
 
     set({ syncLoading: true, syncMessage: null })
     try {
-      const cloudProgress = await loadOwnQuranProgress(current.user.id, current.settings.language, current.settings.hijriOffset)
+      try {
+        const cloudState = await loadOwnCloudState(current.user.id)
+        if (cloudState?.appSettings && cloudState.fastingState && cloudState.cycleState && !hasLocalCloudStateSources()) {
+          saveAppSettings(cloudState.appSettings)
+          saveFastingState(cloudState.fastingState)
+          saveCycleState(cloudState.cycleState)
+          if (cloudState.dailyTrackerState) {
+            saveDailyTrackerState(cloudState.dailyTrackerState)
+          }
+          set({
+            settings: cloudState.appSettings,
+            fastingState: cloudState.fastingState,
+            cycleState: cloudState.cycleState,
+            dailyTrackerState: cloudState.dailyTrackerState ?? defaultDailyTrackerState,
+          })
+        } else {
+          await get().syncCloudState()
+        }
+      } catch (error) {
+        set({ syncMessage: error instanceof Error ? error.message : "Could not load app state from Supabase." })
+      }
+
+      const synced = get()
+      const userId = current.user.id
+      const cloudProgress = await loadOwnQuranProgress(userId, synced.settings.language, synced.settings.hijriOffset)
       if (!cloudProgress) {
-        await upsertQuranProgress(current.quranProgress, current.user.id)
+        await upsertQuranProgress(synced.quranProgress, userId)
       } else if (
-        cloudProgress.last_page_read >= current.quranProgress.last_page_read ||
-        cloudProgress.logs.length >= current.quranProgress.logs.length
+        cloudProgress.last_page_read >= synced.quranProgress.last_page_read ||
+        cloudProgress.logs.length >= synced.quranProgress.logs.length
       ) {
         saveQuranProgress(cloudProgress)
         set({ quranProgress: cloudProgress })
       } else {
-        await upsertQuranProgress(current.quranProgress, current.user.id)
+        await upsertQuranProgress(synced.quranProgress, userId)
       }
 
       await get().loadPartnerSnapshot()
@@ -360,12 +432,29 @@ export const useAppStore = create<StoreState>((set, get) => ({
       set({ syncLoading: false, syncMessage: error instanceof Error ? error.message : "Could not sync with Supabase." })
     }
   },
+  syncCloudState: async () => {
+    const current = get()
+    if (!current.user) return
+
+    try {
+      await upsertCloudState(current.user.id, {
+        appSettings: current.settings,
+        fastingState: current.fastingState,
+        cycleState: current.cycleState,
+        dailyTrackerState: current.dailyTrackerState,
+        dailyQuranGoal: current.quranProgress.daily_goal,
+      })
+    } catch (error) {
+      set({ syncMessage: error instanceof Error ? error.message : "Could not save app state to Supabase." })
+    }
+  },
   syncQuranProgress: async () => {
     const current = get()
     if (!current.user) return
 
     try {
       await upsertQuranProgress(current.quranProgress, current.user.id)
+      await get().syncCloudState()
       await get().loadPartnerSnapshot()
     } catch (error) {
       set({ syncMessage: error instanceof Error ? error.message : "Could not save Quran progress to Supabase." })
@@ -383,6 +472,7 @@ export const useAppStore = create<StoreState>((set, get) => ({
       const invite = await createSupabasePartnerInvite(current.user.id, role)
       const settings = persistPartnerRole(current.settings, role)
       set({ settings, partnerInvite: invite, syncLoading: false, syncMessage: "Partner code created." })
+      void get().syncCloudState()
     } catch (error) {
       set({ syncLoading: false, syncMessage: error instanceof Error ? error.message : "Could not create partner code." })
     }
@@ -399,6 +489,7 @@ export const useAppStore = create<StoreState>((set, get) => ({
       await acceptSupabasePartnerInvite(code.trim(), role)
       const settings = persistPartnerRole(current.settings, role)
       set({ settings, partnerInvite: null })
+      void get().syncCloudState()
       await get().loadPartnerSnapshot()
       set({ syncLoading: false, syncMessage: "Partner connected." })
     } catch (error) {
@@ -455,10 +546,12 @@ export const useAppStore = create<StoreState>((set, get) => ({
     )
     saveQuranProgress(quranProgress)
     set({ settings, quranProgress })
+    void get().syncCloudState()
   },
   setTheme: (theme) => {
     const settings = persistSettings({ ...get().settings, theme })
     set({ settings })
+    void get().syncCloudState()
   },
   setHijriOffset: (hijriOffset) => {
     const current = get()
@@ -473,10 +566,14 @@ export const useAppStore = create<StoreState>((set, get) => ({
     )
     saveQuranProgress(quranProgress)
     set({ settings, quranProgress })
+    void get().syncCloudState()
   },
   addHabit: () => {
-    const settings = persistSettings({ ...get().settings, habits: [...get().settings.habits, makeHabit()] })
+    const habit = makeHabit()
+    const settings = persistSettings({ ...get().settings, habits: [habit, ...get().settings.habits] })
     set({ settings })
+    void get().syncCloudState()
+    return habit.id
   },
   updateHabit: (id, patch) => {
     const current = get().settings
@@ -486,11 +583,13 @@ export const useAppStore = create<StoreState>((set, get) => ({
       habits: current.habits.map((habit) => (habit.id === id ? { ...habit, ...normalizedPatch } : habit)),
     })
     set({ settings })
+    void get().syncCloudState()
   },
   deleteHabit: (id) => {
     const current = get().settings
     const settings = persistSettings({ ...current, habits: current.habits.filter((habit) => habit.id !== id) })
     set({ settings })
+    void get().syncCloudState()
   },
   setHabitFrequency: (id, plannedDays) => {
     get().updateHabit(id, { plannedDays: plannedDays.length === 7 ? plannedDays : [true, true, true, true, true, false, false] })
@@ -550,33 +649,63 @@ export const useAppStore = create<StoreState>((set, get) => ({
     const fastingState = addQadhaDebt(get().fastingState, days)
     saveFastingState(fastingState)
     set({ fastingState })
+    void get().syncCloudState()
   },
   markQadhaPaid: () => {
     const fastingState = markQadhaPaid(get().fastingState)
     saveFastingState(fastingState)
     set({ fastingState })
+    void get().syncCloudState()
   },
   toggleSahurReminder: (dateKey) => {
     const fastingState = toggleSahurReminder(get().fastingState, dateKey)
     saveFastingState(fastingState)
     set({ fastingState })
+    void get().syncCloudState()
+  },
+  setPrayerCompleted: (prayer, completed, dateKey = localDailyTrackerKey()) => {
+    const dailyTrackerState = setDailyPrayerCompleted(get().dailyTrackerState, dateKey, prayer, completed)
+    saveDailyTrackerState(dailyTrackerState)
+    set({ dailyTrackerState })
+    void get().syncCloudState()
+  },
+  toggleSunnahSelection: (prayer, dateKey = localDailyTrackerKey()) => {
+    const dailyTrackerState = toggleDailySunnahSelection(get().dailyTrackerState, dateKey, prayer)
+    saveDailyTrackerState(dailyTrackerState)
+    set({ dailyTrackerState })
+    void get().syncCloudState()
+  },
+  setHabitCompleted: (habitId, completed, completedAt, dateKey = localDailyTrackerKey()) => {
+    const dailyTrackerState = setDailyHabitCompleted(get().dailyTrackerState, dateKey, habitId, completed, completedAt)
+    saveDailyTrackerState(dailyTrackerState)
+    set({ dailyTrackerState })
+    void get().syncCloudState()
+  },
+  setHabitsCompleted: (habitIds, completedAt, dateKey = localDailyTrackerKey()) => {
+    const dailyTrackerState = setDailyHabitsCompleted(get().dailyTrackerState, dateKey, habitIds, completedAt)
+    saveDailyTrackerState(dailyTrackerState)
+    set({ dailyTrackerState })
+    void get().syncCloudState()
   },
   startPeriod: (date) => {
     const cycleState = startPeriod(get().cycleState, date)
     saveCycleState(cycleState)
     set({ cycleState })
+    void get().syncCloudState()
   },
   endPeriod: (date) => {
     const current = get()
     const cycleState = endPeriod(current.cycleState, current.settings.hijriOffset, date)
     saveCycleState(cycleState)
     set({ cycleState })
+    void get().syncCloudState()
   },
   saveCycleRange: (input) => {
     const current = get()
     const cycleState = saveCycleRange(current.cycleState, input, current.settings.hijriOffset)
     saveCycleState(cycleState)
     set({ cycleState })
+    void get().syncCloudState()
   },
   confirmCycleQadha: (logId) => {
     const current = get()
@@ -591,21 +720,25 @@ export const useAppStore = create<StoreState>((set, get) => ({
     saveFastingState(fastingState)
     saveCycleState(cycleState)
     set({ fastingState, cycleState })
+    void get().syncCloudState()
   },
   ignoreCycleQadha: (logId) => {
     const cycleState = setCycleQadhaStatus(get().cycleState, logId, "ignored")
     saveCycleState(cycleState)
     set({ cycleState })
+    void get().syncCloudState()
   },
   toggleCyclePrivacy: () => {
     const cycleState = toggleCyclePrivacy(get().cycleState)
     saveCycleState(cycleState)
     set({ cycleState })
+    void get().syncCloudState()
   },
   toggleCycleSymptom: (symptomId) => {
     const cycleState = toggleCycleSymptom(get().cycleState, symptomId)
     saveCycleState(cycleState)
     set({ cycleState })
+    void get().syncCloudState()
   },
 }))
 

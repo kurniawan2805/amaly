@@ -1,4 +1,4 @@
-import { BookOpen, Check, Clock, Lock, MoreHorizontal, Moon, Play, Plus, Quote, Settings, Sparkles, Sun } from "lucide-react"
+import { BookOpen, Check, ChevronDown, Clock, Lock, MoreHorizontal, Moon, Play, Plus, Quote, Settings, Sparkles, Sun } from "lucide-react"
 import { CSSProperties, PointerEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react"
 import { Link } from "react-router-dom"
 
@@ -7,8 +7,9 @@ import { QuickLogButtons } from "@/components/quran/quick-log-buttons"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
-import { AppSettings, HabitDefinition } from "@/lib/app-settings"
+import { AppSettings, HabitDefinition, PrayerAnchor } from "@/lib/app-settings"
 import { type CycleState, getCycleSummary } from "@/lib/cycle-progress"
+import { getDailyTrackerDay, localDailyTrackerKey, type DailyTrackerState } from "@/lib/daily-tracker"
 import { formatHijriDate } from "@/lib/hijri-date"
 import { shouldShowQuranEveningNudge, type QuranProgressState } from "@/lib/quran-progress"
 import { cn } from "@/lib/utils"
@@ -16,9 +17,12 @@ import { cn } from "@/lib/utils"
 type Habit = {
   id: string
   label: string
+  category: string
   scheduleLabel: string
   plannedDays: boolean[]
+  timing: HabitDefinition["timing"]
   completed: boolean
+  completedAt: string | null
 }
 
 type FlowerBurst = {
@@ -77,10 +81,51 @@ function toHabitState(habit: HabitDefinition): Habit {
   return {
     id: habit.id,
     label: habit.label,
+    category: habit.category,
     scheduleLabel: habit.scheduleLabel,
     plannedDays: habit.plannedDays,
+    timing: habit.timing,
     completed: false,
+    completedAt: null,
   }
+}
+
+function prayerToMinutes(prayer: PrayerAnchor) {
+  const prayerWindow = prayers.find((item) => item.label.toLowerCase() === prayer)
+  return prayerWindow ? timeToMinutes(prayerWindow.start) : Number.MAX_SAFE_INTEGER
+}
+
+function getActiveHabitPhase(nowMinutes: number) {
+  return nowMinutes >= timeToMinutes("15:00") ? "night" : "morning"
+}
+
+function getHabitPhase(habit: Habit, activePhase: "morning" | "night") {
+  if (habit.timing.mode !== "prayer") {
+    return activePhase
+  }
+
+  return habit.timing.prayer === "fajr" || habit.timing.prayer === "dzuhr" ? "morning" : "night"
+}
+
+function getHabitSortValue(habit: Habit, activePhase: "morning" | "night", currentPrayer: string | null) {
+  if (habit.timing.mode !== "prayer") {
+    return activePhase === "night" ? timeToMinutes("15:00") : 0
+  }
+
+  const anchorLabel = habit.timing.prayer
+  const boost = currentPrayer?.toLowerCase() === anchorLabel ? -1000 : 0
+  return prayerToMinutes(anchorLabel) + habit.timing.offsetMinutes + boost
+}
+
+function formatTime(date: Date, language: AppSettings["language"]) {
+  return new Intl.DateTimeFormat(language === "id" ? "id-ID" : "en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date)
+}
+
+function formatAnchor(prayer: PrayerAnchor) {
+  return prayer.charAt(0).toUpperCase() + prayer.slice(1)
 }
 
 function HabitMark({ habit }: { habit: Habit }) {
@@ -129,6 +174,17 @@ const copy = {
     prayerMark: (prayer: string) => `Mark ${prayer} complete.`,
     sunnah: "Sunnah",
     dailyHabits: "Daily Habits",
+    earlierToday: "Earlier Today",
+    eveningNight: "Evening & Night",
+    phaseDone: (done: number, total: number) => `${done} of ${total} Done`,
+    morningComplete: "Morning Complete",
+    nightPhase: "Night phase",
+    logAllMorning: "Log All Morning",
+    upcomingAfter: (anchor: string) => `Upcoming: After ${anchor}`,
+    upcomingDuring: (anchor: string) => `Upcoming: During ${anchor}`,
+    upcomingBefore: (anchor: string) => `Upcoming: Before ${anchor}`,
+    anytimeActive: "Anytime today",
+    doneAt: (time: string) => `Done at ${time}`,
     completed: "completed",
     manageHabits: "Manage daily habits",
     cyclePhase: "Cycle Phase",
@@ -156,6 +212,17 @@ const copy = {
     prayerMark: (prayer: string) => `Tandai ${prayer} selesai.`,
     sunnah: "Sunnah",
     dailyHabits: "Kebiasaan Harian",
+    earlierToday: "Tadi Hari Ini",
+    eveningNight: "Sore & Malam",
+    phaseDone: (done: number, total: number) => `${done} dari ${total} selesai`,
+    morningComplete: "Pagi Selesai",
+    nightPhase: "Fase malam",
+    logAllMorning: "Tandai Semua Pagi",
+    upcomingAfter: (anchor: string) => `Berikutnya: Setelah ${anchor}`,
+    upcomingDuring: (anchor: string) => `Berikutnya: Saat ${anchor}`,
+    upcomingBefore: (anchor: string) => `Berikutnya: Sebelum ${anchor}`,
+    anytimeActive: "Kapan saja hari ini",
+    doneAt: (time: string) => `Selesai ${time}`,
     completed: "selesai",
     manageHabits: "Atur kebiasaan harian",
     cyclePhase: "Fase Siklus",
@@ -236,32 +303,60 @@ function PressAction({ children, className, disabled = false, onPress, onLongPre
 type DailyPageProps = {
   settings: AppSettings
   cycleState: CycleState
+  dailyTrackerState: DailyTrackerState
   displayName?: string
   quranProgress: QuranProgressState
   onQuickLog: (increment: number) => void
   onSetQuranPage: (page: number) => void
+  onSetPrayerCompleted: (prayer: string, completed: boolean, dateKey?: string) => void
+  onToggleSunnahSelection: (prayer: string, dateKey?: string) => void
+  onSetHabitCompleted: (habitId: string, completed: boolean, completedAt: string | null, dateKey?: string) => void
+  onSetHabitsCompleted: (habitIds: string[], completedAt: string, dateKey?: string) => void
   onOpenSettings: () => void
 }
 
-export default function DailyPage({ settings, cycleState, displayName = "", quranProgress, onQuickLog, onSetQuranPage, onOpenSettings }: DailyPageProps) {
-  const [habits, setHabits] = useState<Habit[]>(() =>
-    settings.habits.filter((habit) => habit.enabled && habit.plannedDays[new Date().getDay()]).map(toHabitState),
-  )
-  const [completedPrayers, setCompletedPrayers] = useState<string[]>([])
-  const [selectedSunnah, setSelectedSunnah] = useState<string[]>([])
+export default function DailyPage({
+  settings,
+  cycleState,
+  dailyTrackerState,
+  displayName = "",
+  quranProgress,
+  onQuickLog,
+  onSetQuranPage,
+  onSetPrayerCompleted,
+  onToggleSunnahSelection,
+  onSetHabitCompleted,
+  onSetHabitsCompleted,
+  onOpenSettings,
+}: DailyPageProps) {
   const [flowerBursts, setFlowerBursts] = useState<FlowerBurst[]>([])
   const [cycleRevealed, setCycleRevealed] = useState(false)
   const [now, setNow] = useState(() => new Date())
   const t = copy[settings.language]
+  const todayKey = localDailyTrackerKey(now)
+  const todayTracker = useMemo(() => getDailyTrackerDay(dailyTrackerState, todayKey), [dailyTrackerState, todayKey])
+  const completedPrayers = todayTracker.completedPrayers
+  const selectedSunnah = todayTracker.selectedSunnah
   const gregorianDate = formatGregorianDate(now, settings.language)
   const hijriDate = formatHijriDate(now, settings.hijriOffset, settings.language)
   const visibleHabitDefinitions = useMemo(() => {
     const todayIndex = now.getDay()
     return settings.habits.filter((habit) => habit.enabled && habit.plannedDays[todayIndex])
   }, [now, settings.habits])
+  const habits = useMemo(
+    () =>
+      visibleHabitDefinitions.map((habit) => {
+        const completion = todayTracker.habitCompletions[habit.id]
+        return {
+          ...toHabitState(habit),
+          completed: Boolean(completion?.completed),
+          completedAt: completion?.completedAt ?? null,
+        }
+      }),
+    [todayTracker.habitCompletions, visibleHabitDefinitions],
+  )
 
   const completedHabits = useMemo(() => habits.filter((habit) => habit.completed).length, [habits])
-  const progress = habits.length > 0 ? (completedHabits / habits.length) * 100 : 0
   const hasPrayerProgress = completedPrayers.length > 0
   const nowMinutes = getNowMinutes(now)
   const availablePrayers = prayers.filter((prayer) => timeToMinutes(prayer.start) <= nowMinutes)
@@ -273,6 +368,7 @@ export default function DailyPage({ settings, cycleState, displayName = "", qura
     }) ??
     availablePrayers[availablePrayers.length - 1] ??
     null
+  const activeHabitPhase = getActiveHabitPhase(nowMinutes)
   const allAvailablePrayersCompleted =
     availablePrayers.length > 0 && availablePrayers.every((prayer) => completedPrayers.includes(prayer.label))
   const prayerReminder = (() => {
@@ -296,21 +392,25 @@ export default function DailyPage({ settings, cycleState, displayName = "", qura
   })()
   const cycleSummary = useMemo(() => getCycleSummary(cycleState, now), [cycleState, now])
   const cyclePrivate = cycleState.settings.privacyEnabled && !cycleRevealed
-
-  useEffect(() => {
-    setHabits((current) =>
-      visibleHabitDefinitions.map((habit) => {
-        const existing = current.find((item) => item.id === habit.id)
-        return {
-          id: habit.id,
-          label: habit.label,
-          scheduleLabel: habit.scheduleLabel,
-          plannedDays: habit.plannedDays,
-          completed: existing?.completed ?? false,
-        }
-      }),
-    )
-  }, [visibleHabitDefinitions])
+  const morningHabits = useMemo(
+    () =>
+      habits
+        .filter((habit) => getHabitPhase(habit, activeHabitPhase) === "morning")
+        .sort((a, b) => getHabitSortValue(a, activeHabitPhase, currentPrayer?.label ?? null) - getHabitSortValue(b, activeHabitPhase, currentPrayer?.label ?? null)),
+    [activeHabitPhase, currentPrayer?.label, habits],
+  )
+  const nightHabits = useMemo(
+    () =>
+      habits
+        .filter((habit) => getHabitPhase(habit, activeHabitPhase) === "night")
+        .sort((a, b) => getHabitSortValue(a, activeHabitPhase, currentPrayer?.label ?? null) - getHabitSortValue(b, activeHabitPhase, currentPrayer?.label ?? null)),
+    [activeHabitPhase, currentPrayer?.label, habits],
+  )
+  const activeHabits = activeHabitPhase === "night" ? nightHabits : morningHabits
+  const earlierHabits = activeHabitPhase === "night" ? morningHabits : []
+  const activeCompletedHabits = activeHabits.filter((habit) => habit.completed).length
+  const earlierCompletedHabits = earlierHabits.filter((habit) => habit.completed).length
+  const activeProgress = activeHabits.length > 0 ? (activeCompletedHabits / activeHabits.length) * 100 : 0
 
   useEffect(() => {
     const interval = window.setInterval(() => {
@@ -321,15 +421,36 @@ export default function DailyPage({ settings, cycleState, displayName = "", qura
   }, [])
 
   function completeHabit(id: string) {
-    setHabits((current) =>
-      current.map((habit) => (habit.id === id ? { ...habit, completed: true } : habit)),
-    )
+    onSetHabitCompleted(id, true, formatTime(new Date(), settings.language), todayKey)
   }
 
   function uncompleteHabit(id: string) {
-    setHabits((current) =>
-      current.map((habit) => (habit.id === id ? { ...habit, completed: false } : habit)),
-    )
+    onSetHabitCompleted(id, false, null, todayKey)
+  }
+
+  function completeHabits(ids: string[]) {
+    onSetHabitsCompleted(ids, formatTime(new Date(), settings.language), todayKey)
+  }
+
+  function habitTimeLabel(habit: Habit) {
+    if (habit.completed && habit.completedAt) {
+      return t.doneAt(habit.completedAt)
+    }
+
+    if (habit.timing.mode !== "prayer") {
+      return t.anytimeActive
+    }
+
+    const anchor = formatAnchor(habit.timing.prayer)
+    if (habit.timing.offsetMinutes > 0) {
+      return t.upcomingAfter(anchor)
+    }
+
+    if (habit.timing.offsetMinutes < 0) {
+      return t.upcomingBefore(anchor)
+    }
+
+    return t.upcomingDuring(anchor)
   }
 
   function completePrayer(prayer: string) {
@@ -337,28 +458,74 @@ export default function DailyPage({ settings, cycleState, displayName = "", qura
       return
     }
 
-    setCompletedPrayers((current) => {
-      if (current.includes(prayer)) {
-        return current
-      }
+    if (completedPrayers.includes(prayer)) {
+      return
+    }
 
-      const burstId = Date.now()
-      setFlowerBursts((bursts) => [...bursts, { id: burstId, prayer }])
-      window.setTimeout(() => {
-        setFlowerBursts((bursts) => bursts.filter((burst) => burst.id !== burstId))
-      }, 1800)
+    const burstId = Date.now()
+    setFlowerBursts((bursts) => [...bursts, { id: burstId, prayer }])
+    window.setTimeout(() => {
+      setFlowerBursts((bursts) => bursts.filter((burst) => burst.id !== burstId))
+    }, 1800)
 
-      return [...current, prayer]
-    })
+    onSetPrayerCompleted(prayer, true, todayKey)
   }
 
   function uncompletePrayer(prayer: string) {
-    setCompletedPrayers((current) => current.filter((item) => item !== prayer))
+    onSetPrayerCompleted(prayer, false, todayKey)
   }
 
   function toggleSunnah(prayer: string) {
-    setSelectedSunnah((current) =>
-      current.includes(prayer) ? current.filter((item) => item !== prayer) : [...current, prayer],
+    onToggleSunnahSelection(prayer, todayKey)
+  }
+
+  function renderHabitItem(habit: Habit) {
+    const isCurrentAnchor = habit.timing.mode === "prayer" && currentPrayer?.label.toLowerCase() === habit.timing.prayer
+
+    return (
+      <li
+        key={habit.id}
+        className={cn(
+          "group flex items-center gap-3 rounded-xl border border-sage/10 bg-card px-3 py-3 transition hover:border-sage/20 hover:bg-surface-container-low/70",
+          isCurrentAnchor && !habit.completed && "border-sage/45 bg-sage-pale/35 dark:bg-sage/10",
+        )}
+      >
+        <HabitMark habit={habit} />
+        <div className="min-w-0 flex-1">
+          <PressAction
+            ariaLabel={
+              habit.completed
+                ? `${habit.label} ${t.completed}. Long press to uncheck.`
+                : `Mark ${habit.label} ${t.completed}.`
+            }
+            className={cn(
+              "block min-w-0 text-left transition",
+              habit.completed ? "text-foreground/60 line-through" : "text-foreground",
+            )}
+            onLongPress={() => uncompleteHabit(habit.id)}
+            onPress={() => completeHabit(habit.id)}
+          >
+            <span className="block truncate text-sm font-bold">{habit.label}</span>
+            <span className="block truncate text-xs font-semibold text-muted-foreground">{habitTimeLabel(habit)}</span>
+          </PressAction>
+        </div>
+        <FrequencyDots plannedDays={habit.plannedDays} />
+        <PressAction
+          ariaLabel={
+            habit.completed
+              ? `${habit.label} ${t.completed}. Long press to uncheck.`
+              : `Mark ${habit.label} ${t.completed}.`
+          }
+          className={cn(
+            "flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-sage/35 bg-card transition",
+            habit.completed && "border-primary bg-primary text-white",
+          )}
+          onLongPress={() => uncompleteHabit(habit.id)}
+          onPress={() => completeHabit(habit.id)}
+        >
+          {habit.completed ? <Check className="h-4 w-4" /> : null}
+        </PressAction>
+      </li>
     )
   }
 
@@ -544,52 +711,67 @@ export default function DailyPage({ settings, cycleState, displayName = "", qura
               <Settings className="h-5 w-5" />
             </Button>
           </div>
-          <Progress className="relative z-10 mt-6" value={progress} />
+          <div className="relative z-10 mt-6 rounded-2xl border border-sage/15 bg-surface-container-low/70 p-4">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 text-sm font-bold text-primary">
+                {activeHabitPhase === "night" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+                <span>{activeHabitPhase === "night" ? t.nightPhase : t.morningComplete}</span>
+              </div>
+              <span className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                {t.phaseDone(activeCompletedHabits, activeHabits.length)}
+              </span>
+            </div>
+            <Progress value={activeProgress} />
+          </div>
 
-          <ul className="relative z-10 mt-5 flex flex-col gap-2">
-            {habits.map((habit) => (
-              <li
-                key={habit.id}
-                className="group flex items-center gap-3 rounded-xl border border-sage/10 bg-card px-3 py-3 transition hover:border-sage/20 hover:bg-surface-container-low/70"
-              >
-                <HabitMark habit={habit} />
-                <div className="min-w-0 flex-1">
-                  <PressAction
-                    ariaLabel={
-                      habit.completed
-                        ? `${habit.label} ${t.completed}. Long press to uncheck.`
-                        : `Mark ${habit.label} ${t.completed}.`
-                    }
-                    className={cn(
-                      "block min-w-0 text-left transition",
-                      habit.completed ? "text-foreground/60 line-through" : "text-foreground",
-                    )}
-                    onLongPress={() => uncompleteHabit(habit.id)}
-                    onPress={() => completeHabit(habit.id)}
+          <div className="relative z-10 mt-5 flex flex-col gap-3">
+            {earlierHabits.length > 0 ? (
+              <details className="group rounded-2xl border border-sage/10 bg-card">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3">
+                  <div>
+                    <p className="text-sm font-bold text-foreground">{t.earlierToday}</p>
+                    <p className="text-xs font-semibold text-muted-foreground">
+                      {t.phaseDone(earlierCompletedHabits, earlierHabits.length)}
+                    </p>
+                  </div>
+                  <ChevronDown className="h-4 w-4 text-muted-foreground transition group-open:rotate-180" />
+                </summary>
+                <div className="border-t border-sage/10 p-3">
+                  <Button
+                    className="mb-3 w-full"
+                    onClick={() => completeHabits(earlierHabits.map((habit) => habit.id))}
+                    size="sm"
+                    type="button"
+                    variant="outline"
                   >
-                    <span className="block truncate text-sm font-bold">{habit.label}</span>
-                    <span className="block truncate text-xs font-semibold text-muted-foreground">{habit.scheduleLabel}</span>
-                  </PressAction>
+                    <Sun className="h-4 w-4" />
+                    {t.logAllMorning}
+                  </Button>
+                  <ul className="flex flex-col gap-2">{earlierHabits.map(renderHabitItem)}</ul>
                 </div>
-                <FrequencyDots plannedDays={habit.plannedDays} />
-                <PressAction
-                  ariaLabel={
-                    habit.completed
-                      ? `${habit.label} ${t.completed}. Long press to uncheck.`
-                      : `Mark ${habit.label} ${t.completed}.`
-                  }
-                  className={cn(
-                    "flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-sage/35 bg-card transition",
-                    habit.completed && "border-primary bg-primary text-white",
-                  )}
-                  onLongPress={() => uncompleteHabit(habit.id)}
-                  onPress={() => completeHabit(habit.id)}
-                >
-                  {habit.completed ? <Check className="h-4 w-4" /> : null}
-                </PressAction>
-              </li>
-            ))}
-          </ul>
+              </details>
+            ) : null}
+
+            <section
+              className={cn(
+                "rounded-2xl border bg-card p-3",
+                activeHabitPhase === "night" ? "border-sage/25 shadow-[0_0_24px_rgba(88,112,83,0.1)]" : "border-sage/10",
+              )}
+            >
+              <div className="mb-3 flex items-center justify-between gap-3 px-1">
+                <div className="flex items-center gap-2">
+                  {activeHabitPhase === "night" ? <Moon className="h-4 w-4 text-primary" /> : <Sun className="h-4 w-4 text-primary" />}
+                  <h4 className="text-sm font-bold text-foreground">
+                    {activeHabitPhase === "night" ? t.eveningNight : t.dailyHabits}
+                  </h4>
+                </div>
+                <span className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                  {t.phaseDone(activeCompletedHabits, activeHabits.length)}
+                </span>
+              </div>
+              <ul className="flex flex-col gap-2">{activeHabits.map(renderHabitItem)}</ul>
+            </section>
+          </div>
         </Card>
 
         <Card className="relative overflow-hidden p-6 text-center md:col-span-4">

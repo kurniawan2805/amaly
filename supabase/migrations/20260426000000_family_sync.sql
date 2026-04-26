@@ -1,5 +1,18 @@
-create type public.partner_role as enum ('husband', 'wife');
-create type public.partner_event_type as enum ('quran_goal', 'nudge');
+do $$
+begin
+  create type public.partner_role as enum ('husband', 'wife');
+exception
+  when duplicate_object then null;
+end;
+$$;
+
+do $$
+begin
+  create type public.partner_event_type as enum ('quran_goal', 'nudge');
+exception
+  when duplicate_object then null;
+end;
+$$;
 
 alter table public.quran_progress
   add column if not exists daily_goal integer not null default 5 check (daily_goal > 0),
@@ -57,7 +70,7 @@ alter table public.partner_invites enable row level security;
 alter table public.partnerships enable row level security;
 alter table public.partner_events enable row level security;
 
-create or replace function public.partner_user_ids(current_user uuid default auth.uid())
+create or replace function public.partner_user_ids(p_current_user uuid default auth.uid())
 returns table(user_id uuid)
 language sql
 stable
@@ -66,11 +79,11 @@ set search_path = public
 as $$
   select wife_id as user_id
   from public.partnerships
-  where husband_id = current_user
+  where husband_id = p_current_user
   union
   select husband_id as user_id
   from public.partnerships
-  where wife_id = current_user
+  where wife_id = p_current_user
 $$;
 
 create or replace function public.are_partners(target_user uuid)

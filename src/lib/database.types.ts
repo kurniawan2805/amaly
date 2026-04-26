@@ -161,6 +161,11 @@ export type Database = {
           daily_quran_goal_pages: number
           qadha_days_remaining: number
           reminder_settings: Json
+          app_settings: Json
+          fasting_state: Json
+          cycle_state: Json
+          daily_tracker_state: Json
+          cloud_state_version: number
           updated_at: string
         }
         Insert: {
@@ -168,12 +173,22 @@ export type Database = {
           daily_quran_goal_pages?: number
           qadha_days_remaining?: number
           reminder_settings?: Json
+          app_settings?: Json
+          fasting_state?: Json
+          cycle_state?: Json
+          daily_tracker_state?: Json
+          cloud_state_version?: number
           updated_at?: string
         }
         Update: {
           daily_quran_goal_pages?: number
           qadha_days_remaining?: number
           reminder_settings?: Json
+          app_settings?: Json
+          fasting_state?: Json
+          cycle_state?: Json
+          daily_tracker_state?: Json
+          cloud_state_version?: number
           updated_at?: string
         }
         Relationships: []

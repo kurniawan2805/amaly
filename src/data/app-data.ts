@@ -12,12 +12,68 @@ import {
 } from "lucide-react"
 
 export const dailyHabits = [
-  { label: "Morning Dhikr", completed: true },
-  { label: "Read Surah Al-Kahf", completed: false },
-  { label: "Evening Reflection", completed: true },
-  { label: "Du'a List", completed: true },
-  { label: "Sleep Intention", completed: false },
-]
+  // --- DAILY ROUTINE ---
+  {
+    label: "Morning Dhikr",
+    category: "Daily Routine",
+    scheduleLabel: "After Fajr",
+    plannedDays: [true, true, true, true, true, true, true],
+    timing: { mode: "fixed", time: "05:30" },
+  },
+  {
+    label: "Mid-day Quran (1 Page)",
+    category: "Daily Routine",
+    scheduleLabel: "Toddler Nap Time",
+    plannedDays: [true, true, true, true, true, true, true],
+    timing: { mode: "flexible", window: "Afternoon" },
+  },
+  {
+    label: "Evening Reflection & Shidq",
+    category: "Daily Routine",
+    scheduleLabel: "Before Bed",
+    plannedDays: [true, true, true, true, true, true, true],
+    timing: { mode: "fixed", time: "21:00" },
+  },
+  {
+    label: "Dua for Children",
+    category: "Daily Routine",
+    scheduleLabel: "During Ashr Window",
+    plannedDays: [true, true, true, true, true, true, true],
+    timing: { mode: "fixed", time: "16:30" }, // Relevant to her current time!
+  },
+
+  // --- FRIDAY SPECIALS ---
+  {
+    label: "Read Surah Al-Kahf",
+    category: "Friday Specials",
+    scheduleLabel: "Anytime Friday",
+    plannedDays: [false, false, false, false, false, true, false], // Index 5 = Friday
+    timing: { mode: "flexible", time: "" },
+  },
+  {
+    label: "Increased Salawat",
+    category: "Friday Specials",
+    scheduleLabel: "Throughout Jumu'ah",
+    plannedDays: [false, false, false, false, false, true, false],
+    timing: { mode: "flexible", time: "" },
+  },
+  {
+    label: "Friday Sadaqah",
+    category: "Friday Specials",
+    scheduleLabel: "Morning",
+    plannedDays: [false, false, false, false, false, true, false],
+    timing: { mode: "fixed", time: "10:00" },
+  },
+
+  // --- SUNNAH LOGGING (Optional: Tracking these as habits too) ---
+  {
+    label: "Log Sunnah Prayers",
+    category: "Daily Routine",
+    scheduleLabel: "End of Day",
+    plannedDays: [true, true, true, true, true, true, true],
+    timing: { mode: "fixed", time: "20:30" },
+  }
+];
 
 export const quranShortcuts = [
   { label: "Bookmarks", icon: BookMarked },

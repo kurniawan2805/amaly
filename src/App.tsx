@@ -46,6 +46,7 @@ export default function App() {
   const quranProgress = useAppStore((state) => state.quranProgress)
   const fastingState = useAppStore((state) => state.fastingState)
   const cycleState = useAppStore((state) => state.cycleState)
+  const dailyTrackerState = useAppStore((state) => state.dailyTrackerState)
   const settingsOpen = useAppStore((state) => state.settingsOpen)
   const quranBurst = useAppStore((state) => state.quranBurst)
   const partnerNotice = useAppStore((state) => state.partnerNotice)
@@ -60,6 +61,10 @@ export default function App() {
   const addQadhaDebt = useAppStore((state) => state.addQadhaDebt)
   const markQadhaPaid = useAppStore((state) => state.markQadhaPaid)
   const toggleSahurReminder = useAppStore((state) => state.toggleSahurReminder)
+  const setPrayerCompleted = useAppStore((state) => state.setPrayerCompleted)
+  const toggleSunnahSelection = useAppStore((state) => state.toggleSunnahSelection)
+  const setHabitCompleted = useAppStore((state) => state.setHabitCompleted)
+  const setHabitsCompleted = useAppStore((state) => state.setHabitsCompleted)
   const startPeriod = useAppStore((state) => state.startPeriod)
   const endPeriod = useAppStore((state) => state.endPeriod)
   const saveCycleRange = useAppStore((state) => state.saveCycleRange)
@@ -93,7 +98,12 @@ export default function App() {
                 onOpenSettings={() => setSettingsOpen(true)}
                 onQuickLog={quickLogQuran}
                 onSetQuranPage={setQuranPage}
+                onSetPrayerCompleted={setPrayerCompleted}
+                onToggleSunnahSelection={toggleSunnahSelection}
+                onSetHabitCompleted={setHabitCompleted}
+                onSetHabitsCompleted={setHabitsCompleted}
                 cycleState={cycleState}
+                dailyTrackerState={dailyTrackerState}
                 displayName={displayName}
                 quranProgress={quranProgress}
                 settings={settings}
