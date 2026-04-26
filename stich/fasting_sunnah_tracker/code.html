@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SoulFast - Fasting Tracker</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&amp;family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-surface": "#1a1c1a",
+                        "on-primary-container": "#243d24",
+                        "on-primary-fixed": "#07200b",
+                        "primary-container": "#8ba888",
+                        "on-error-container": "#93000a",
+                        "on-surface-variant": "#434841",
+                        "secondary-fixed-dim": "#b2cad3",
+                        "inverse-on-surface": "#f1f1ec",
+                        "inverse-surface": "#2f312e",
+                        "primary-fixed": "#ccebc7",
+                        "surface-tint": "#4a6549",
+                        "tertiary-container": "#c39595",
+                        "tertiary": "#7b5455",
+                        "outline-variant": "#c3c8bf",
+                        "on-secondary-fixed-variant": "#344a52",
+                        "on-tertiary-fixed-variant": "#613d3e",
+                        "on-background": "#1a1c1a",
+                        "error-container": "#ffdad6",
+                        "surface-container-highest": "#e3e3de",
+                        "tertiary-fixed": "#ffdad9",
+                        "on-tertiary-container": "#4f2e2f",
+                        "on-tertiary-fixed": "#2f1314",
+                        "on-primary": "#ffffff",
+                        "surface": "#faf9f5",
+                        "surface-bright": "#faf9f5",
+                        "on-secondary-container": "#516870",
+                        "primary-fixed-dim": "#b0cfad",
+                        "on-primary-fixed-variant": "#334d33",
+                        "primary": "#4a6549",
+                        "on-error": "#ffffff",
+                        "inverse-primary": "#b0cfad",
+                        "surface-container-low": "#f4f4ef",
+                        "surface-container": "#efeeea",
+                        "error": "#ba1a1a",
+                        "outline": "#737970",
+                        "surface-dim": "#dadad6",
+                        "surface-variant": "#e3e3de",
+                        "on-tertiary": "#ffffff",
+                        "tertiary-fixed-dim": "#ecbaba",
+                        "secondary-container": "#cee7f0",
+                        "on-secondary-fixed": "#061e25",
+                        "background": "#faf9f5",
+                        "secondary-fixed": "#cee7f0",
+                        "on-secondary": "#ffffff",
+                        "surface-container-high": "#e9e8e4",
+                        "secondary": "#4b626a",
+                        "surface-container-lowest": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "xs": "4px",
+                        "lg": "48px",
+                        "container-padding": "24px",
+                        "xl": "64px",
+                        "md": "24px",
+                        "base": "8px",
+                        "sm": "12px",
+                        "gutter": "16px"
+                    },
+                    "fontFamily": {
+                        "label-sm": ["Plus Jakarta Sans"],
+                        "body-md": ["Plus Jakarta Sans"],
+                        "h3": ["Playfair Display"],
+                        "h2": ["Playfair Display"],
+                        "h1": ["Playfair Display"],
+                        "body-lg": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "label-sm": ["14px", { "lineHeight": "1.2", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "h3": ["24px", { "lineHeight": "1.4", "fontWeight": "500" }],
+                        "h2": ["32px", { "lineHeight": "1.3", "fontWeight": "500" }],
+                        "h1": ["40px", { "lineHeight": "1.2", "fontWeight": "600" }],
+                        "body-lg": ["18px", { "lineHeight": "1.6", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen pb-[100px]">
+<!-- TopAppBar -->
+<header class="bg-[#FDF5E6] dark:bg-stone-950 text-[#8BA888] dark:text-[#AEC6CF] font-serif text-lg font-medium tracking-tight docked full-width top-0 border-b border-[#8BA888]/10 flat no-shadows flex justify-between items-center px-6 py-4 w-full sticky z-40">
+<button class="hover:bg-[#8BA888]/5 transition-all duration-300 ease-in-out active:scale-95 p-2 rounded-full text-[#8BA888]/60">
+<span class="material-symbols-outlined" data-icon="menu">menu</span>
+</button>
+<div class="text-[#8BA888] font-serif italic text-2xl text-center flex-1">SoulFast</div>
+<button class="hover:bg-[#8BA888]/5 transition-all duration-300 ease-in-out active:scale-95 p-1 rounded-full text-[#8BA888]/60">
+<span class="material-symbols-outlined" data-icon="user_profile_avatar">account_circle</span>
+</button>
+</header>
+<main class="px-container-padding max-w-md mx-auto pt-lg">
+<!-- Qadha Tracking Card -->
+<section class="mb-lg">
+<div class="bg-surface-container-lowest border border-outline-variant/30 rounded-[16px] p-md flex flex-col items-center justify-center relative overflow-hidden">
+<div class="absolute top-0 right-0 w-32 h-32 bg-primary-fixed-dim/10 rounded-full -mr-16 -mt-16 pointer-events-none"></div>
+<h2 class="font-h3 text-h3 text-on-surface mb-xs text-center">Remaining Qadha</h2>
+<p class="font-body-md text-body-md text-on-surface-variant text-center mb-lg">Days to make up before Ramadan</p>
+<!-- Circular Progress -->
+<div class="relative w-48 h-48 mb-lg flex items-center justify-center">
+<svg class="w-full h-full transform -rotate-90" viewbox="0 0 100 100">
+<circle class="opacity-50" cx="50" cy="50" fill="none" r="45" stroke="#cee7f0" stroke-width="6"></circle>
+<circle class="transition-all duration-1000 ease-out" cx="50" cy="50" fill="none" r="45" stroke="#4a6549" stroke-dasharray="283" stroke-dashoffset="80" stroke-linecap="round" stroke-width="6"></circle>
+</svg>
+<div class="absolute flex flex-col items-center justify-center">
+<span class="font-h1 text-h1 text-primary">7</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant mt-xs">Days</span>
+</div>
+</div>
+<!-- Action Buttons -->
+<div class="flex gap-gutter w-full">
+<button class="flex-1 bg-surface-container-lowest border border-primary text-primary font-label-sm text-label-sm rounded-[16px] py-sm px-md flex items-center justify-center gap-xs hover:bg-primary/5 transition-colors">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                        Add Debt
+                    </button>
+<button class="flex-1 bg-primary text-on-primary font-label-sm text-label-sm rounded-[16px] py-sm px-md flex items-center justify-center gap-xs shadow-[0_0_20px_rgba(139,168,136,0.08)] hover:bg-surface-tint transition-colors">
+<span class="material-symbols-outlined text-[18px]">remove</span>
+                        Mark Paid
+                    </button>
+</div>
+</div>
+</section>
+<!-- Upcoming Sunnah -->
+<section>
+<div class="flex justify-between items-end mb-md">
+<h2 class="font-h3 text-h3 text-on-surface">Upcoming Sunnah</h2>
+<button class="font-label-sm text-label-sm text-secondary hover:text-primary transition-colors flex items-center gap-xs">
+                    View Calendar
+                    <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+</button>
+</div>
+<div class="flex flex-col gap-sm">
+<!-- Sunnah Card 1 -->
+<div class="bg-surface-container-lowest border border-outline-variant/30 rounded-[16px] p-md flex items-center gap-md relative overflow-hidden group hover:border-secondary-container transition-colors">
+<div class="w-12 h-12 rounded-full bg-[#cee7f0]/30 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-secondary" data-icon="light_mode">light_mode</span>
+</div>
+<div class="flex-1">
+<h3 class="font-body-lg text-body-lg text-on-surface font-medium">Monday Fast</h3>
+<p class="font-body-md text-body-md text-on-surface-variant text-sm mt-xs">Tomorrow</p>
+</div>
+<button class="text-outline hover:text-primary transition-colors">
+<span class="material-symbols-outlined">add_alert</span>
+</button>
+</div>
+<!-- Sunnah Card 2 -->
+<div class="bg-surface-container-lowest border border-outline-variant/30 rounded-[16px] p-md flex items-center gap-md relative overflow-hidden group hover:border-[#F4C2C2]/50 transition-colors">
+<div class="w-12 h-12 rounded-full bg-[#F4C2C2]/20 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[#c39595]" data-icon="brightness_4">brightness_4</span>
+</div>
+<div class="flex-1">
+<h3 class="font-body-lg text-body-lg text-on-surface font-medium">Ayyamul Bidh</h3>
+<p class="font-body-md text-body-md text-on-surface-variant text-sm mt-xs">In 3 days</p>
+</div>
+<button class="text-outline hover:text-primary transition-colors">
+<span class="material-symbols-outlined">add_alert</span>
+</button>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="bg-white dark:bg-stone-900 text-[#8BA888] dark:text-[#AEC6CF] font-serif text-[11px] uppercase tracking-widest fixed bottom-0 w-full rounded-t-[32px] border-t border-[#8BA888]/15 shadow-[0_-4px_20px_0_rgba(139,168,136,0.08)] fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-3">
+<button class="flex flex-col items-center justify-center text-[#8BA888]/50 hover:text-[#8BA888] tap-highlight-transparent active:scale-90 transition-all">
+<span class="material-symbols-outlined mb-1" data-icon="home_mini">home_mini</span>
+            Home
+        </button>
+<button class="flex flex-col items-center justify-center bg-[#F4C2C2]/20 text-[#F4C2C2] rounded-full px-5 py-1.5 transition-all tap-highlight-transparent active:scale-90 hover:text-[#8BA888]">
+<span class="material-symbols-outlined mb-1" data-icon="hourglass_empty" style="font-variation-settings: 'FILL' 1;">hourglass_empty</span>
+            Qadha
+        </button>
+<button class="flex flex-col items-center justify-center text-[#8BA888]/50 hover:text-[#8BA888] tap-highlight-transparent active:scale-90 transition-all">
+<span class="material-symbols-outlined mb-1" data-icon="calendar_month">calendar_month</span>
+            Sunnah
+        </button>
+<button class="flex flex-col items-center justify-center text-[#8BA888]/50 hover:text-[#8BA888] tap-highlight-transparent active:scale-90 transition-all">
+<span class="material-symbols-outlined mb-1" data-icon="auto_graph">auto_graph</span>
+            Insights
+        </button>
+</nav>
+</body></html>

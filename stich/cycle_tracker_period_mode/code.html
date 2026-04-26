@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Amaly - Cycle Tracker</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-bright": "#faf9f5",
+                      "surface": "#faf9f5",
+                      "on-secondary": "#ffffff",
+                      "on-tertiary-fixed-variant": "#613d3e",
+                      "on-secondary-container": "#516870",
+                      "tertiary-container": "#c39595",
+                      "on-primary-fixed-variant": "#334d33",
+                      "on-background": "#1a1c1a",
+                      "on-error": "#ffffff",
+                      "background": "#faf9f5",
+                      "surface-container": "#efeeea",
+                      "on-tertiary-fixed": "#2f1314",
+                      "on-surface-variant": "#434841",
+                      "primary-fixed-dim": "#b0cfad",
+                      "secondary": "#4b626a",
+                      "surface-container-highest": "#e3e3de",
+                      "secondary-fixed-dim": "#b2cad3",
+                      "surface-tint": "#4a6549",
+                      "on-tertiary-container": "#4f2e2f",
+                      "on-primary-container": "#243d24",
+                      "on-error-container": "#93000a",
+                      "outline-variant": "#c3c8bf",
+                      "secondary-fixed": "#cee7f0",
+                      "primary-container": "#8ba888",
+                      "surface-container-low": "#f4f4ef",
+                      "primary-fixed": "#ccebc7",
+                      "on-secondary-fixed": "#061e25",
+                      "tertiary-fixed": "#ffdad9",
+                      "inverse-on-surface": "#f1f1ec",
+                      "on-surface": "#1a1c1a",
+                      "outline": "#737970",
+                      "on-secondary-fixed-variant": "#344a52",
+                      "surface-container-lowest": "#ffffff",
+                      "surface-variant": "#e3e3de",
+                      "primary": "#4a6549",
+                      "surface-container-high": "#e9e8e4",
+                      "on-tertiary": "#ffffff",
+                      "secondary-container": "#cee7f0",
+                      "tertiary": "#7b5455",
+                      "error-container": "#ffdad6",
+                      "tertiary-fixed-dim": "#ecbaba",
+                      "on-primary-fixed": "#07200b",
+                      "error": "#ba1a1a",
+                      "inverse-primary": "#b0cfad",
+                      "surface-dim": "#dadad6",
+                      "on-primary": "#ffffff",
+                      "inverse-surface": "#2f312e"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "sm": "12px",
+                      "container-padding": "24px",
+                      "xl": "64px",
+                      "xs": "4px",
+                      "lg": "48px",
+                      "gutter": "16px",
+                      "md": "24px",
+                      "base": "8px"
+              },
+              "fontFamily": {
+                      "h3": [
+                              "Playfair Display"
+                      ],
+                      "label-sm": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "body-lg": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "h1": [
+                              "Playfair Display"
+                      ],
+                      "body-md": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "h2": [
+                              "Playfair Display"
+                      ]
+              },
+              "fontSize": {
+                      "h3": [
+                              "24px",
+                              {
+                                      "lineHeight": "1.4",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "label-sm": [
+                              "14px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-lg": [
+                              "18px",
+                              {
+                                      "lineHeight": "1.6",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "h1": [
+                              "40px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "1.6",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "h2": [
+                              "32px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "500"
+                              }
+                      ]
+              }
+            },
+          }
+        }
+      </script>
+<style>
+        .material-symbols-outlined {
+          font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+      </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface font-body-md min-h-screen flex flex-col antialiased">
+<!-- TopAppBar -->
+<header class="bg-[#FDF5E6] dark:bg-stone-900 border-b border-[#8BA888]/10 dark:border-white/5 docked full-width top-0 z-50">
+<div class="flex justify-between items-center w-full px-6 h-16 transition-all duration-300 ease-in-out">
+<button class="text-[#8BA888] dark:text-emerald-400 hover:bg-[#AEC6CF]/10 dark:hover:bg-white/5 p-2 rounded-full active:scale-95 transition-all">
+<span class="material-symbols-outlined">spa</span>
+</button>
+<h1 class="font-h3 text-h3 text-[#8BA888] dark:text-emerald-300 tracking-wide">Amaly</h1>
+<button class="w-8 h-8 rounded-full overflow-hidden hover:bg-[#AEC6CF]/10 dark:hover:bg-white/5 active:scale-95 transition-all">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="Portrait of a serene woman with natural light and soft background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBC2vntFF_jXLQVEtpS5sl3hZAVHw5cNeHm3DZHfNh4x-MZQyCAnGHuFZ2jhFAz1rma5z5-BOka4PR2ScyLK4x-dG6jl333vqSGUA97DjmMlt9xfy6lyAUzGFyk4AZmCffrWqwbiwNKEap6ZIh57v2ciEzSjtoYoXDHd9DGU1mOXdroIkpDKxppBpE8Npjlv--rZU3axaFJ1FJNAexgJw_VhIYrCB-RhmWw1_XWgMaayDxhjUP7TniAIOSvJj7pUTg6BeYcXV9JDbXh"/>
+</button>
+</div>
+</header>
+<!-- Main Content -->
+<main class="flex-1 px-container-padding py-lg pb-32 max-w-3xl mx-auto w-full space-y-xl">
+<!-- Header Section -->
+<section class="text-center space-y-sm">
+<h2 class="font-h1 text-h1 text-on-surface">Your Cycle</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant">Day 14 • Ovulation Phase</p>
+</section>
+<!-- Circular Tracker -->
+<section class="flex justify-center relative">
+<div class="w-64 h-64 rounded-full border-[12px] border-surface-container-highest relative flex items-center justify-center shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+<!-- Highlighted Segment (Simulated with SVG) -->
+<svg class="absolute top-0 left-0 w-full h-full -rotate-90 pointer-events-none" viewbox="0 0 100 100">
+<circle class="drop-shadow-md" cx="50" cy="50" fill="none" r="44" stroke="#F4C2C2" stroke-dasharray="276" stroke-dashoffset="200" stroke-width="12"></circle>
+</svg>
+<div class="text-center space-y-xs z-10 bg-surface/80 backdrop-blur-sm rounded-full w-40 h-40 flex flex-col items-center justify-center">
+<span class="material-symbols-outlined text-[#F4C2C2] text-4xl" style="font-variation-settings: 'FILL' 1;">favorite</span>
+<span class="font-h3 text-h3 text-primary block mt-2">14 Days</span>
+<span class="font-label-sm text-label-sm text-secondary uppercase tracking-widest">Until Period</span>
+</div>
+</div>
+</section>
+<!-- Current Phase Details -->
+<section class="bg-surface-lowest border border-primary-container/15 rounded-xl p-md space-y-md">
+<div class="flex items-start justify-between">
+<div>
+<h3 class="font-h2 text-h2 text-primary">Ovulation Phase</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">High energy, peak fertility.</p>
+</div>
+<span class="bg-[#F4C2C2]/20 text-tertiary-container px-3 py-1 rounded-full font-label-sm text-label-sm">Current</span>
+</div>
+<div class="grid grid-cols-2 gap-sm">
+<div class="bg-surface-container-low p-sm rounded-lg border border-primary-container/10">
+<span class="material-symbols-outlined text-secondary mb-2">mood</span>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Focus On</p>
+<p class="font-body-md text-body-md text-on-surface">Connection &amp; Creativity</p>
+</div>
+<div class="bg-surface-container-low p-sm rounded-lg border border-primary-container/10">
+<span class="material-symbols-outlined text-secondary mb-2">fitness_center</span>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Movement</p>
+<p class="font-body-md text-body-md text-on-surface">High Intensity</p>
+</div>
+</div>
+</section>
+<!-- Quick Log -->
+<section class="space-y-md">
+<h3 class="font-h3 text-h3 text-on-surface">Log Today</h3>
+<div class="flex gap-sm overflow-x-auto pb-4 snap-x no-scrollbar">
+<button class="snap-start flex-shrink-0 flex flex-col items-center justify-center w-20 h-24 bg-surface-lowest border border-primary-container/15 rounded-xl hover:bg-secondary-container/10 active:scale-95 transition-all shadow-[0_2px_10px_rgb(0,0,0,0.02)]">
+<span class="material-symbols-outlined text-primary mb-2">water_drop</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Flow</span>
+</button>
+<button class="snap-start flex-shrink-0 flex flex-col items-center justify-center w-20 h-24 bg-surface-lowest border border-[#F4C2C2]/30 rounded-xl bg-[#F4C2C2]/5 active:scale-95 transition-all shadow-[0_2px_10px_rgb(0,0,0,0.02)]">
+<span class="material-symbols-outlined text-[#F4C2C2] mb-2" style="font-variation-settings: 'FILL' 1;">sentiment_satisfied</span>
+<span class="font-label-sm text-label-sm text-tertiary-container">Mood</span>
+</button>
+<button class="snap-start flex-shrink-0 flex flex-col items-center justify-center w-20 h-24 bg-surface-lowest border border-primary-container/15 rounded-xl hover:bg-secondary-container/10 active:scale-95 transition-all shadow-[0_2px_10px_rgb(0,0,0,0.02)]">
+<span class="material-symbols-outlined text-primary mb-2">bed</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Sleep</span>
+</button>
+<button class="snap-start flex-shrink-0 flex flex-col items-center justify-center w-20 h-24 bg-surface-lowest border border-primary-container/15 rounded-xl hover:bg-secondary-container/10 active:scale-95 transition-all shadow-[0_2px_10px_rgb(0,0,0,0.02)]">
+<span class="material-symbols-outlined text-primary mb-2">thermostat</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Temp</span>
+</button>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="bg-white/80 dark:bg-stone-900/80 backdrop-blur-lg fixed bottom-0 w-full z-50 rounded-t-[32px] border-t border-[#8BA888]/5 dark:border-white/5 shadow-[0_-4px_20px_0_rgba(139,168,136,0.08)]">
+<div class="fixed bottom-0 left-0 w-full flex justify-around items-center px-4 pb-safe pt-3 h-20">
+<a class="flex flex-col items-center justify-center text-[#8BA888]/50 dark:text-stone-500 hover:text-[#AEC6CF] dark:hover:text-blue-300 tap-highlight-transparent transition-all duration-200" href="#">
+<span class="material-symbols-outlined mb-1 text-2xl">event_repeat</span>
+<span class="font-serif text-[11px] font-medium">Daily</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#8BA888]/50 dark:text-stone-500 hover:text-[#AEC6CF] dark:hover:text-blue-300 tap-highlight-transparent transition-all duration-200" href="#">
+<span class="material-symbols-outlined mb-1 text-2xl">menu_book</span>
+<span class="font-serif text-[11px] font-medium">Quran</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#8BA888]/50 dark:text-stone-500 hover:text-[#AEC6CF] dark:hover:text-blue-300 tap-highlight-transparent transition-all duration-200" href="#">
+<span class="material-symbols-outlined mb-1 text-2xl">restaurant_menu</span>
+<span class="font-serif text-[11px] font-medium">Fasting</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#F4C2C2] dark:text-pink-300 scale-110 transition-transform tap-highlight-transparent duration-200" href="#">
+<span class="material-symbols-outlined mb-1 text-2xl" style="font-variation-settings: 'FILL' 1;">calendar_month</span>
+<span class="font-serif text-[11px] font-medium text-[#8BA888]">Cycle</span>
+</a>
+</div>
+</nav>
+</body></html>

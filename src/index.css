@@ -1,0 +1,150 @@
+@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 52 33% 97%;
+    --foreground: 120 4% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 120 4% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 120 4% 11%;
+    --primary: 118 16% 34%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 193 17% 35%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 60 14% 93%;
+    --muted-foreground: 103 5% 27%;
+    --accent: 0 70% 86%;
+    --accent-foreground: 357 38% 28%;
+    --destructive: 0 75% 42%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 105 8% 77%;
+    --input: 105 8% 77%;
+    --ring: 118 16% 34%;
+    --radius: 1rem;
+    --surface: 52 33% 97%;
+    --surface-bright: 52 33% 97%;
+    --surface-dim: 60 5% 85%;
+    --surface-container: 60 14% 93%;
+    --surface-container-lowest: 0 0% 100%;
+    --surface-container-low: 60 19% 95%;
+    --surface-container-high: 60 10% 90%;
+    --surface-container-highest: 60 8% 88%;
+    --surface-variant: 60 8% 88%;
+    --sage: 108 18% 60%;
+    --sage-deep: 117 16% 34%;
+    --sage-pale: 113 50% 85%;
+    --sage-muted: 116 29% 75%;
+    --sky: 194 22% 75%;
+    --sky-pale: 194 48% 87%;
+    --sky-muted: 195 27% 76%;
+    --blush: 0 70% 86%;
+    --blush-pale: 1 100% 93%;
+    --blush-muted: 0 61% 83%;
+  }
+
+  .dark {
+    --background: 120 8% 9%;
+    --foreground: 52 22% 92%;
+    --card: 120 8% 13%;
+    --card-foreground: 52 22% 92%;
+    --popover: 120 8% 13%;
+    --popover-foreground: 52 22% 92%;
+    --primary: 110 42% 82%;
+    --primary-foreground: 120 8% 10%;
+    --secondary: 193 18% 72%;
+    --secondary-foreground: 120 8% 10%;
+    --muted: 120 7% 19%;
+    --muted-foreground: 95 14% 82%;
+    --accent: 0 54% 78%;
+    --accent-foreground: 0 30% 18%;
+    --destructive: 0 70% 64%;
+    --destructive-foreground: 120 8% 10%;
+    --border: 112 8% 30%;
+    --input: 112 8% 30%;
+    --ring: 110 42% 82%;
+    --surface: 120 8% 9%;
+    --surface-bright: 120 7% 18%;
+    --surface-dim: 120 8% 7%;
+    --surface-container: 120 7% 16%;
+    --surface-container-lowest: 120 8% 6%;
+    --surface-container-low: 120 7% 12%;
+    --surface-container-high: 120 7% 20%;
+    --surface-container-highest: 120 6% 26%;
+    --surface-variant: 110 8% 27%;
+    --sage: 111 42% 76%;
+    --sage-deep: 110 48% 88%;
+    --sage-pale: 113 22% 30%;
+    --sage-muted: 111 28% 66%;
+    --sky: 194 29% 68%;
+    --sky-pale: 196 18% 24%;
+    --sky-muted: 195 19% 45%;
+    --blush: 0 46% 73%;
+    --blush-pale: 355 20% 25%;
+    --blush-muted: 0 29% 55%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    background: #faf9f5;
+  }
+
+  .dark {
+    background: #171d17;
+  }
+
+  body {
+    @apply min-h-screen bg-background font-sans text-foreground antialiased;
+  }
+
+  button,
+  a {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+@layer utilities {
+  @keyframes flower-burst {
+    0% {
+      opacity: 0;
+      transform: translate3d(0, -32px, 0) scale(0.8) rotate(0deg);
+    }
+
+    12% {
+      opacity: 1;
+    }
+
+    70% {
+      opacity: 1;
+    }
+
+    100% {
+      opacity: 0;
+      transform: translate3d(var(--flower-x, 0), var(--flower-y, 120px), 0) scale(1.2) rotate(var(--flower-rotate, 24deg));
+    }
+  }
+
+  .animate-flower-burst {
+    animation: flower-burst 1650ms ease-out forwards;
+  }
+
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 1rem);
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}

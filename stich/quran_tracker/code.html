@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Amaly - Quran Tracker</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-bright": "#faf9f5",
+                        "surface": "#faf9f5",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary-fixed-variant": "#613d3e",
+                        "on-secondary-container": "#516870",
+                        "tertiary-container": "#c39595",
+                        "on-primary-fixed-variant": "#334d33",
+                        "on-background": "#1a1c1a",
+                        "on-error": "#ffffff",
+                        "background": "#faf9f5",
+                        "surface-container": "#efeeea",
+                        "on-tertiary-fixed": "#2f1314",
+                        "on-surface-variant": "#434841",
+                        "primary-fixed-dim": "#b0cfad",
+                        "secondary": "#4b626a",
+                        "surface-container-highest": "#e3e3de",
+                        "secondary-fixed-dim": "#b2cad3",
+                        "surface-tint": "#4a6549",
+                        "on-tertiary-container": "#4f2e2f",
+                        "on-primary-container": "#243d24",
+                        "on-error-container": "#93000a",
+                        "outline-variant": "#c3c8bf",
+                        "secondary-fixed": "#cee7f0",
+                        "primary-container": "#8ba888",
+                        "surface-container-low": "#f4f4ef",
+                        "primary-fixed": "#ccebc7",
+                        "on-secondary-fixed": "#061e25",
+                        "tertiary-fixed": "#ffdad9",
+                        "inverse-on-surface": "#f1f1ec",
+                        "on-surface": "#1a1c1a",
+                        "outline": "#737970",
+                        "on-secondary-fixed-variant": "#344a52",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-variant": "#e3e3de",
+                        "primary": "#4a6549",
+                        "surface-container-high": "#e9e8e4",
+                        "on-tertiary": "#ffffff",
+                        "secondary-container": "#cee7f0",
+                        "tertiary": "#7b5455",
+                        "error-container": "#ffdad6",
+                        "tertiary-fixed-dim": "#ecbaba",
+                        "on-primary-fixed": "#07200b",
+                        "error": "#ba1a1a",
+                        "inverse-primary": "#b0cfad",
+                        "surface-dim": "#dadad6",
+                        "on-primary": "#ffffff",
+                        "inverse-surface": "#2f312e"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "sm": "12px",
+                        "container-padding": "24px",
+                        "xl": "64px",
+                        "xs": "4px",
+                        "lg": "48px",
+                        "gutter": "16px",
+                        "md": "24px",
+                        "base": "8px"
+                    },
+                    "fontFamily": {
+                        "h3": ["Playfair Display"],
+                        "label-sm": ["Plus Jakarta Sans"],
+                        "body-lg": ["Plus Jakarta Sans"],
+                        "h1": ["Playfair Display"],
+                        "body-md": ["Plus Jakarta Sans"],
+                        "h2": ["Playfair Display"]
+                    },
+                    "fontSize": {
+                        "h3": ["24px", { "lineHeight": "1.4", "fontWeight": "500" }],
+                        "label-sm": ["14px", { "lineHeight": "1.2", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "body-lg": ["18px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "h1": ["40px", { "lineHeight": "1.2", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "h2": ["32px", { "lineHeight": "1.3", "fontWeight": "500" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.fill {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background antialiased pb-[100px] md:pb-0">
+<!-- Top App Bar -->
+<header class="bg-[#FDF5E6] dark:bg-stone-900 border-b border-[#8BA888]/10 dark:border-white/5 full-width top-0 z-40 sticky">
+<div class="flex justify-between items-center w-full px-6 h-16">
+<button aria-label="Menu" class="text-[#8BA888] dark:text-emerald-400 hover:bg-[#AEC6CF]/10 dark:hover:bg-white/5 p-2 rounded-full transition-all duration-300 ease-in-out active:scale-95">
+<span class="material-symbols-outlined">spa</span>
+</button>
+<h1 class="text-2xl font-serif font-bold text-[#8BA888] dark:text-emerald-300 tracking-wide">Amaly</h1>
+<div class="w-10 h-10 rounded-full overflow-hidden border-2 border-[#8BA888]/20">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="A portrait of a young woman with a soft, warm smile, neutral background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCXU2kto8coae7Q8fscKDraclzd2dBYjikn9rdoW2AKk5WQf68Ae9tBLI686Unbe4OlqjDNp8NnYR_c0qQZ_fG1qlYnA8Of0CoOT84p73fSQjUtEWXPgCXw5zOp6PK0RJzWpZofOwTDz--AW04vEGduJwqV3GJexiBhKgeHfiwy-hALboa7a_iIMKqEe129JrMd7nHjw1bcHv8P3SXV6cDiNcsBYymhk7ptlbBKbNDmHomlhJZW_0tlP2LDdo9Cjvw6NisCItCidAxM"/>
+</div>
+</div>
+</header>
+<main class="px-container-padding py-md max-w-4xl mx-auto space-y-lg">
+<!-- Header Section -->
+<section class="space-y-sm text-center">
+<h2 class="font-h1 text-h1 text-primary">Quran Tracker</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant">Nurture your soul with daily recitation.</p>
+</section>
+<!-- Main Stats & Current Surah -->
+<section class="grid grid-cols-1 md:grid-cols-12 gap-gutter">
+<!-- Progress Card -->
+<div class="md:col-span-4 bg-surface-container-lowest rounded-xl p-md border border-primary-container/15 flex flex-col items-center justify-center space-y-md text-center">
+<div class="relative w-32 h-32 flex items-center justify-center">
+<svg class="w-full h-full transform -rotate-90" viewbox="0 0 100 100">
+<circle class="text-surface-variant stroke-current" cx="50" cy="50" fill="transparent" r="40" stroke-width="8"></circle>
+<circle class="text-primary-container stroke-current" cx="50" cy="50" fill="transparent" r="40" stroke-dasharray="251.2" stroke-dashoffset="180" stroke-width="8"></circle>
+</svg>
+<div class="absolute inset-0 flex flex-col items-center justify-center">
+<span class="font-h2 text-h2 text-primary">28%</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Completed</span>
+</div>
+</div>
+<div>
+<p class="font-body-md text-body-md text-on-surface-variant">Juz 8, Page 142</p>
+</div>
+</div>
+<!-- Current Reading -->
+<div class="md:col-span-8 bg-surface-container-lowest rounded-xl p-md border border-primary-container/15 flex flex-col justify-between">
+<div class="flex justify-between items-start mb-md">
+<div>
+<h3 class="font-label-sm text-label-sm text-secondary uppercase tracking-wider mb-xs">Continue Reading</h3>
+<h2 class="font-h2 text-h2 text-primary">Surah Al-A'raf</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Verses 1-10</p>
+</div>
+<div class="bg-primary-container/10 p-sm rounded-full text-primary">
+<span class="material-symbols-outlined text-3xl">menu_book</span>
+</div>
+</div>
+<div class="space-y-sm">
+<div class="w-full bg-surface-variant rounded-full h-2 overflow-hidden">
+<div class="bg-primary-container h-full" style="width: 45%"></div>
+</div>
+<div class="flex justify-between text-on-surface-variant font-label-sm text-label-sm">
+<span>Daily Goal: 5 Pages</span>
+<span>2 / 5 Pages</span>
+</div>
+</div>
+<div class="mt-md flex justify-end">
+<button class="bg-primary text-on-primary px-container-padding py-sm rounded-lg font-label-sm text-label-sm hover:bg-surface-tint transition-colors shadow-[0_4px_20px_0_rgba(139,168,136,0.08)]">
+                        Continue
+                    </button>
+</div>
+</div>
+</section>
+<!-- Quick Actions Bento -->
+<section class="grid grid-cols-2 md:grid-cols-4 gap-gutter">
+<button class="bg-surface-container-lowest border border-primary-container/15 rounded-xl p-md flex flex-col items-center justify-center space-y-sm hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined text-primary text-3xl">bookmarks</span>
+<span class="font-label-sm text-label-sm text-on-surface">Bookmarks</span>
+</button>
+<button class="bg-surface-container-lowest border border-primary-container/15 rounded-xl p-md flex flex-col items-center justify-center space-y-sm hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined text-primary text-3xl">favorite</span>
+<span class="font-label-sm text-label-sm text-on-surface">Favorites</span>
+</button>
+<button class="bg-surface-container-lowest border border-primary-container/15 rounded-xl p-md flex flex-col items-center justify-center space-y-sm hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined text-primary text-3xl">headset</span>
+<span class="font-label-sm text-label-sm text-on-surface">Audio</span>
+</button>
+<button class="bg-surface-container-lowest border border-primary-container/15 rounded-xl p-md flex flex-col items-center justify-center space-y-sm hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined text-primary text-3xl">history</span>
+<span class="font-label-sm text-label-sm text-on-surface">History</span>
+</button>
+</section>
+<!-- Surah List -->
+<section class="space-y-md">
+<div class="flex justify-between items-center">
+<h3 class="font-h3 text-h3 text-primary">Surahs</h3>
+<div class="relative w-48 hidden md:block">
+<input class="w-full bg-surface-container-lowest border border-outline-variant rounded-lg py-xs px-sm pl-8 font-body-md text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none text-on-surface placeholder:text-on-surface-variant/50" placeholder="Search Surah..." type="text"/>
+<span class="material-symbols-outlined absolute left-2 top-1/2 -translate-y-1/2 text-on-surface-variant/50 text-[18px]">search</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest rounded-xl border border-primary-container/15 overflow-hidden">
+<!-- Surah Item -->
+<div class="flex items-center justify-between p-md border-b border-primary-container/10 hover:bg-surface-container-low transition-colors cursor-pointer group">
+<div class="flex items-center space-x-md">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center font-label-sm text-label-sm text-primary group-hover:bg-primary-container/20">
+                            1
+                        </div>
+<div>
+<h4 class="font-label-sm text-label-sm text-on-surface">Al-Fatihah</h4>
+<p class="font-body-md text-body-md text-on-surface-variant text-sm">The Opener • 7 Verses</p>
+</div>
+</div>
+<div class="text-right">
+<h4 class="font-h3 text-h3 text-primary text-xl">الفاتحة</h4>
+</div>
+</div>
+<!-- Surah Item -->
+<div class="flex items-center justify-between p-md border-b border-primary-container/10 hover:bg-surface-container-low transition-colors cursor-pointer group">
+<div class="flex items-center space-x-md">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center font-label-sm text-label-sm text-primary group-hover:bg-primary-container/20">
+                            2
+                        </div>
+<div>
+<h4 class="font-label-sm text-label-sm text-on-surface">Al-Baqarah</h4>
+<p class="font-body-md text-body-md text-on-surface-variant text-sm">The Cow • 286 Verses</p>
+</div>
+</div>
+<div class="text-right">
+<h4 class="font-h3 text-h3 text-primary text-xl">البقرة</h4>
+</div>
+</div>
+<!-- Surah Item -->
+<div class="flex items-center justify-between p-md border-b border-primary-container/10 hover:bg-surface-container-low transition-colors cursor-pointer group">
+<div class="flex items-center space-x-md">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center font-label-sm text-label-sm text-primary group-hover:bg-primary-container/20">
+                            3
+                        </div>
+<div>
+<h4 class="font-label-sm text-label-sm text-on-surface">Ali 'Imran</h4>
+<p class="font-body-md text-body-md text-on-surface-variant text-sm">Family of Imran • 200 Verses</p>
+</div>
+</div>
+<div class="text-right">
+<h4 class="font-h3 text-h3 text-primary text-xl">آل عمران</h4>
+</div>
+</div>
+</div>
+<div class="text-center pt-sm">
+<button class="text-primary font-label-sm text-label-sm hover:underline">View All Surahs</button>
+</div>
+</section>
+</main>
+<!-- Bottom Nav Bar -->
+<nav class="md:hidden bg-white/80 dark:bg-stone-900/80 backdrop-blur-lg fixed bottom-0 w-full z-50 rounded-t-[32px] border-t border-[#8BA888]/5 dark:border-white/5 shadow-[0_-4px_20px_0_rgba(139,168,136,0.08)]">
+<div class="fixed bottom-0 left-0 w-full flex justify-around items-center px-4 pb-safe pt-3 h-20">
+<a class="flex flex-col items-center justify-center text-[#8BA888]/50 dark:text-stone-500 hover:text-[#AEC6CF] dark:hover:text-blue-300 tap-highlight-transparent transition-all duration-200" href="#">
+<span class="material-symbols-outlined mb-1">event_repeat</span>
+<span class="font-serif text-[11px] font-medium">Daily</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#F4C2C2] dark:text-pink-300 scale-110 transition-transform tap-highlight-transparent duration-200" href="#">
+<span class="material-symbols-outlined mb-1 fill">menu_book</span>
+<span class="font-serif text-[11px] font-medium">Quran</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#8BA888]/50 dark:text-stone-500 hover:text-[#AEC6CF] dark:hover:text-blue-300 tap-highlight-transparent transition-all duration-200" href="#">
+<span class="material-symbols-outlined mb-1">restaurant_menu</span>
+<span class="font-serif text-[11px] font-medium">Fasting</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#8BA888]/50 dark:text-stone-500 hover:text-[#AEC6CF] dark:hover:text-blue-300 tap-highlight-transparent transition-all duration-200" href="#">
+<span class="material-symbols-outlined mb-1">calendar_month</span>
+<span class="font-serif text-[11px] font-medium">Cycle</span>
+</a>
+</div>
+</nav>
+</body></html>
