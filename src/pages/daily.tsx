@@ -555,31 +555,6 @@ export default function DailyPage({
           )}
         </div>
       ) : null}
-
-      <section className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1">
-          <span className="font-serif text-2xl font-semibold leading-tight text-sage sm:text-3xl">{hijriDate}</span>
-          <span className="text-sm font-semibold text-muted-foreground">{gregorianDate}</span>
-        </div>
-        <h2 className="font-serif text-4xl font-semibold leading-tight text-primary">{t.morning(displayName)}</h2>
-        <p className="max-w-lg text-lg leading-8 text-muted-foreground">{t.intro}</p>
-      </section>
-
-      <section className="grid grid-cols-1 gap-6 md:grid-cols-12">
-        <div className="md:col-span-12">
-          <QuickLogButtons
-            language={settings.language}
-            onQuickLog={onQuickLog}
-            onSetPage={onSetQuranPage}
-            progress={quranProgress}
-          />
-          {shouldShowQuranEveningNudge(quranProgress) ? (
-            <div className="mt-3 rounded-xl border border-sage/20 bg-sage-pale/70 px-4 py-3 text-sm font-semibold text-sage-deep">
-              {t.quranNudge}
-            </div>
-          ) : null}
-        </div>
-
         <PartnerWidget language={settings.language} />
 
         <Card
@@ -697,6 +672,30 @@ export default function DailyPage({
             })}
           </div>
         </Card>
+
+        <section className="flex flex-col gap-4">
+        <div className="flex flex-col gap-1">
+          <span className="font-serif text-2xl font-semibold leading-tight text-sage sm:text-3xl">{hijriDate}</span>
+          <span className="text-sm font-semibold text-muted-foreground">{gregorianDate}</span>
+        </div>
+        <h2 className="font-serif text-4xl font-semibold leading-tight text-primary">{t.morning(displayName)}</h2>
+        <p className="max-w-lg text-lg leading-8 text-muted-foreground">{t.intro}</p>
+      </section>
+
+      <section className="grid grid-cols-1 gap-6 md:grid-cols-12">
+        <div className="md:col-span-12">
+          <QuickLogButtons
+            language={settings.language}
+            onQuickLog={onQuickLog}
+            onSetPage={onSetQuranPage}
+            progress={quranProgress}
+          />
+          {shouldShowQuranEveningNudge(quranProgress) ? (
+            <div className="mt-3 rounded-xl border border-sage/20 bg-sage-pale/70 px-4 py-3 text-sm font-semibold text-sage-deep">
+              {t.quranNudge}
+            </div>
+          ) : null}
+        </div>
 
         <Card className="relative overflow-hidden p-6 md:col-span-8">
           <div className="absolute right-0 top-0 h-32 w-32 rounded-bl-full bg-sky-pale/30" />
