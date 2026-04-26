@@ -1,32 +1,15 @@
 import { Route, Routes, useLocation } from "react-router-dom"
-import { type CSSProperties, useEffect, useState } from "react"
+import { type CSSProperties, useEffect } from "react"
 
 import { BottomNav } from "@/components/layout/bottom-nav"
 import { Header } from "@/components/layout/header"
 import { SettingsPanel } from "@/components/settings/settings-panel"
-import { type AppSettings, type HijriOffset, loadAppSettings, saveAppSettings } from "@/lib/app-settings"
-import {
-  endPeriod,
-  loadCycleState,
-  saveCycleRange,
-  saveCycleState,
-  setCycleQadhaStatus,
-  startPeriod,
-  toggleCyclePrivacy,
-  toggleCycleSymptom,
-} from "@/lib/cycle-progress"
-import {
-  addQadhaDebt,
-  loadFastingState,
-  markQadhaPaid,
-  saveFastingState,
-  toggleSahurReminder,
-} from "@/lib/fasting-progress"
-import { loadQuranProgress, saveQuranProgress, setProgressToPage, updateProgress, updateQuranDailyGoal } from "@/lib/quran-progress"
+import { type AppSettings } from "@/lib/app-settings"
 import CyclePage from "@/pages/cycle"
 import DailyPage from "@/pages/daily"
 import FastingPage from "@/pages/fasting"
 import QuranPage from "@/pages/quran"
+import { useAppStore } from "@/stores/app-store"
 
 const titles: Record<AppSettings["language"], Record<string, string>> = {
   en: {
@@ -55,184 +38,35 @@ const flowerConfetti = Array.from({ length: 56 }, (_, index) => ({
   size: index % 4 === 0 ? "text-4xl sm:text-5xl" : "text-3xl sm:text-4xl",
 }))
 
-type QuranBurst = { type: "juz"; juz: number } | { type: "goal" }
-
 export default function App() {
   const location = useLocation()
-  const [settings, setSettings] = useState(loadAppSettings)
-  const [quranProgress, setQuranProgress] = useState(() => loadQuranProgress(settings.language, settings.hijriOffset))
-  const [fastingState, setFastingState] = useState(loadFastingState)
-  const [cycleState, setCycleState] = useState(() => loadCycleState(fastingState.cycleLogs))
-  const [settingsOpen, setSettingsOpen] = useState(false)
-  const [quranBurst, setQuranBurst] = useState<QuranBurst | null>(null)
+  const settings = useAppStore((state) => state.settings)
+  const quranProgress = useAppStore((state) => state.quranProgress)
+  const fastingState = useAppStore((state) => state.fastingState)
+  const cycleState = useAppStore((state) => state.cycleState)
+  const settingsOpen = useAppStore((state) => state.settingsOpen)
+  const quranBurst = useAppStore((state) => state.quranBurst)
+  const setSettingsOpen = useAppStore((state) => state.setSettingsOpen)
+  const dismissQuranBurst = useAppStore((state) => state.dismissQuranBurst)
+  const quickLogQuran = useAppStore((state) => state.quickLogQuran)
+  const setQuranPage = useAppStore((state) => state.setQuranPage)
+  const setQuranDailyGoal = useAppStore((state) => state.setQuranDailyGoal)
+  const setHijriOffset = useAppStore((state) => state.setHijriOffset)
+  const addQadhaDebt = useAppStore((state) => state.addQadhaDebt)
+  const markQadhaPaid = useAppStore((state) => state.markQadhaPaid)
+  const toggleSahurReminder = useAppStore((state) => state.toggleSahurReminder)
+  const startPeriod = useAppStore((state) => state.startPeriod)
+  const endPeriod = useAppStore((state) => state.endPeriod)
+  const saveCycleRange = useAppStore((state) => state.saveCycleRange)
+  const confirmCycleQadha = useAppStore((state) => state.confirmCycleQadha)
+  const ignoreCycleQadha = useAppStore((state) => state.ignoreCycleQadha)
+  const toggleCyclePrivacy = useAppStore((state) => state.toggleCyclePrivacy)
+  const toggleCycleSymptom = useAppStore((state) => state.toggleCycleSymptom)
   const title = titles[settings.language][location.pathname] ?? "Amaly"
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", settings.theme === "dark")
   }, [settings.theme])
-
-  useEffect(() => {
-    setQuranProgress((current) =>
-      updateProgress(current.last_page_read, 0, current.logs, settings.language, current.daily_goal, settings.hijriOffset),
-    )
-  }, [settings.hijriOffset, settings.language])
-
-  function handleSaveSettings(nextSettings: AppSettings) {
-    setSettings(nextSettings)
-    saveAppSettings(nextSettings)
-    setSettingsOpen(false)
-  }
-
-  function handleSetHijriOffset(hijriOffset: HijriOffset) {
-    setSettings((current) => {
-      const next = { ...current, hijriOffset }
-      saveAppSettings(next)
-      return next
-    })
-  }
-
-  function handleQuickLog(increment: number) {
-    setQuranProgress((current) => {
-      const next = updateProgress(
-        current.last_page_read,
-        increment,
-        current.logs,
-        settings.language,
-        current.daily_goal,
-        settings.hijriOffset,
-      )
-      saveQuranProgress(next)
-      if (next.barakah_burst && next.completed_juz) {
-        setQuranBurst({ type: "juz", juz: next.completed_juz })
-        window.setTimeout(() => setQuranBurst(null), 4200)
-      } else if (next.goal_burst) {
-        setQuranBurst({ type: "goal" })
-        window.setTimeout(() => setQuranBurst(null), 3200)
-      }
-      return next
-    })
-  }
-
-  function handleSetQuranPage(page: number) {
-    setQuranProgress((current) => {
-      const next = setProgressToPage(
-        current.last_page_read,
-        page,
-        current.logs,
-        settings.language,
-        current.daily_goal,
-        settings.hijriOffset,
-      )
-      saveQuranProgress(next)
-      if (next.barakah_burst && next.completed_juz) {
-        setQuranBurst({ type: "juz", juz: next.completed_juz })
-        window.setTimeout(() => setQuranBurst(null), 4200)
-      } else if (next.goal_burst) {
-        setQuranBurst({ type: "goal" })
-        window.setTimeout(() => setQuranBurst(null), 3200)
-      }
-      return next
-    })
-  }
-
-  function handleSetDailyGoal(goal: number) {
-    setQuranProgress((current) => {
-      const next = updateQuranDailyGoal(current, goal, settings.language, settings.hijriOffset)
-      saveQuranProgress(next)
-      return next
-    })
-  }
-
-  function handleAddQadhaDebt(days = 1) {
-    setFastingState((current) => {
-      const next = addQadhaDebt(current, days)
-      saveFastingState(next)
-      return next
-    })
-  }
-
-  function handleMarkQadhaPaid() {
-    setFastingState((current) => {
-      const next = markQadhaPaid(current)
-      saveFastingState(next)
-      return next
-    })
-  }
-
-  function handleToggleSahurReminder(dateKey: string) {
-    setFastingState((current) => {
-      const next = toggleSahurReminder(current, dateKey)
-      saveFastingState(next)
-      return next
-    })
-  }
-
-  function handleStartPeriod(date?: string) {
-    setCycleState((current) => {
-      const next = startPeriod(current, date)
-      saveCycleState(next)
-      return next
-    })
-  }
-
-  function handleEndPeriod(date?: string) {
-    setCycleState((current) => {
-      const next = endPeriod(current, settings.hijriOffset, date)
-      saveCycleState(next)
-      return next
-    })
-  }
-
-  function handleSaveCycleRange(input: { startDate: string; endDate: string }) {
-    setCycleState((current) => {
-      const next = saveCycleRange(current, input, settings.hijriOffset)
-      saveCycleState(next)
-      return next
-    })
-  }
-
-  function handleConfirmCycleQadha(logId: string) {
-    const log = cycleState.logs.find((item) => item.id === logId)
-
-    if (!log || log.qadhaUpdateStatus !== "pending") {
-      return
-    }
-
-    setFastingState((current) => {
-      const next = addQadhaDebt(current, log.qadhaOverlapDays)
-      saveFastingState(next)
-      return next
-    })
-    setCycleState((current) => {
-      const next = setCycleQadhaStatus(current, logId, "added")
-      saveCycleState(next)
-      return next
-    })
-  }
-
-  function handleIgnoreCycleQadha(logId: string) {
-    setCycleState((current) => {
-      const next = setCycleQadhaStatus(current, logId, "ignored")
-      saveCycleState(next)
-      return next
-    })
-  }
-
-  function handleToggleCyclePrivacy() {
-    setCycleState((current) => {
-      const next = toggleCyclePrivacy(current)
-      saveCycleState(next)
-      return next
-    })
-  }
-
-  function handleToggleCycleSymptom(symptomId: string) {
-    setCycleState((current) => {
-      const next = toggleCycleSymptom(current, symptomId)
-      saveCycleState(next)
-      return next
-    })
-  }
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -243,8 +77,8 @@ export default function App() {
             element={
               <DailyPage
                 onOpenSettings={() => setSettingsOpen(true)}
-                onQuickLog={handleQuickLog}
-                onSetQuranPage={handleSetQuranPage}
+                onQuickLog={quickLogQuran}
+                onSetQuranPage={setQuranPage}
                 cycleState={cycleState}
                 quranProgress={quranProgress}
                 settings={settings}
@@ -257,9 +91,9 @@ export default function App() {
               <QuranPage
                 hijriOffset={settings.hijriOffset}
                 language={settings.language}
-                onQuickLog={handleQuickLog}
-                onSetDailyGoal={handleSetDailyGoal}
-                onSetPage={handleSetQuranPage}
+                onQuickLog={quickLogQuran}
+                onSetDailyGoal={setQuranDailyGoal}
+                onSetPage={setQuranPage}
                 progress={quranProgress}
               />
             }
@@ -270,10 +104,10 @@ export default function App() {
               <FastingPage
                 fastingState={fastingState}
                 hijriOffset={settings.hijriOffset}
-                onAddQadhaDebt={handleAddQadhaDebt}
-                onMarkQadhaPaid={handleMarkQadhaPaid}
-                onSetHijriOffset={handleSetHijriOffset}
-                onToggleSahurReminder={handleToggleSahurReminder}
+                onAddQadhaDebt={addQadhaDebt}
+                onMarkQadhaPaid={markQadhaPaid}
+                onSetHijriOffset={setHijriOffset}
+                onToggleSahurReminder={toggleSahurReminder}
               />
             }
             path="/fasting"
@@ -282,13 +116,13 @@ export default function App() {
             element={
               <CyclePage
                 cycleState={cycleState}
-                onConfirmCycleQadha={handleConfirmCycleQadha}
-                onEndPeriod={handleEndPeriod}
-                onIgnoreCycleQadha={handleIgnoreCycleQadha}
-                onSaveCycleRange={handleSaveCycleRange}
-                onStartPeriod={handleStartPeriod}
-                onToggleCyclePrivacy={handleToggleCyclePrivacy}
-                onToggleCycleSymptom={handleToggleCycleSymptom}
+                onConfirmCycleQadha={confirmCycleQadha}
+                onEndPeriod={endPeriod}
+                onIgnoreCycleQadha={ignoreCycleQadha}
+                onSaveCycleRange={saveCycleRange}
+                onStartPeriod={startPeriod}
+                onToggleCyclePrivacy={toggleCyclePrivacy}
+                onToggleCycleSymptom={toggleCycleSymptom}
               />
             }
             path="/cycle"
@@ -296,12 +130,7 @@ export default function App() {
         </Routes>
       </main>
       <BottomNav language={settings.language} />
-      <SettingsPanel
-        onClose={() => setSettingsOpen(false)}
-        onSave={handleSaveSettings}
-        open={settingsOpen}
-        settings={settings}
-      />
+      <SettingsPanel onClose={() => setSettingsOpen(false)} open={settingsOpen} />
       {quranBurst ? (
         <div className="pointer-events-none fixed inset-0 z-[80] overflow-hidden">
           {flowerConfetti.map((flower, index) => (
@@ -337,7 +166,7 @@ export default function App() {
                 <p className="mt-3 text-sm leading-6 text-muted-foreground">A small steady step, beautifully kept.</p>
               </>
             )}
-            <button className="mt-5 text-sm font-bold text-primary" onClick={() => setQuranBurst(null)} type="button">
+            <button className="mt-5 text-sm font-bold text-primary" onClick={dismissQuranBurst} type="button">
               Close
             </button>
           </div>

@@ -3,7 +3,10 @@ import { dailyHabits } from "@/data/app-data"
 export type AppLanguage = "en" | "id"
 export type AppTheme = "day" | "dark"
 export type HijriOffset = -2 | -1 | 0 | 1 | 2
-export type HabitSection = "daily" | "friday"
+export type PrayerAnchor = "fajr" | "dzuhr" | "ashr" | "maghrib" | "isya"
+export type HabitTiming =
+  | { mode: "fixed"; time: string }
+  | { mode: "prayer"; prayer: PrayerAnchor; offsetMinutes: number }
 
 export type HabitDefinition = {
   id: string
@@ -12,17 +15,14 @@ export type HabitDefinition = {
   scheduleLabel: string
   plannedDays: boolean[]
   enabled: boolean
-  section: HabitSection
+  timing: HabitTiming
 }
 
 export type AppSettings = {
   language: AppLanguage
   theme: AppTheme
   hijriOffset: HijriOffset
-  habits: {
-    daily: HabitDefinition[]
-    friday: HabitDefinition[]
-  }
+  habits: HabitDefinition[]
 }
 
 export const APP_SETTINGS_STORAGE_KEY = "amaly.settings.v1"
@@ -35,37 +35,40 @@ export const defaultAppSettings: AppSettings = {
   language: "en",
   theme: "day",
   hijriOffset: 0,
-  habits: {
-    daily: dailyHabits.map((habit, index) => ({
+  habits: [
+    ...dailyHabits.map((habit, index) => ({
       id: `daily-${slugify(habit.label) || index}`,
       label: habit.label,
       category: "Daily Routine",
       scheduleLabel: index === 0 ? "06:00 AM" : index === 1 ? "07:30 AM" : "Anytime",
       plannedDays: index === 1 ? [true, true, true, true, true, true, true] : [true, true, true, true, true, false, false],
       enabled: true,
-      section: "daily",
+      timing:
+        index === 0
+          ? ({ mode: "fixed", time: "06:00" } satisfies HabitTiming)
+          : index === 1
+            ? ({ mode: "fixed", time: "07:30" } satisfies HabitTiming)
+            : ({ mode: "fixed", time: "" } satisfies HabitTiming),
     })),
-    friday: [
-      {
-        id: "friday-surah-al-kahf",
-        label: "Surah Al-Kahf",
-        category: "Friday Specials",
-        scheduleLabel: "Anytime Friday",
-        plannedDays: [false, false, false, false, true, false, false],
-        enabled: true,
-        section: "friday",
-      },
-      {
-        id: "friday-salawat",
-        label: "Salawat",
-        category: "Friday Specials",
-        scheduleLabel: "Evening",
-        plannedDays: [false, false, false, false, true, false, false],
-        enabled: true,
-        section: "friday",
-      },
-    ],
-  },
+    {
+      id: "friday-surah-al-kahf",
+      label: "Surah Al-Kahf",
+      category: "Friday Specials",
+      scheduleLabel: "Anytime Friday",
+      plannedDays: [false, false, false, false, false, true, false],
+      enabled: true,
+      timing: { mode: "fixed", time: "" },
+    },
+    {
+      id: "friday-salawat",
+      label: "Salawat",
+      category: "Friday Specials",
+      scheduleLabel: "Evening",
+      plannedDays: [false, false, false, false, false, true, false],
+      enabled: true,
+      timing: { mode: "fixed", time: "" },
+    },
+  ],
 }
 
 function isAppLanguage(value: unknown): value is AppLanguage {
@@ -80,18 +83,62 @@ function isHijriOffset(value: unknown): value is HijriOffset {
   return value === -2 || value === -1 || value === 0 || value === 1 || value === 2
 }
 
+function normalizeTiming(value: unknown, fallback: HabitTiming): HabitTiming {
+  if (typeof value !== "object" || value === null) {
+    return fallback
+  }
+
+  const timing = value as Partial<HabitTiming>
+
+  if (timing.mode === "prayer") {
+    const prayer = timing.prayer
+    return {
+      mode: "prayer",
+      prayer: prayer === "fajr" || prayer === "dzuhr" || prayer === "ashr" || prayer === "maghrib" || prayer === "isya" ? prayer : "fajr",
+      offsetMinutes:
+        typeof timing.offsetMinutes === "number" && Number.isFinite(timing.offsetMinutes)
+          ? Math.max(-120, Math.min(120, Math.round(timing.offsetMinutes)))
+          : 0,
+    }
+  }
+
+  if (timing.mode === "fixed") {
+    return {
+      mode: "fixed",
+      time: typeof timing.time === "string" ? timing.time : "",
+    }
+  }
+
+  return fallback
+}
+
+function timingFromSchedule(scheduleLabel: string, fallback: HabitTiming): HabitTiming {
+  const match = scheduleLabel.match(/(\d{1,2}):(\d{2})/)
+  if (!match) {
+    return fallback
+  }
+
+  let hour = Number(match[1])
+  const minute = match[2]
+  if (/pm/i.test(scheduleLabel) && hour < 12) hour += 12
+  if (/am/i.test(scheduleLabel) && hour === 12) hour = 0
+
+  return { mode: "fixed", time: `${String(hour).padStart(2, "0")}:${minute}` }
+}
+
 function normalizeHabit(value: Partial<HabitDefinition>, fallback: HabitDefinition): HabitDefinition {
+  const scheduleLabel = typeof value.scheduleLabel === "string" ? value.scheduleLabel : fallback.scheduleLabel
   return {
     id: typeof value.id === "string" && value.id ? value.id : fallback.id,
     label: typeof value.label === "string" && value.label ? value.label : fallback.label,
     category: typeof value.category === "string" ? value.category : fallback.category,
-    scheduleLabel: typeof value.scheduleLabel === "string" ? value.scheduleLabel : fallback.scheduleLabel,
+    scheduleLabel,
     plannedDays:
       Array.isArray(value.plannedDays) && value.plannedDays.length === 7
         ? value.plannedDays.map(Boolean)
         : fallback.plannedDays,
     enabled: typeof value.enabled === "boolean" ? value.enabled : fallback.enabled,
-    section: value.section === "friday" || value.section === "daily" ? value.section : fallback.section,
+    timing: normalizeTiming(value.timing, timingFromSchedule(scheduleLabel, fallback.timing)),
   }
 }
 
@@ -106,6 +153,32 @@ function normalizeHabits(value: unknown, fallback: HabitDefinition[]): HabitDefi
       fallback[index] ?? fallback[0],
     ),
   )
+}
+
+function normalizeHabitCollection(value: unknown): HabitDefinition[] {
+  if (Array.isArray(value)) {
+    return normalizeHabits(value, defaultAppSettings.habits)
+  }
+
+  if (typeof value === "object" && value !== null) {
+    const legacy = value as {
+      daily?: unknown
+      friday?: unknown
+    }
+
+    return [
+      ...normalizeHabits(legacy.daily, defaultAppSettings.habits.filter((habit) => !habit.id.startsWith("friday-"))),
+      ...normalizeHabits(legacy.friday, defaultAppSettings.habits.filter((habit) => habit.id.startsWith("friday-"))).map((habit) => ({
+        ...habit,
+        plannedDays:
+          habit.plannedDays.length === 7 && habit.plannedDays[4] && !habit.plannedDays[5]
+            ? [false, false, false, false, false, true, false]
+            : habit.plannedDays,
+      })),
+    ]
+  }
+
+  return defaultAppSettings.habits
 }
 
 export function loadAppSettings(): AppSettings {
@@ -125,16 +198,7 @@ export function loadAppSettings(): AppSettings {
       language: isAppLanguage(parsed.language) ? parsed.language : defaultAppSettings.language,
       theme: isAppTheme(parsed.theme) ? parsed.theme : defaultAppSettings.theme,
       hijriOffset: isHijriOffset(parsed.hijriOffset) ? parsed.hijriOffset : defaultAppSettings.hijriOffset,
-      habits: {
-        daily: normalizeHabits(parsed.habits?.daily, defaultAppSettings.habits.daily).map((habit) => ({
-          ...habit,
-          section: "daily",
-        })),
-        friday: normalizeHabits(parsed.habits?.friday, defaultAppSettings.habits.friday).map((habit) => ({
-          ...habit,
-          section: "friday",
-        })),
-      },
+      habits: normalizeHabitCollection(parsed.habits),
     }
   } catch {
     return defaultAppSettings

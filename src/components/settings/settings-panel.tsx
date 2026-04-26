@@ -1,15 +1,17 @@
-import { BookOpen, GripHorizontal, Moon, Plus, Save, Sun, Trash2, X } from "lucide-react"
-import { useEffect, useState } from "react"
+import { BookOpen, ChevronDown, Moon, Plus, Sparkles, Sun, Trash2 } from "lucide-react"
+import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-import { AppLanguage, AppSettings, AppTheme, HabitDefinition, HabitSection, HijriOffset } from "@/lib/app-settings"
+import { type AppLanguage, type AppTheme, type HabitDefinition, type HabitTiming, type HijriOffset, type PrayerAnchor } from "@/lib/app-settings"
+import { cn } from "@/lib/utils"
+import { prayerAnchors, useAppStore } from "@/stores/app-store"
 
 type SettingsPanelProps = {
   open: boolean
-  settings: AppSettings
   onClose: () => void
-  onSave: (settings: AppSettings) => void
 }
 
 const copy = {
@@ -21,17 +23,20 @@ const copy = {
     hijriOffset: "Hijri Offset",
     day: "Day",
     dark: "Dark",
-    daily: "Daily Habits",
-    friday: "Friday Specials",
-    addDaily: "Add Daily",
-    addFriday: "Add Friday",
+    habits: "Habits",
+    addHabit: "Add Habit",
     label: "Name",
     category: "Category",
-    schedule: "Schedule",
     enabled: "Enabled",
-    save: "Save Changes",
     close: "Close settings",
-    plannedDays: "Planned Days",
+    plannedDays: "Frequency",
+    timing: "Timing",
+    fixed: "Fixed Time",
+    prayer: "Prayer Anchor",
+    time: "Time",
+    offset: "Offset",
+    delete: "Delete",
+    deleteConfirm: (habit: string) => `Delete ${habit}?`,
   },
   id: {
     title: "Pengaturan",
@@ -41,51 +46,56 @@ const copy = {
     hijriOffset: "Koreksi Hijri",
     day: "Terang",
     dark: "Gelap",
-    daily: "Rutinitas Harian",
-    friday: "Spesial Jumat",
-    addDaily: "Tambah Harian",
-    addFriday: "Tambah Jumat",
+    habits: "Kebiasaan",
+    addHabit: "Tambah Kebiasaan",
     label: "Nama",
     category: "Kategori",
-    schedule: "Jadwal",
     enabled: "Aktif",
-    save: "Simpan",
     close: "Tutup pengaturan",
-    plannedDays: "Hari Terjadwal",
+    plannedDays: "Frekuensi",
+    timing: "Waktu",
+    fixed: "Jam Tetap",
+    prayer: "Patokan Shalat",
+    time: "Jam",
+    offset: "Jarak",
+    delete: "Hapus",
+    deleteConfirm: (habit: string) => `Hapus ${habit}?`,
   },
 }
 
 const dayLabels = ["S", "M", "T", "W", "T", "F", "S"]
 const offsetOptions: HijriOffset[] = [-2, -1, 0, 1, 2]
+const categoryOptions = ["Spiritual", "Self-Care", "Family", "Household", "Learning"]
+const frequencyPresets = [
+  { label: "Daily", days: [true, true, true, true, true, true, true] },
+  { label: "Weekdays", days: [true, true, true, true, true, false, false] },
+  { label: "Weekend", days: [false, false, false, false, false, true, true] },
+  { label: "Friday", days: [false, false, false, false, false, true, false] },
+]
 
 function formatOffset(offset: HijriOffset) {
   return offset > 0 ? `+${offset}` : String(offset)
 }
 
-function makeHabit(section: HabitSection): HabitDefinition {
-  const id = `${section}-${Date.now()}`
-  return {
-    id,
-    label: section === "daily" ? "New Habit" : "New Friday Habit",
-    category: section === "daily" ? "Daily Routine" : "Friday Specials",
-    scheduleLabel: section === "daily" ? "Anytime" : "Anytime Friday",
-    plannedDays: section === "daily" ? [true, true, true, true, true, false, false] : [false, false, false, false, true, false, false],
-    enabled: true,
-    section,
-  }
+function formatPrayer(prayer: PrayerAnchor) {
+  return prayer.charAt(0).toUpperCase() + prayer.slice(1)
+}
+
+function plannedDaysMatch(a: boolean[], b: boolean[]) {
+  return a.length === b.length && a.every((active, index) => active === b[index])
 }
 
 function HabitMark({ habit }: { habit: HabitDefinition }) {
   const label = habit.label.toLowerCase()
-  const Icon = label.includes("quran") || label.includes("surah") ? BookOpen : label.includes("dhikr") ? Sun : Moon
+  const Icon = label.includes("quran") || label.includes("surah") ? BookOpen : label.includes("dhikr") ? Sun : Sparkles
   const color = label.includes("quran")
-    ? "bg-sage-pale text-sage-deep"
+    ? "bg-sage-pale text-sage-deep dark:bg-sage/20 dark:text-sage-pale"
     : label.includes("dhikr")
-      ? "bg-blush-pale text-accent-foreground"
-      : "bg-sky-pale text-secondary"
+      ? "bg-blush-pale text-accent-foreground dark:bg-blush/20 dark:text-blush-pale"
+      : "bg-sky-pale text-secondary dark:bg-sage-muted/25 dark:text-sage-pale"
 
   return (
-    <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${color}`}>
+    <span className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-full", color)}>
       <Icon className="h-5 w-5" />
     </span>
   )
@@ -95,242 +105,111 @@ function FrequencyDots({ plannedDays }: { plannedDays: boolean[] }) {
   return (
     <div className="flex shrink-0 items-center gap-1.5" aria-hidden="true">
       {plannedDays.map((active, index) => (
-        <span className={active ? "h-2 w-2 rounded-full bg-sage-deep" : "h-2 w-2 rounded-full bg-surface-container-highest"} key={index} />
+        <span
+          className={active ? "h-2 w-2 rounded-full bg-sage-deep dark:bg-sage-pale" : "h-2 w-2 rounded-full bg-surface-container-highest"}
+          key={index}
+        />
       ))}
     </div>
   )
 }
 
-export function SettingsPanel({ open, settings, onClose, onSave }: SettingsPanelProps) {
-  const [draft, setDraft] = useState(settings)
-  const [expandedHabitId, setExpandedHabitId] = useState<string | null>(null)
-  const t = copy[draft.language]
+function timingFromMode(mode: "fixed" | "prayer", current: HabitTiming): HabitTiming {
+  if (mode === current.mode) {
+    return current
+  }
 
-  useEffect(() => {
-    if (open) {
-      setDraft(settings)
+  return mode === "fixed" ? { mode: "fixed", time: "" } : { mode: "prayer", prayer: "fajr", offsetMinutes: 0 }
+}
+
+export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
+  const settings = useAppStore((state) => state.settings)
+  const setSettingsOpen = useAppStore((state) => state.setSettingsOpen)
+  const setLanguage = useAppStore((state) => state.setLanguage)
+  const setTheme = useAppStore((state) => state.setTheme)
+  const setHijriOffset = useAppStore((state) => state.setHijriOffset)
+  const addHabit = useAppStore((state) => state.addHabit)
+  const updateHabit = useAppStore((state) => state.updateHabit)
+  const deleteHabit = useAppStore((state) => state.deleteHabit)
+  const setHabitFrequency = useAppStore((state) => state.setHabitFrequency)
+  const [expandedHabitId, setExpandedHabitId] = useState<string | null>(null)
+  const t = copy[settings.language]
+
+  function close(openState: boolean) {
+    setSettingsOpen(openState)
+    if (!openState) {
+      onClose()
       setExpandedHabitId(null)
     }
-  }, [open, settings])
-
-  function setLanguage(language: AppLanguage) {
-    setDraft((current) => ({ ...current, language }))
   }
 
-  function setTheme(theme: AppTheme) {
-    setDraft((current) => ({ ...current, theme }))
+  function updateTiming(habit: HabitDefinition, timing: HabitTiming) {
+    updateHabit(habit.id, { timing })
   }
 
-  function setHijriOffset(hijriOffset: HijriOffset) {
-    setDraft((current) => ({ ...current, hijriOffset }))
+  function updatePrayerAnchor(habit: HabitDefinition, prayer: PrayerAnchor) {
+    const current = habit.timing.mode === "prayer" ? habit.timing : { mode: "prayer" as const, prayer: "fajr" as const, offsetMinutes: 0 }
+    updateTiming(habit, { ...current, prayer })
   }
 
-  function addHabit(section: HabitSection) {
-    setDraft((current) => ({
-      ...current,
-      habits: {
-        ...current.habits,
-        [section]: [...current.habits[section], makeHabit(section)],
-      },
-    }))
+  function updatePrayerOffset(habit: HabitDefinition, offsetMinutes: number) {
+    const current = habit.timing.mode === "prayer" ? habit.timing : { mode: "prayer" as const, prayer: "fajr" as const, offsetMinutes: 0 }
+    updateTiming(habit, { ...current, offsetMinutes })
   }
 
-  function deleteHabit(section: HabitSection, id: string) {
-    setDraft((current) => ({
-      ...current,
-      habits: {
-        ...current.habits,
-        [section]: current.habits[section].filter((habit) => habit.id !== id),
-      },
-    }))
-  }
-
-  function updateHabit(section: HabitSection, id: string, patch: Partial<HabitDefinition>) {
-    setDraft((current) => ({
-      ...current,
-      habits: {
-        ...current.habits,
-        [section]: current.habits[section].map((habit) => (habit.id === id ? { ...habit, ...patch } : habit)),
-      },
-    }))
-  }
-
-  function togglePlannedDay(section: HabitSection, habit: HabitDefinition, index: number) {
-    updateHabit(section, habit.id, {
-      plannedDays: habit.plannedDays.map((active, dayIndex) => (dayIndex === index ? !active : active)),
-    })
-  }
-
-  function renderSection(section: HabitSection) {
-    const title = section === "daily" ? t.daily : t.friday
-    const addLabel = section === "daily" ? t.addDaily : t.addFriday
-
-    return (
-      <section className="flex flex-col gap-4">
-        <div className="flex items-center justify-between gap-3">
-          <h3 className="font-serif text-2xl font-semibold text-primary">{title}</h3>
-          <Button className="shrink-0" onClick={() => addHabit(section)} size="sm" type="button" variant="outline">
-            <Plus className="h-4 w-4" />
-            {addLabel}
-          </Button>
-        </div>
-
-        <div className="flex flex-col gap-3">
-          {draft.habits[section].map((habit) => (
-            <div
-              className="overflow-hidden rounded-xl border border-sage/15 bg-card shadow-[0_8px_24px_rgba(0,0,0,0.03)]"
-              key={habit.id}
-            >
-              <button
-                className="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-sage-pale/15"
-                onClick={() => setExpandedHabitId((current) => (current === habit.id ? null : habit.id))}
-                type="button"
-              >
-                <HabitMark habit={habit} />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-bold text-foreground">{habit.label}</p>
-                  <p className="truncate text-xs font-semibold text-muted-foreground">{habit.scheduleLabel}</p>
-                </div>
-                <FrequencyDots plannedDays={habit.plannedDays} />
-              </button>
-
-              {expandedHabitId === habit.id ? (
-                <div className="border-t border-sage/10 p-4">
-                  <div className="mb-3 flex items-center gap-3">
-                    <GripHorizontal className="h-5 w-5 shrink-0 text-muted-foreground/45" />
-                    <label className="flex min-w-0 flex-1 items-center gap-2 text-sm font-bold text-muted-foreground">
-                      <span>{t.enabled}</span>
-                      <input
-                        checked={habit.enabled}
-                        className="h-5 w-5 accent-sage"
-                        onChange={(event) => updateHabit(section, habit.id, { enabled: event.target.checked })}
-                        type="checkbox"
-                      />
-                    </label>
-                    <Button
-                      aria-label={`Delete ${habit.label}`}
-                      className="text-destructive hover:bg-destructive/10"
-                      onClick={() => deleteHabit(section, habit.id)}
-                      size="icon"
-                      type="button"
-                      variant="ghost"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <label className="flex flex-col gap-1 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                      {t.label}
-                      <input
-                        className="h-10 rounded-xl border border-sage/15 bg-background px-3 text-sm font-semibold normal-case tracking-normal text-foreground outline-none focus:border-sage"
-                        onChange={(event) => updateHabit(section, habit.id, { label: event.target.value })}
-                        value={habit.label}
-                      />
-                    </label>
-                    <label className="flex flex-col gap-1 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                      {t.schedule}
-                      <input
-                        className="h-10 rounded-xl border border-sage/15 bg-background px-3 text-sm font-semibold normal-case tracking-normal text-foreground outline-none focus:border-sage"
-                        onChange={(event) => updateHabit(section, habit.id, { scheduleLabel: event.target.value })}
-                        value={habit.scheduleLabel}
-                      />
-                    </label>
-                    <label className="flex flex-col gap-1 text-xs font-bold uppercase tracking-wide text-muted-foreground sm:col-span-2">
-                      {t.category}
-                      <input
-                        className="h-10 rounded-xl border border-sage/15 bg-background px-3 text-sm font-semibold normal-case tracking-normal text-foreground outline-none focus:border-sage"
-                        onChange={(event) => updateHabit(section, habit.id, { category: event.target.value })}
-                        value={habit.category}
-                      />
-                    </label>
-                  </div>
-
-                  <div className="mt-4">
-                    <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">{t.plannedDays}</p>
-                    <div className="mt-2 flex gap-2">
-                      {habit.plannedDays.map((active, index) => (
-                        <button
-                          className={
-                            active
-                              ? "flex h-8 w-8 items-center justify-center rounded-full bg-sage text-xs font-bold text-white"
-                              : "flex h-8 w-8 items-center justify-center rounded-full bg-muted text-xs font-bold text-muted-foreground"
-                          }
-                          key={`${habit.id}-${index}`}
-                          onClick={() => togglePlannedDay(section, habit, index)}
-                          type="button"
-                        >
-                          {dayLabels[index]}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              ) : null}
-            </div>
-          ))}
-        </div>
-      </section>
-    )
-  }
-
-  if (!open) {
-    return null
+  function confirmDelete(habit: HabitDefinition) {
+    if (window.confirm(t.deleteConfirm(habit.label))) {
+      deleteHabit(habit.id)
+    }
   }
 
   return (
-    <div className="fixed inset-0 z-[70]">
-      <button
-        aria-label={t.close}
-        className="hidden h-full w-full bg-foreground/25 backdrop-blur-sm md:block"
-        onClick={onClose}
-        type="button"
-      />
-      <aside className="fixed inset-0 flex flex-col bg-background md:inset-y-0 md:left-auto md:right-0 md:w-[440px] md:border-l md:border-sage/15 md:shadow-2xl">
-        <div className="flex items-start justify-between gap-4 border-b border-sage/10 px-6 py-5">
-          <div>
-            <h2 className="font-serif text-3xl font-semibold text-primary">{t.title}</h2>
-            <p className="mt-1 text-sm font-semibold text-muted-foreground">{t.subtitle}</p>
-          </div>
-          <Button aria-label={t.close} onClick={onClose} size="icon" type="button" variant="ghost">
-            <X className="h-5 w-5" />
-          </Button>
-        </div>
+    <Sheet open={open} onOpenChange={close}>
+      <SheetContent closeLabel={t.close}>
+        <SheetHeader>
+          <SheetTitle>{t.title}</SheetTitle>
+          <SheetDescription>{t.subtitle}</SheetDescription>
+        </SheetHeader>
 
         <div className="flex-1 overflow-y-auto px-6 py-6">
           <div className="flex flex-col gap-8">
             <section className="grid gap-4">
               <div>
                 <p className="text-sm font-bold uppercase tracking-wide text-muted-foreground">{t.language}</p>
-                <ToggleGroup aria-label={t.language} className="mt-2 flex w-full">
-                  <ToggleGroupItem onClick={() => setLanguage("en")} pressed={draft.language === "en"}>
-                    EN
-                  </ToggleGroupItem>
-                  <ToggleGroupItem onClick={() => setLanguage("id")} pressed={draft.language === "id"}>
-                    ID
-                  </ToggleGroupItem>
-                </ToggleGroup>
+                <Tabs value={settings.language} onValueChange={(value) => setLanguage(value as AppLanguage)}>
+                  <TabsList className="mt-2 flex w-full">
+                    <TabsTrigger value="en">EN</TabsTrigger>
+                    <TabsTrigger value="id">ID</TabsTrigger>
+                  </TabsList>
+                </Tabs>
               </div>
 
               <div>
                 <p className="text-sm font-bold uppercase tracking-wide text-muted-foreground">{t.theme}</p>
-                <ToggleGroup aria-label={t.theme} className="mt-2 flex w-full">
-                  <ToggleGroupItem onClick={() => setTheme("day")} pressed={draft.theme === "day"}>
-                    <Sun className="h-4 w-4" />
-                    {t.day}
-                  </ToggleGroupItem>
-                  <ToggleGroupItem onClick={() => setTheme("dark")} pressed={draft.theme === "dark"}>
-                    <Moon className="h-4 w-4" />
-                    {t.dark}
-                  </ToggleGroupItem>
-                </ToggleGroup>
+                <Tabs value={settings.theme} onValueChange={(value) => setTheme(value as AppTheme)}>
+                  <TabsList className="mt-2 flex w-full">
+                    <TabsTrigger value="day">
+                      <Sun className="h-4 w-4" />
+                      {t.day}
+                    </TabsTrigger>
+                    <TabsTrigger value="dark">
+                      <Moon className="h-4 w-4" />
+                      {t.dark}
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
               </div>
 
               <div>
                 <p className="text-sm font-bold uppercase tracking-wide text-muted-foreground">{t.hijriOffset}</p>
                 <ToggleGroup aria-label={t.hijriOffset} className="mt-2 flex w-full">
                   {offsetOptions.map((offset) => (
-                    <ToggleGroupItem key={offset} onClick={() => setHijriOffset(offset)} pressed={draft.hijriOffset === offset}>
+                    <ToggleGroupItem
+                      className="min-w-12 data-[state=active]:bg-sage"
+                      key={offset}
+                      onClick={() => setHijriOffset(offset)}
+                      pressed={settings.hijriOffset === offset}
+                    >
                       {formatOffset(offset)}
                     </ToggleGroupItem>
                   ))}
@@ -338,18 +217,210 @@ export function SettingsPanel({ open, settings, onClose, onSave }: SettingsPanel
               </div>
             </section>
 
-            {renderSection("daily")}
-            {renderSection("friday")}
+            <section className="flex flex-col gap-4">
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="font-serif text-2xl font-semibold text-primary">{t.habits}</h3>
+                <Button
+                  className="shrink-0"
+                  onClick={() => {
+                    addHabit()
+                    window.setTimeout(() => setExpandedHabitId(useAppStore.getState().settings.habits.at(-1)?.id ?? null), 0)
+                  }}
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                >
+                  <Plus className="h-4 w-4" />
+                  {t.addHabit}
+                </Button>
+              </div>
+
+              <div className="flex flex-col gap-3">
+                {settings.habits.map((habit) => (
+                  <div
+                    className="overflow-hidden rounded-xl border border-sage/15 bg-card shadow-[0_8px_24px_rgba(0,0,0,0.03)]"
+                    key={habit.id}
+                  >
+                    <button
+                      className="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-sage-pale/15"
+                      onClick={() => setExpandedHabitId((current) => (current === habit.id ? null : habit.id))}
+                      type="button"
+                    >
+                      <HabitMark habit={habit} />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-bold text-foreground">{habit.label}</p>
+                        <p className="truncate text-xs font-semibold text-muted-foreground">{habit.scheduleLabel}</p>
+                      </div>
+                      <FrequencyDots plannedDays={habit.plannedDays} />
+                      <ChevronDown
+                        className={cn(
+                          "h-4 w-4 shrink-0 text-muted-foreground transition",
+                          expandedHabitId === habit.id && "rotate-180",
+                        )}
+                      />
+                    </button>
+
+                    {expandedHabitId === habit.id ? (
+                      <div className="border-t border-sage/10 p-4">
+                        <div className="mb-4 flex items-center justify-between gap-3">
+                          <label className="flex items-center gap-2 text-sm font-bold text-muted-foreground">
+                            <input
+                              checked={habit.enabled}
+                              className="h-5 w-5 accent-sage"
+                              onChange={(event) => updateHabit(habit.id, { enabled: event.target.checked })}
+                              type="checkbox"
+                            />
+                            <span>{t.enabled}</span>
+                          </label>
+                          <Button
+                            aria-label={`${t.delete} ${habit.label}`}
+                            className="text-destructive hover:bg-destructive/10"
+                            onClick={() => confirmDelete(habit)}
+                            size="icon"
+                            type="button"
+                            variant="ghost"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+
+                        <div className="grid gap-3">
+                          <label className="flex flex-col gap-1 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                            {t.label}
+                            <input
+                              className="h-10 rounded-xl border border-sage/15 bg-background px-3 text-sm font-semibold normal-case tracking-normal text-foreground outline-none focus:border-sage"
+                              onChange={(event) => updateHabit(habit.id, { label: event.target.value })}
+                              value={habit.label}
+                            />
+                          </label>
+
+                          <div>
+                            <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">{t.category}</p>
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {categoryOptions.map((category) => (
+                                <button
+                                  className={cn(
+                                    "rounded-full border border-sage/15 px-3 py-1.5 text-xs font-bold text-muted-foreground transition hover:bg-sage-pale/20",
+                                    habit.category === category && "border-sage bg-sage text-white hover:bg-sage",
+                                  )}
+                                  key={category}
+                                  onClick={() => updateHabit(habit.id, { category })}
+                                  type="button"
+                                >
+                                  {category}
+                                </button>
+                              ))}
+                            </div>
+                            <input
+                              className="mt-2 h-10 w-full rounded-xl border border-sage/15 bg-background px-3 text-sm font-semibold text-foreground outline-none focus:border-sage"
+                              onChange={(event) => updateHabit(habit.id, { category: event.target.value })}
+                              placeholder={t.category}
+                              value={habit.category}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="mt-4">
+                          <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">{t.timing}</p>
+                          <Tabs
+                            value={habit.timing.mode}
+                            onValueChange={(value) => updateTiming(habit, timingFromMode(value as "fixed" | "prayer", habit.timing))}
+                          >
+                            <TabsList className="mt-2 flex w-full">
+                              <TabsTrigger value="fixed">{t.fixed}</TabsTrigger>
+                              <TabsTrigger value="prayer">{t.prayer}</TabsTrigger>
+                            </TabsList>
+                          </Tabs>
+
+                          {habit.timing.mode === "fixed" ? (
+                            <label className="mt-3 flex flex-col gap-1 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                              {t.time}
+                              <input
+                                className="h-10 rounded-xl border border-sage/15 bg-background px-3 text-sm font-semibold normal-case tracking-normal text-foreground outline-none focus:border-sage"
+                                onChange={(event) => updateTiming(habit, { mode: "fixed", time: event.target.value })}
+                                type="time"
+                                value={habit.timing.time}
+                              />
+                            </label>
+                          ) : (
+                            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                              <label className="flex flex-col gap-1 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                                {t.prayer}
+                                <select
+                                  className="h-10 rounded-xl border border-sage/15 bg-background px-3 text-sm font-semibold normal-case tracking-normal text-foreground outline-none focus:border-sage"
+                                  onChange={(event) => updatePrayerAnchor(habit, event.target.value as PrayerAnchor)}
+                                  value={habit.timing.prayer}
+                                >
+                                  {prayerAnchors().map((prayer) => (
+                                    <option key={prayer} value={prayer}>
+                                      {formatPrayer(prayer)}
+                                    </option>
+                                  ))}
+                                </select>
+                              </label>
+                              <label className="flex flex-col gap-1 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                                {t.offset}
+                                <input
+                                  className="h-10 rounded-xl border border-sage/15 bg-background px-3 text-sm font-semibold normal-case tracking-normal text-foreground outline-none focus:border-sage"
+                                  max={120}
+                                  min={-120}
+                                  onChange={(event) => updatePrayerOffset(habit, Number(event.target.value))}
+                                  step={5}
+                                  type="number"
+                                  value={habit.timing.offsetMinutes}
+                                />
+                              </label>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="mt-4">
+                          <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">{t.plannedDays}</p>
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {frequencyPresets.map((preset) => (
+                              <button
+                                className={cn(
+                                  "rounded-full border border-sage/15 px-3 py-1.5 text-xs font-bold text-muted-foreground transition hover:bg-sage-pale/20",
+                                  plannedDaysMatch(habit.plannedDays, preset.days) && "border-sage bg-sage text-white hover:bg-sage",
+                                )}
+                                key={preset.label}
+                                onClick={() => setHabitFrequency(habit.id, preset.days)}
+                                type="button"
+                              >
+                                {preset.label}
+                              </button>
+                            ))}
+                          </div>
+                          <div className="mt-3 flex gap-2">
+                            {habit.plannedDays.map((active, index) => (
+                              <button
+                                className={cn(
+                                  "flex h-8 w-8 items-center justify-center rounded-full bg-muted text-xs font-bold text-muted-foreground transition",
+                                  active && "bg-sage text-white",
+                                )}
+                                key={`${habit.id}-${index}`}
+                                onClick={() =>
+                                  setHabitFrequency(
+                                    habit.id,
+                                    habit.plannedDays.map((day, dayIndex) => (dayIndex === index ? !day : day)),
+                                  )
+                                }
+                                type="button"
+                              >
+                                {dayLabels[index]}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            </section>
           </div>
         </div>
-
-        <div className="border-t border-sage/10 bg-background px-6 py-4">
-          <Button className="w-full" onClick={() => onSave(draft)} type="button">
-            <Save className="h-4 w-4" />
-            {t.save}
-          </Button>
-        </div>
-      </aside>
-    </div>
+      </SheetContent>
+    </Sheet>
   )
 }

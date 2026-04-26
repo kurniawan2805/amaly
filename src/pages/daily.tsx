@@ -82,10 +82,6 @@ function toHabitState(habit: HabitDefinition): Habit {
   }
 }
 
-function isFriday(date: Date) {
-  return date.getDay() === 5
-}
-
 function HabitMark({ habit }: { habit: Habit }) {
   const label = habit.label.toLowerCase()
   const Icon = label.includes("quran") || label.includes("surah") ? BookOpen : label.includes("dhikr") ? Sun : Moon
@@ -247,7 +243,7 @@ type DailyPageProps = {
 
 export default function DailyPage({ settings, cycleState, quranProgress, onQuickLog, onSetQuranPage, onOpenSettings }: DailyPageProps) {
   const [habits, setHabits] = useState<Habit[]>(() =>
-    settings.habits.daily.filter((habit) => habit.enabled).map(toHabitState),
+    settings.habits.filter((habit) => habit.enabled && habit.plannedDays[new Date().getDay()]).map(toHabitState),
   )
   const [completedPrayers, setCompletedPrayers] = useState<string[]>([])
   const [selectedSunnah, setSelectedSunnah] = useState<string[]>([])
@@ -258,10 +254,9 @@ export default function DailyPage({ settings, cycleState, quranProgress, onQuick
   const gregorianDate = formatGregorianDate(now, settings.language)
   const hijriDate = formatHijriDate(now, settings.hijriOffset)
   const visibleHabitDefinitions = useMemo(() => {
-    const daily = settings.habits.daily.filter((habit) => habit.enabled)
-    const friday = isFriday(now) ? settings.habits.friday.filter((habit) => habit.enabled) : []
-    return [...daily, ...friday]
-  }, [now, settings.habits.daily, settings.habits.friday])
+    const todayIndex = now.getDay()
+    return settings.habits.filter((habit) => habit.enabled && habit.plannedDays[todayIndex])
+  }, [now, settings.habits])
 
   const completedHabits = useMemo(() => habits.filter((habit) => habit.completed).length, [habits])
   const progress = habits.length > 0 ? (completedHabits / habits.length) * 100 : 0
