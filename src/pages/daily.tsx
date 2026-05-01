@@ -144,19 +144,6 @@ function HabitMark({ habit }: { habit: Habit }) {
   )
 }
 
-function FrequencyDots({ plannedDays }: { plannedDays: boolean[] }) {
-  return (
-    <div className="flex shrink-0 items-center gap-1.5" aria-hidden="true">
-      {plannedDays.map((active, index) => (
-        <span
-          className={active ? "h-2 w-2 rounded-full bg-sage-deep" : "h-2 w-2 rounded-full bg-surface-container-highest"}
-          key={index}
-        />
-      ))}
-    </div>
-  )
-}
-
 const copy = {
   en: {
     morning: (name: string) => `Ahlan, ${name || "friend"}`,
@@ -509,7 +496,6 @@ export default function DailyPage({
             <span className="block truncate text-xs font-semibold text-muted-foreground">{habitTimeLabel(habit)}</span>
           </PressAction>
         </div>
-        <FrequencyDots plannedDays={habit.plannedDays} />
         <PressAction
           ariaLabel={
             habit.completed
@@ -801,7 +787,13 @@ export default function DailyPage({
           </div>
         </Card>
 
-        <Card className="flex items-center gap-6 p-6 md:col-span-6">
+        <Card className="md:col-span-6">
+          <a
+            className="flex items-center gap-6 p-6 transition hover:bg-sage-pale/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            href={quranProgress.continue_url}
+            rel="noopener noreferrer"
+            target="_blank"
+          >
           <div className="h-24 w-20 shrink-0 overflow-hidden rounded-xl bg-sky-pale">
             <img
               alt="Open Quran with prayer beads in soft natural light"
@@ -816,11 +808,10 @@ export default function DailyPage({
               {t.page} {quranProgress.page} • {t.juz} {quranProgress.juz} • Ayah {quranProgress.ayah}
             </p>
           </div>
-          <Button asChild aria-label={t.continueQuran} size="icon">
-            <Link to="/quran">
+          <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-soft" aria-label={t.continueQuran}>
               <Play className="h-5 w-5 fill-current" />
-            </Link>
-          </Button>
+          </span>
+          </a>
         </Card>
 
         <div className="relative overflow-hidden rounded-xl bg-surface-container-low p-6 md:col-span-6">

@@ -81,6 +81,7 @@ import {
 import { supabase } from "@/lib/supabase"
 
 export type QuranBurst = { type: "juz"; juz: number } | { type: "goal" }
+export type ActivePanel = "habits" | "account" | null
 
 type StoreState = {
   settings: AppSettings
@@ -99,6 +100,7 @@ type StoreState = {
   partnerSnapshot: PartnerSnapshot | null
   partnerNotice: PartnerNotice | null
   settingsOpen: boolean
+  activePanel: ActivePanel
   quranBurst: QuranBurst | null
   initializeAuth: () => Promise<void>
   signInWithGoogle: () => Promise<void>
@@ -115,11 +117,14 @@ type StoreState = {
   loadPartnerSnapshot: () => Promise<void>
   sendPartnerNudge: () => Promise<void>
   setSettingsOpen: (open: boolean) => void
+  openPanel: (panel: Exclude<ActivePanel, null>) => void
+  closePanel: () => void
   dismissQuranBurst: () => void
   setLanguage: (language: AppLanguage) => void
   setTheme: (theme: AppTheme) => void
   setHijriOffset: (offset: HijriOffset) => void
   addHabit: () => string
+  setHabits: (habits: HabitDefinition[]) => void
   updateHabit: (id: string, patch: Partial<HabitDefinition>) => void
   deleteHabit: (id: string) => void
   setHabitFrequency: (id: string, plannedDays: boolean[]) => void
@@ -261,6 +266,7 @@ export const useAppStore = create<StoreState>((set, get) => ({
   partnerSnapshot: null,
   partnerNotice: null,
   settingsOpen: false,
+  activePanel: null,
   quranBurst: null,
   initializeAuth: async () => {
     if (authInitialized) {
@@ -526,6 +532,8 @@ export const useAppStore = create<StoreState>((set, get) => ({
     }
   },
   setSettingsOpen: (open) => set({ settingsOpen: open }),
+  openPanel: (panel) => set({ activePanel: panel, settingsOpen: true }),
+  closePanel: () => set({ activePanel: null, settingsOpen: false }),
   dismissQuranBurst: () => {
     if (burstTimer) {
       window.clearTimeout(burstTimer)
@@ -574,6 +582,11 @@ export const useAppStore = create<StoreState>((set, get) => ({
     set({ settings })
     void get().syncCloudState()
     return habit.id
+  },
+  setHabits: (habits) => {
+    const settings = persistSettings({ ...get().settings, habits })
+    set({ settings })
+    void get().syncCloudState()
   },
   updateHabit: (id, patch) => {
     const current = get().settings

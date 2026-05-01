@@ -11,6 +11,10 @@ export const QURAN_TOTAL_PAGES = 604
 export const QURAN_DAILY_GOAL = 5
 export const QURAN_STREAK_GRACE_PAGES = QURAN_DAILY_GOAL * 2
 
+function quranReadingUrl(page: number) {
+  return `https://quranwbw.com/page?id=${clampPage(page || 1)}`
+}
+
 export type QuranProgressLog = {
   date: string
   pages: number
@@ -389,7 +393,7 @@ export function setProgressToPage(
     goal_completed_today: goalCompletedToday,
     goal_burst: goalBurst,
     completed_juzs_this_update: completedJuzsThisUpdate,
-    continue_url: `https://quran.com/page/${newPage || 1}`,
+    continue_url: quranReadingUrl(newPage || 1),
     barakah_burst: completedJuzsThisUpdate.length > 0,
     is_khatm_complete: newPage >= QURAN_TOTAL_PAGES,
   }
@@ -415,7 +419,7 @@ export function initialQuranProgress(language: AppLanguage = "en", hijriOffset: 
     goal_completed_today: false,
     goal_burst: false,
     completed_juzs_this_update: [],
-    continue_url: "https://quran.com/page/1",
+    continue_url: quranReadingUrl(1),
     barakah_burst: false,
     is_khatm_complete: false,
   }

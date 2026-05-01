@@ -56,9 +56,24 @@ export function ContinueReadingCard({ language, progress, onSetDailyGoal }: Cont
     setGoalOpen(false)
   }
 
+  function openReadingPage() {
+    window.open(progress.continue_url, "_blank", "noopener,noreferrer")
+  }
+
   return (
     <>
-      <Card className="flex flex-col justify-between p-6">
+      <Card
+        className="flex cursor-pointer flex-col justify-between p-6 transition hover:bg-sage-pale/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        onClick={openReadingPage}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault()
+            openReadingPage()
+          }
+        }}
+        role="link"
+        tabIndex={0}
+      >
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
             <p className="mb-1 text-sm font-semibold uppercase tracking-wide text-secondary">{t.continueReading}</p>
@@ -81,7 +96,10 @@ export function ContinueReadingCard({ language, progress, onSetDailyGoal }: Cont
             <button
               aria-label={t.updateGoal}
               className="inline-flex h-8 w-8 items-center justify-center rounded-full text-primary transition hover:bg-surface-container"
-              onClick={() => setGoalOpen(true)}
+              onClick={(event) => {
+                event.stopPropagation()
+                setGoalOpen(true)
+              }}
               type="button"
             >
               <Pencil className="h-4 w-4" />
@@ -97,10 +115,14 @@ export function ContinueReadingCard({ language, progress, onSetDailyGoal }: Cont
         </div>
 
         <div className="mt-6 flex justify-end">
-          <Button asChild>
-            <a href={progress.continue_url} rel="noreferrer" target="_blank">
-              {t.startReading}
-            </a>
+          <Button
+            onClick={(event) => {
+              event.stopPropagation()
+              openReadingPage()
+            }}
+            type="button"
+          >
+            {t.startReading}
           </Button>
         </div>
       </Card>

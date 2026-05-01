@@ -23,7 +23,7 @@ describe("quran progress", () => {
     expect(progress.progress_percent).toBe(0)
     expect(progress.daily_goal).toBe(QURAN_DAILY_GOAL)
     expect(progress.logs).toEqual([])
-    expect(progress.continue_url).toBe("https://quran.com/page/1")
+    expect(progress.continue_url).toBe("https://quranwbw.com/page?id=1")
   })
 
   it("logs pages for the current Riyadh day", () => {
@@ -82,7 +82,7 @@ describe("quran progress", () => {
     expect(progress.last_page_read).toBe(QURAN_TOTAL_PAGES)
     expect(progress.page).toBe(QURAN_TOTAL_PAGES)
     expect(progress.is_khatm_complete).toBe(true)
-    expect(progress.continue_url).toBe(`https://quran.com/page/${QURAN_TOTAL_PAGES}`)
+    expect(progress.continue_url).toBe(`https://quranwbw.com/page?id=${QURAN_TOTAL_PAGES}`)
   })
 
   it("normalizes daily goals to supported bounds", () => {

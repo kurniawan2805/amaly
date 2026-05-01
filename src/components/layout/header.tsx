@@ -1,28 +1,36 @@
-import { Menu, UserRound } from "lucide-react"
+import { Menu, Moon, Sun, UserRound } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { AppLanguage } from "@/lib/app-settings"
+import { AppLanguage, AppTheme } from "@/lib/app-settings"
 import { cn } from "@/lib/utils"
 import { useAppStore } from "@/stores/app-store"
 
 type HeaderProps = {
   language: AppLanguage
-  onOpenSettings: () => void
+  theme: AppTheme
+  onOpenAccount: () => void
+  onOpenHabits: () => void
+  onToggleLanguage: () => void
+  onToggleTheme: () => void
   title: string
 }
 
-const labels: Record<AppLanguage, { menu: string; profile: string }> = {
+const labels: Record<AppLanguage, { account: string; habits: string; language: string; theme: string }> = {
   en: {
-    menu: "Open settings",
-    profile: "Open profile",
+    account: "Open account settings",
+    habits: "Open habit settings",
+    language: "Change language",
+    theme: "Toggle theme",
   },
   id: {
-    menu: "Buka pengaturan",
-    profile: "Buka profil",
+    account: "Buka pengaturan akun",
+    habits: "Buka pengaturan habit",
+    language: "Ganti bahasa",
+    theme: "Ganti tema",
   },
 }
 
-export function Header({ language, onOpenSettings, title }: HeaderProps) {
+export function Header({ language, theme, onOpenAccount, onOpenHabits, onToggleLanguage, onToggleTheme, title }: HeaderProps) {
   const t = labels[language]
   const user = useAppStore((state) => state.user)
   const profile = useAppStore((state) => state.profile)
@@ -36,29 +44,30 @@ export function Header({ language, onOpenSettings, title }: HeaderProps) {
 
   return (
     <header className="sticky top-0 z-40 border-b border-sage/10 bg-background/95 backdrop-blur">
-      <div className="mx-auto flex h-16 w-full max-w-5xl items-center justify-between px-6">
-        <Button aria-label={t.menu} onClick={onOpenSettings} size="icon" variant="ghost">
-          {user ? (
-            avatarUrl ? (
-              <img alt="" className="h-8 w-8 rounded-full object-cover ring-2 ring-sage/25" src={avatarUrl} />
-            ) : (
-              <span
-                className={cn(
-                  "flex h-8 w-8 items-center justify-center rounded-full bg-sage text-sm font-bold text-white shadow-soft",
-                )}
-              >
-                {initial}
-              </span>
-            )
-          ) : (
-            <Menu className="h-5 w-5" />
-          )}
+      <div className="mx-auto grid h-16 w-full max-w-5xl grid-cols-[auto_1fr_auto] items-center gap-2 px-4 sm:px-6">
+        <Button aria-label={t.habits} onClick={onOpenHabits} size="icon" variant="ghost">
+          <Menu className="h-5 w-5" />
         </Button>
-        <div className="flex items-center gap-2 text-sage">
+
+        <div className="flex min-w-0 items-center justify-center gap-2 text-sage">
           <img alt="" className="h-7 w-7" src="/logo.svg" />
-          <h1 className="font-serif text-2xl font-medium tracking-normal">{title}</h1>
+          <h1 className="truncate font-serif text-2xl font-medium tracking-normal">{title}</h1>
         </div>
-        <Button aria-label={t.profile} onClick={onOpenSettings} size="icon" variant="ghost">
+
+        <div className="flex items-center justify-end gap-1.5">
+          <button
+            aria-label={t.language}
+            className="grid h-10 w-[68px] grid-cols-2 rounded-full border border-sage/15 bg-muted p-1 text-[11px] font-bold text-muted-foreground transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            onClick={onToggleLanguage}
+            type="button"
+          >
+            <span className={cn("flex items-center justify-center rounded-full transition", language === "en" && "bg-sage text-white shadow-soft")}>EN</span>
+            <span className={cn("flex items-center justify-center rounded-full transition", language === "id" && "bg-sage text-white shadow-soft")}>ID</span>
+          </button>
+          <Button aria-label={t.theme} className="transition active:scale-95" onClick={onToggleTheme} size="icon" variant="ghost">
+            {theme === "dark" ? <Moon className="h-5 w-5 rotate-[-8deg] transition" /> : <Sun className="h-5 w-5 transition" />}
+          </Button>
+          <Button aria-label={t.account} onClick={onOpenAccount} size="icon" variant="ghost">
           {user ? (
             avatarUrl ? (
               <img alt="" className="h-8 w-8 rounded-full object-cover ring-2 ring-sage/25" src={avatarUrl} />
@@ -70,7 +79,8 @@ export function Header({ language, onOpenSettings, title }: HeaderProps) {
           ) : (
             <UserRound className="h-5 w-5" />
           )}
-        </Button>
+          </Button>
+        </div>
       </div>
     </header>
   )

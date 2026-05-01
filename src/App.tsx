@@ -1,15 +1,21 @@
 import { Route, Routes, useLocation } from "react-router-dom"
-import { type CSSProperties, useEffect } from "react"
+import { lazy, Suspense, type CSSProperties, useEffect } from "react"
 
 import { BottomNav } from "@/components/layout/bottom-nav"
 import { Header } from "@/components/layout/header"
-import { SettingsPanel } from "@/components/settings/settings-panel"
 import { type AppSettings } from "@/lib/app-settings"
-import CyclePage from "@/pages/cycle"
-import DailyPage from "@/pages/daily"
-import FastingPage from "@/pages/fasting"
-import QuranPage from "@/pages/quran"
 import { useAppStore } from "@/stores/app-store"
+
+const AccountSettingsPanel = lazy(() =>
+  import("@/components/settings/account-settings-panel").then((module) => ({ default: module.AccountSettingsPanel })),
+)
+const HabitSettingsPanel = lazy(() =>
+  import("@/components/settings/habit-settings-panel").then((module) => ({ default: module.HabitSettingsPanel })),
+)
+const CyclePage = lazy(() => import("@/pages/cycle"))
+const DailyPage = lazy(() => import("@/pages/daily"))
+const FastingPage = lazy(() => import("@/pages/fasting"))
+const QuranPage = lazy(() => import("@/pages/quran"))
 
 const titles: Record<AppSettings["language"], Record<string, string>> = {
   en: {
@@ -38,6 +44,14 @@ const flowerConfetti = Array.from({ length: 56 }, (_, index) => ({
   size: index % 4 === 0 ? "text-4xl sm:text-5xl" : "text-3xl sm:text-4xl",
 }))
 
+function AppLoading() {
+  return (
+    <div className="flex min-h-[50vh] items-center justify-center px-6 text-center">
+      <div className="h-10 w-10 animate-spin rounded-full border-2 border-sage/20 border-t-sage" aria-label="Loading" />
+    </div>
+  )
+}
+
 export default function App() {
   const location = useLocation()
   const settings = useAppStore((state) => state.settings)
@@ -47,11 +61,14 @@ export default function App() {
   const fastingState = useAppStore((state) => state.fastingState)
   const cycleState = useAppStore((state) => state.cycleState)
   const dailyTrackerState = useAppStore((state) => state.dailyTrackerState)
-  const settingsOpen = useAppStore((state) => state.settingsOpen)
+  const activePanel = useAppStore((state) => state.activePanel)
   const quranBurst = useAppStore((state) => state.quranBurst)
   const partnerNotice = useAppStore((state) => state.partnerNotice)
   const initializeAuth = useAppStore((state) => state.initializeAuth)
-  const setSettingsOpen = useAppStore((state) => state.setSettingsOpen)
+  const openPanel = useAppStore((state) => state.openPanel)
+  const closePanel = useAppStore((state) => state.closePanel)
+  const setLanguage = useAppStore((state) => state.setLanguage)
+  const setTheme = useAppStore((state) => state.setTheme)
   const dismissQuranBurst = useAppStore((state) => state.dismissQuranBurst)
   const clearPartnerNotice = useAppStore((state) => state.clearPartnerNotice)
   const quickLogQuran = useAppStore((state) => state.quickLogQuran)
@@ -89,74 +106,87 @@ export default function App() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <Header language={settings.language} onOpenSettings={() => setSettingsOpen(true)} title={title} />
+      <Header
+        language={settings.language}
+        onOpenAccount={() => openPanel("account")}
+        onOpenHabits={() => openPanel("habits")}
+        onToggleLanguage={() => setLanguage(settings.language === "en" ? "id" : "en")}
+        onToggleTheme={() => setTheme(settings.theme === "dark" ? "day" : "dark")}
+        theme={settings.theme}
+        title={title}
+      />
       <main className="flex-1">
-        <Routes>
-          <Route
-            element={
-              <DailyPage
-                onOpenSettings={() => setSettingsOpen(true)}
-                onQuickLog={quickLogQuran}
-                onSetQuranPage={setQuranPage}
-                onSetPrayerCompleted={setPrayerCompleted}
-                onToggleSunnahSelection={toggleSunnahSelection}
-                onSetHabitCompleted={setHabitCompleted}
-                onSetHabitsCompleted={setHabitsCompleted}
-                cycleState={cycleState}
-                dailyTrackerState={dailyTrackerState}
-                displayName={displayName}
-                quranProgress={quranProgress}
-                settings={settings}
-              />
-            }
-            path="/"
-          />
-          <Route
-            element={
-              <QuranPage
-                hijriOffset={settings.hijriOffset}
-                language={settings.language}
-                onQuickLog={quickLogQuran}
-                onSetDailyGoal={setQuranDailyGoal}
-                onSetPage={setQuranPage}
-                progress={quranProgress}
-              />
-            }
-            path="/quran"
-          />
-          <Route
-            element={
-              <FastingPage
-                fastingState={fastingState}
-                language={settings.language}
-                hijriOffset={settings.hijriOffset}
-                onAddQadhaDebt={addQadhaDebt}
-                onMarkQadhaPaid={markQadhaPaid}
-                onSetHijriOffset={setHijriOffset}
-                onToggleSahurReminder={toggleSahurReminder}
-              />
-            }
-            path="/fasting"
-          />
-          <Route
-            element={
-              <CyclePage
-                cycleState={cycleState}
-                onConfirmCycleQadha={confirmCycleQadha}
-                onEndPeriod={endPeriod}
-                onIgnoreCycleQadha={ignoreCycleQadha}
-                onSaveCycleRange={saveCycleRange}
-                onStartPeriod={startPeriod}
-                onToggleCyclePrivacy={toggleCyclePrivacy}
-                onToggleCycleSymptom={toggleCycleSymptom}
-              />
-            }
-            path="/cycle"
-          />
-        </Routes>
+        <Suspense fallback={<AppLoading />}>
+          <Routes>
+            <Route
+              element={
+                <DailyPage
+                  onOpenSettings={() => openPanel("habits")}
+                  onQuickLog={quickLogQuran}
+                  onSetQuranPage={setQuranPage}
+                  onSetPrayerCompleted={setPrayerCompleted}
+                  onToggleSunnahSelection={toggleSunnahSelection}
+                  onSetHabitCompleted={setHabitCompleted}
+                  onSetHabitsCompleted={setHabitsCompleted}
+                  cycleState={cycleState}
+                  dailyTrackerState={dailyTrackerState}
+                  displayName={displayName}
+                  quranProgress={quranProgress}
+                  settings={settings}
+                />
+              }
+              path="/"
+            />
+            <Route
+              element={
+                <QuranPage
+                  hijriOffset={settings.hijriOffset}
+                  language={settings.language}
+                  onQuickLog={quickLogQuran}
+                  onSetDailyGoal={setQuranDailyGoal}
+                  onSetPage={setQuranPage}
+                  progress={quranProgress}
+                />
+              }
+              path="/quran"
+            />
+            <Route
+              element={
+                <FastingPage
+                  fastingState={fastingState}
+                  language={settings.language}
+                  hijriOffset={settings.hijriOffset}
+                  onAddQadhaDebt={addQadhaDebt}
+                  onMarkQadhaPaid={markQadhaPaid}
+                  onSetHijriOffset={setHijriOffset}
+                  onToggleSahurReminder={toggleSahurReminder}
+                />
+              }
+              path="/fasting"
+            />
+            <Route
+              element={
+                <CyclePage
+                  cycleState={cycleState}
+                  onConfirmCycleQadha={confirmCycleQadha}
+                  onEndPeriod={endPeriod}
+                  onIgnoreCycleQadha={ignoreCycleQadha}
+                  onSaveCycleRange={saveCycleRange}
+                  onStartPeriod={startPeriod}
+                  onToggleCyclePrivacy={toggleCyclePrivacy}
+                  onToggleCycleSymptom={toggleCycleSymptom}
+                />
+              }
+              path="/cycle"
+            />
+          </Routes>
+        </Suspense>
       </main>
       <BottomNav language={settings.language} />
-      <SettingsPanel onClose={() => setSettingsOpen(false)} open={settingsOpen} />
+      <Suspense fallback={null}>
+        {activePanel === "habits" ? <HabitSettingsPanel onClose={closePanel} open /> : null}
+        {activePanel === "account" ? <AccountSettingsPanel onClose={closePanel} open /> : null}
+      </Suspense>
       {partnerNotice ? (
         <div className="fixed inset-x-4 top-20 z-[75] mx-auto max-w-sm rounded-2xl border border-sage/20 bg-card p-4 text-card-foreground shadow-2xl">
           <p className="text-xs font-bold uppercase tracking-wide text-primary">
