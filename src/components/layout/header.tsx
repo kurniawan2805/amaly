@@ -45,7 +45,7 @@ export function Header({ language, theme, onOpenAccount, onOpenHabits, onToggleL
   return (
     <header className="sticky top-0 z-40 border-b border-sage/10 bg-background/95 backdrop-blur">
       <div className="mx-auto grid h-16 w-full max-w-5xl grid-cols-[auto_1fr_auto] items-center gap-2 px-4 sm:px-6">
-        <Button aria-label={t.habits} onClick={onOpenHabits} size="icon" variant="ghost">
+        <Button aria-label={t.habits} onClick={onOpenHabits} size="icon" type="button" variant="ghost">
           <Menu className="h-5 w-5" />
         </Button>
 

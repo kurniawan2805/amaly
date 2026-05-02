@@ -69,17 +69,17 @@ export default function QuranPage({ language, hijriOffset, progress, onQuickLog,
   const progressOffset = circumference - (progress.progress_percent / 100) * circumference
 
   return (
-    <div className="mx-auto max-w-4xl space-y-12 px-6 py-6 pb-32">
-      <section className="space-y-3 text-center">
-        <h2 className="font-serif text-4xl font-semibold leading-tight text-primary">{t.title}</h2>
-        <p className="text-lg leading-8 text-muted-foreground">{t.subtitle}</p>
+    <div className="mx-auto flex max-w-4xl flex-col gap-4 px-6 py-5 pb-28">
+      <section className="space-y-2 text-center">
+        <h2 className="font-serif text-3xl font-semibold leading-tight text-primary">{t.title}</h2>
+        <p className="text-base leading-7 text-muted-foreground">{t.subtitle}</p>
       </section>
 
       <QuickLogButtons language={language} onQuickLog={onQuickLog} onSetPage={onSetPage} progress={progress} />
 
       <section className="grid grid-cols-1 gap-4 md:grid-cols-12">
-        <Card className="flex flex-col items-center justify-center p-6 text-center md:col-span-4">
-          <div className="relative flex h-32 w-32 items-center justify-center">
+        <Card className="flex flex-col items-center justify-center p-4 text-center md:col-span-4">
+          <div className="relative flex h-24 w-24 items-center justify-center">
             <svg className="h-full w-full -rotate-90" viewBox="0 0 100 100">
               <circle className="stroke-surface-container-highest" cx="50" cy="50" fill="transparent" r="40" strokeWidth="8" />
               <circle
@@ -94,11 +94,11 @@ export default function QuranPage({ language, hijriOffset, progress, onQuickLog,
               />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="font-serif text-3xl font-medium text-primary">{progress.progress_percent}%</span>
-              <span className="text-sm font-semibold text-muted-foreground">{t.completed}</span>
+              <span className="font-serif text-2xl font-medium text-primary">{progress.progress_percent}%</span>
+              <span className="text-xs font-semibold text-muted-foreground">{t.completed}</span>
             </div>
           </div>
-          <p className="mt-6 text-muted-foreground">
+          <p className="mt-3 text-sm font-semibold text-muted-foreground">
             Juz {progress.juz}, Page {progress.page}
           </p>
         </Card>
@@ -108,14 +108,14 @@ export default function QuranPage({ language, hijriOffset, progress, onQuickLog,
         </div>
       </section>
 
-      <section className="space-y-4">
-        <h3 className="font-serif text-2xl font-medium text-primary">{t.juzGrid}</h3>
+      <section className="space-y-3">
+        <h3 className="font-serif text-xl font-medium text-primary">{t.juzGrid}</h3>
         <JuzGrid progress={progress} />
       </section>
 
-      <section className="space-y-4">
-        <h3 className="font-serif text-2xl font-medium text-primary">{t.journeyLog}</h3>
-        <ol className="space-y-4 border-l border-sage/15 pl-3">
+      <section className="space-y-3">
+        <h3 className="font-serif text-xl font-medium text-primary">{t.journeyLog}</h3>
+        <ol className="space-y-3 border-l border-sage/15 pl-3">
           {[...progress.logs].reverse().slice(0, 8).map((log) => (
             <JourneyEntry hijriOffset={hijriOffset} key={log.date} language={language} log={log} />
           ))}

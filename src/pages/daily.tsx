@@ -1,4 +1,4 @@
-import { BookOpen, Check, ChevronDown, Clock, Lock, MoreHorizontal, Moon, Play, Plus, Quote, Settings, Sparkles, Sun } from "lucide-react"
+import { BookOpen, Check, ChevronDown, Clock, Lock, MoreHorizontal, Moon, Plus, Quote, Settings, Sparkles, Sun } from "lucide-react"
 import { CSSProperties, PointerEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react"
 import { Link } from "react-router-dom"
 
@@ -46,7 +46,6 @@ const prayers = [
   { label: "Maghrib", start: "17:45", end: "19:30" },
   { label: "Isya", start: "19:00", end: "23:59" },
 ]
-const sunnahPrayers = ["Tahajjud", "Duha", "Rawatib"]
 const flowerEmojis = ["💐", "🌸", "🌷", "🌹", "🌺", "🌼", "🪷", "🌸", "🌷", "🌹", "🌺", "🌼", "💐", "🪷"]
 const flowerConfetti = Array.from({ length: 64 }, (_, index) => ({
   emoji: flowerEmojis[index % flowerEmojis.length],
@@ -177,10 +176,6 @@ const copy = {
     cyclePhase: "Cycle Phase",
     follicular: "Follicular Day 4",
     logSymptoms: "Log Symptoms",
-    continueReading: "Continue Reading",
-    page: "Page",
-    juz: "Juz",
-    continueQuran: "Continue Quran reading",
     quranNudge: "Salam! There's still time for a quick page tonight to keep your streak glowing.",
   },
   id: {
@@ -215,10 +210,6 @@ const copy = {
     cyclePhase: "Fase Siklus",
     follicular: "Hari Folikular 4",
     logSymptoms: "Catat Gejala",
-    continueReading: "Lanjut Membaca",
-    page: "Halaman",
-    juz: "Juz",
-    continueQuran: "Lanjut membaca Quran",
     quranNudge: "Salam! Masih ada waktu untuk satu halaman malam ini agar istiqomah tetap menyala.",
   },
 }
@@ -516,7 +507,7 @@ export default function DailyPage({
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-12 px-6 py-6 pb-32">
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-6 py-5 pb-28">
       {flowerBursts.length > 0 ? (
         <div className="pointer-events-none fixed inset-0 z-50 overflow-hidden">
           {flowerBursts.map((burst) =>
@@ -543,7 +534,7 @@ export default function DailyPage({
       ) : null}
         <PartnerWidget language={settings.language} />
 
-        <section className="flex flex-col gap-4">
+        <section className="flex flex-col gap-3">
         <div className="flex flex-col gap-1">
           <span className="font-serif text-2xl font-semibold leading-tight text-sage sm:text-3xl">{hijriDate}</span>
           <span className="text-sm font-semibold text-muted-foreground">{gregorianDate}</span>
@@ -554,25 +545,25 @@ export default function DailyPage({
 
         <Card
           className={cn(
-            "overflow-hidden p-8 transition-[border-color,box-shadow] duration-1000 md:col-span-12",
+            "overflow-hidden p-4 transition-[border-color,box-shadow] duration-1000 md:col-span-12",
             hasPrayerProgress
               ? "border-sage/70 shadow-[0_0_34px_rgba(139,168,136,0.24)]"
               : "border-surface-container-highest shadow-none",
           )}
         >
           <div className="flex items-start justify-between gap-4">
-            <h3 className="font-serif text-3xl font-semibold tracking-normal text-sage">{t.prayerCheck}</h3>
-            <Button aria-label={t.options} className="text-sage" size="icon" variant="ghost">
-              <MoreHorizontal className="h-6 w-6" />
+            <h3 className="font-serif text-[1.4rem] font-semibold tracking-normal text-sage sm:text-2xl">{t.prayerCheck}</h3>
+            <Button aria-label={t.options} className="text-sage" onClick={onOpenSettings} size="icon" type="button" variant="ghost">
+              <MoreHorizontal className="h-5 w-5" />
             </Button>
           </div>
 
-          <div className="mt-6 flex items-start gap-3 rounded-2xl border border-sage/30 bg-sage-pale/70 px-4 py-3 text-sage-deep">
-            <Clock className="mt-0.5 h-5 w-5 shrink-0" />
-            <p className="text-sm font-semibold leading-6">{prayerReminder}</p>
+          <div className="mt-3 flex items-center gap-2 rounded-2xl border border-sage/30 bg-sage-pale/70 px-3 py-1.5 text-sage-deep">
+            <Clock className="h-4 w-4 shrink-0" />
+            <p className="text-xs font-semibold leading-5">{prayerReminder}</p>
           </div>
 
-          <div className="mt-10 grid grid-cols-5 gap-3">
+          <div className="mt-4 grid grid-cols-5 gap-2 sm:gap-3">
             {prayers.map((prayer) => {
               const isCompleted = completedPrayers.includes(prayer.label)
               const isAvailable = timeToMinutes(prayer.start) <= nowMinutes
@@ -590,7 +581,7 @@ export default function DailyPage({
                         : t.prayerMark(prayer.label)
                   }
                   className={cn(
-                    "flex min-w-0 flex-col items-center gap-2 transition",
+                    "flex min-w-0 flex-col items-center gap-1.5 transition",
                     isDisabled && "cursor-not-allowed opacity-55",
                   )}
                   disabled={isDisabled}
@@ -604,24 +595,24 @@ export default function DailyPage({
                   <span className="relative flex w-full justify-center">
                     <span
                       className={cn(
-                        "flex aspect-square w-full max-w-[68px] items-center justify-center rounded-full border bg-surface text-muted-foreground shadow-[0_10px_28px_rgb(0,0,0,0.04)] transition",
+                        "flex aspect-square w-full max-w-[50px] items-center justify-center rounded-full border bg-surface text-muted-foreground shadow-[0_10px_28px_rgb(0,0,0,0.04)] transition sm:max-w-[56px]",
                         isCompleted ? "border-sage bg-sage text-white" : "border-surface-container-highest",
                         isCurrent && !isCompleted && "border-sage/80 text-sage shadow-[0_0_26px_rgba(139,168,136,0.2)]",
                         isFuture && "border-surface-container-highest bg-surface-container text-muted-foreground/50",
                       )}
                     >
                       {isCompleted ? (
-                        <Check className="h-8 w-8" />
+                        <Check className="h-6 w-6" />
                       ) : isFuture ? (
-                        <Lock className="h-6 w-6" />
+                        <Lock className="h-4 w-4" />
                       ) : (
-                        <span className="h-7 w-7 rounded-full border-[3px] border-foreground/20" />
+                        <span className="h-5 w-5 rounded-full border-[3px] border-foreground/20" />
                       )}
                     </span>
                   </span>
                   <span
                     className={cn(
-                      "truncate text-center text-base font-bold tracking-wide text-muted-foreground sm:text-lg",
+                      "truncate text-center text-xs font-bold tracking-wide text-muted-foreground sm:text-sm",
                       isCompleted && "text-sage",
                     )}
                   >
@@ -632,22 +623,21 @@ export default function DailyPage({
             })}
           </div>
 
-          <div className="my-10 h-px bg-surface-container-highest" />
+          <div className="my-4 h-px bg-surface-container-highest" />
 
-          <div className="flex items-center gap-3 text-sage">
-            <Settings className="h-6 w-6" />
-            <h4 className="text-xl font-bold tracking-wide">{t.sunnah}</h4>
-          </div>
-
-          <div className="no-scrollbar mt-5 flex gap-4 overflow-x-auto pb-1">
-            {sunnahPrayers.map((prayer) => {
+          <div className="no-scrollbar flex items-center gap-2 overflow-x-auto pb-1">
+            <div className="mr-1 flex shrink-0 items-center gap-2 text-sage">
+              <Settings className="h-4 w-4" />
+              <h4 className="text-base font-bold tracking-wide">{t.sunnah}</h4>
+            </div>
+            {settings.sunnahPrayers.map((prayer) => {
               const isSelected = selectedSunnah.includes(prayer)
 
               return (
                 <button
                   key={prayer}
                   className={cn(
-                    "flex shrink-0 items-center gap-3 rounded-2xl border border-sage/30 bg-sage-pale/70 px-6 py-3 text-lg font-medium text-sage-deep transition",
+                    "flex shrink-0 items-center gap-2 rounded-xl border border-sage/30 bg-sage-pale/70 px-3 py-2 text-sm font-bold text-sage-deep transition",
                     isSelected && "border-sage bg-sage text-white",
                   )}
                   onClick={() => toggleSunnah(prayer)}
@@ -655,11 +645,11 @@ export default function DailyPage({
                 >
                   <span
                     className={cn(
-                      "flex h-5 w-5 items-center justify-center rounded-full border-2 border-current",
+                      "flex h-4 w-4 items-center justify-center rounded-full border-2 border-current",
                       isSelected && "bg-white text-sage",
                     )}
                   >
-                    <Plus className="h-3.5 w-3.5" />
+                    <Plus className="h-3 w-3" />
                   </span>
                   {prayer}
                 </button>
@@ -668,7 +658,7 @@ export default function DailyPage({
           </div>
         </Card>
 
-      <section className="grid grid-cols-1 gap-6 md:grid-cols-12">
+      <section className="grid grid-cols-1 gap-4 md:grid-cols-12">
         <div className="md:col-span-12">
           <QuickLogButtons
             language={settings.language}
@@ -683,7 +673,7 @@ export default function DailyPage({
           ) : null}
         </div>
 
-        <Card className="relative overflow-hidden p-6 md:col-span-8">
+        <Card className="relative overflow-hidden p-4 md:col-span-8">
           <div className="absolute right-0 top-0 h-32 w-32 rounded-bl-full bg-sky-pale/30" />
           <div className="relative z-10 flex items-start justify-between">
             <div>
@@ -759,7 +749,7 @@ export default function DailyPage({
           </div>
         </Card>
 
-        <Card className="relative overflow-hidden p-6 text-center md:col-span-4">
+        <Card className="relative overflow-hidden p-4 text-center md:col-span-4">
           <div className="absolute inset-0 bg-gradient-to-br from-blush/20 to-transparent" />
           <div className="relative z-10 flex flex-col items-center">
             <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-blush-pale text-accent-foreground shadow-glow">
@@ -787,34 +777,7 @@ export default function DailyPage({
           </div>
         </Card>
 
-        <Card className="md:col-span-6">
-          <a
-            className="flex items-center gap-6 p-6 transition hover:bg-sage-pale/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            href={quranProgress.continue_url}
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-          <div className="h-24 w-20 shrink-0 overflow-hidden rounded-xl bg-sky-pale">
-            <img
-              alt="Open Quran with prayer beads in soft natural light"
-              className="h-full w-full object-cover"
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuB7BepeehezA6SgBvSucN4ycy0k21NIsdEYFO_IejApnpESJHTh9dpENtD3xdpMB-Dl9Y8Au29skhYHIAO6Hpnkj9DqQIXaRjpy0FFtPkgIGNTSkBuTZTqir4TctJsqjFfwkAlye-N65L96KcfOQM-epobATLSFeCIpBskFggoHXBhfr9zDDxFoh5XjCNz3T5GVdb6_pQXCfkRT_dgmJCugB9q6cplv7_UfeBWjOiq3KyB4OCb0tsFnaP8xtbCXcy125FmTG7dJFtY7"
-            />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold uppercase tracking-wide text-primary">{t.continueReading}</p>
-            <h3 className="mt-1 font-serif text-2xl font-medium text-foreground">{quranProgress.surah_name}</h3>
-            <p className="text-muted-foreground">
-              {t.page} {quranProgress.page} • {t.juz} {quranProgress.juz} • Ayah {quranProgress.ayah}
-            </p>
-          </div>
-          <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-soft" aria-label={t.continueQuran}>
-              <Play className="h-5 w-5 fill-current" />
-          </span>
-          </a>
-        </Card>
-
-        <div className="relative overflow-hidden rounded-xl bg-surface-container-low p-6 md:col-span-6">
+        <div className="relative overflow-hidden rounded-xl bg-surface-container-low p-6 md:col-span-12">
           <Quote className="absolute bottom-2 right-2 h-24 w-24 text-primary/10" />
           <p className="relative z-10 font-serif text-3xl font-medium leading-tight text-primary">
             “Verily, with hardship comes ease.”

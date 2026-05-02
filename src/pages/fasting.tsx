@@ -48,8 +48,8 @@ export default function FastingPage({
   const upcomingFasts = getUpcomingSunnahFasts(hijriOffset)
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-10 px-6 py-8 pb-32">
-      <section className="space-y-4">
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-6 py-5 pb-28">
+      <section className="space-y-3">
         <div>
           <p className="font-serif text-3xl font-semibold text-primary">{formatHijriDate(new Date(), hijriOffset, language)}</p>
           <p className="mt-1 text-sm font-semibold text-muted-foreground">Umm al-Qura date with local correction</p>
@@ -74,17 +74,17 @@ export default function FastingPage({
       <section>
         <Card
           className={cn(
-            "relative flex flex-col items-center overflow-hidden p-6 text-center transition",
+            "relative flex flex-col items-center overflow-hidden p-4 text-center transition",
             hasRamadanWarning ? "border-amber-300 shadow-[0_0_28px_rgba(252,211,77,0.18)]" : "border-sage/15",
           )}
         >
           <div className="pointer-events-none absolute -right-16 -top-16 h-32 w-32 rounded-full bg-sage-muted/10" />
           <h2 className="font-serif text-2xl font-medium text-primary">Remaining Qadha</h2>
-          <p className="mt-1 text-muted-foreground">
+          <p className="mt-1 text-sm text-muted-foreground">
             {hasRamadanWarning ? "Ramadan is close. Keep this gentle and steady." : "Days to make up before Ramadan"}
           </p>
 
-          <div className="relative my-12 flex h-48 w-48 items-center justify-center">
+          <div className="relative my-6 flex h-36 w-36 items-center justify-center">
             <svg className="h-full w-full -rotate-90" viewBox="0 0 100 100">
               <circle
                 className="stroke-surface-container-highest"
@@ -108,7 +108,7 @@ export default function FastingPage({
               />
             </svg>
             <div className="absolute flex flex-col items-center">
-              <span className="font-serif text-4xl font-semibold text-primary">{fastingState.remainingQadha}</span>
+              <span className="font-serif text-3xl font-semibold text-primary">{fastingState.remainingQadha}</span>
               <span className="mt-1 text-sm font-semibold text-muted-foreground">Days Remaining</span>
               <span className="mt-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
                 {fastingState.paidQadha} of {fastingState.totalQadhaDebt} paid
@@ -116,7 +116,7 @@ export default function FastingPage({
             </div>
           </div>
 
-          <div className="grid w-full grid-cols-2 gap-4">
+          <div className="grid w-full grid-cols-2 gap-3">
             <Button onClick={() => onAddQadhaDebt(1)} type="button" variant="outline">
               <Plus className="h-4 w-4" />
               Add Debt
@@ -129,7 +129,7 @@ export default function FastingPage({
       </section>
 
       <section>
-        <div className="mb-6 flex items-end justify-between gap-4">
+        <div className="mb-3 flex items-end justify-between gap-4">
           <div>
             <h2 className="font-serif text-2xl font-medium text-primary">Upcoming Sunnah</h2>
             <p className="mt-1 text-sm font-semibold text-muted-foreground">

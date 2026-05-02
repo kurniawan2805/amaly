@@ -63,7 +63,7 @@ export function ContinueReadingCard({ language, progress, onSetDailyGoal }: Cont
   return (
     <>
       <Card
-        className="flex cursor-pointer flex-col justify-between p-6 transition hover:bg-sage-pale/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="flex cursor-pointer flex-col justify-between p-4 transition hover:bg-sage-pale/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         onClick={openReadingPage}
         onKeyDown={(event) => {
           if (event.key === "Enter" || event.key === " ") {
@@ -74,23 +74,23 @@ export function ContinueReadingCard({ language, progress, onSetDailyGoal }: Cont
         role="link"
         tabIndex={0}
       >
-        <div className="mb-6 flex items-start justify-between gap-4">
+        <div className="mb-4 flex items-start justify-between gap-3">
           <div>
-            <p className="mb-1 text-sm font-semibold uppercase tracking-wide text-secondary">{t.continueReading}</p>
-            <h2 className="font-serif text-3xl font-medium text-primary">{progress.surah_name}</h2>
-            <p className="text-muted-foreground">
+            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-secondary">{t.continueReading}</p>
+            <h2 className="font-serif text-2xl font-medium text-primary">{progress.surah_name}</h2>
+            <p className="text-sm text-muted-foreground">
               {t.ayah} {progress.ayah_range} • {progress.surah_english_name}
             </p>
-            <p className="mt-2 text-sm font-semibold text-muted-foreground">
+            <p className="mt-1 text-sm font-semibold text-muted-foreground">
               Page {progress.page} • Juz {progress.juz}
             </p>
           </div>
-          <div className="rounded-full bg-sage/10 p-3 text-primary">
-            <BookOpen className="h-7 w-7" />
+          <div className="rounded-full bg-sage/10 p-2 text-primary">
+            <BookOpen className="h-5 w-5" />
           </div>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-2">
           <div className="flex items-center justify-between gap-3">
             <span className="text-sm font-semibold text-muted-foreground">{t.dailyGoal}</span>
             <button
@@ -114,7 +114,7 @@ export function ContinueReadingCard({ language, progress, onSetDailyGoal }: Cont
           </div>
         </div>
 
-        <div className="mt-6 flex justify-end">
+        <div className="mt-4 flex justify-end">
           <Button
             onClick={(event) => {
               event.stopPropagation()

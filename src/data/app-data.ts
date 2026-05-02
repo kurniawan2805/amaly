@@ -11,69 +11,46 @@ import {
   Smile,
 } from "lucide-react"
 
+const everyday = [true, true, true, true, true, true, true]
+const fridayOnly = [false, false, false, false, false, true, false]
+
 export const dailyHabits = [
-  // --- DAILY ROUTINE ---
   {
-    label: "Morning Dhikr",
-    category: "Daily Routine",
-    scheduleLabel: "After Fajr",
-    plannedDays: [true, true, true, true, true, true, true],
-    timing: { mode: "fixed", time: "05:30" },
+    label: "Dzikir pagi",
+    category: "Ibadah Harian",
+    scheduleLabel: "10 menit setelah Shubuh",
+    plannedDays: everyday,
+    timing: { mode: "prayer", prayer: "fajr", offsetMinutes: 10 },
   },
   {
-    label: "Mid-day Quran (1 Page)",
-    category: "Daily Routine",
-    scheduleLabel: "Toddler Nap Time",
-    plannedDays: [true, true, true, true, true, true, true],
-    timing: { mode: "flexible", window: "Afternoon" },
+    label: "Dzikir petang",
+    category: "Ibadah Harian",
+    scheduleLabel: "10 menit setelah Ashar",
+    plannedDays: everyday,
+    timing: { mode: "prayer", prayer: "ashr", offsetMinutes: 10 },
   },
   {
-    label: "Evening Reflection & Shidq",
-    category: "Daily Routine",
-    scheduleLabel: "Before Bed",
-    plannedDays: [true, true, true, true, true, true, true],
-    timing: { mode: "fixed", time: "21:00" },
+    label: "Shalat Witr",
+    category: "Ibadah Harian",
+    scheduleLabel: "30 menit sebelum Shubuh",
+    plannedDays: everyday,
+    timing: { mode: "prayer", prayer: "fajr", offsetMinutes: -30 },
   },
   {
-    label: "Dua for Children",
-    category: "Daily Routine",
-    scheduleLabel: "During Ashr Window",
-    plannedDays: [true, true, true, true, true, true, true],
-    timing: { mode: "fixed", time: "16:30" }, // Relevant to her current time!
-  },
-
-  // --- FRIDAY SPECIALS ---
-  {
-    label: "Read Surah Al-Kahf",
-    category: "Friday Specials",
-    scheduleLabel: "Anytime Friday",
-    plannedDays: [false, false, false, false, false, true, false], // Index 5 = Friday
-    timing: { mode: "flexible", time: "" },
+    label: "Baca Al-Kahfi",
+    category: "Jumat",
+    scheduleLabel: "Jumat",
+    plannedDays: fridayOnly,
+    timing: { mode: "fixed", time: "" },
   },
   {
-    label: "Increased Salawat",
-    category: "Friday Specials",
-    scheduleLabel: "Throughout Jumu'ah",
-    plannedDays: [false, false, false, false, false, true, false],
-    timing: { mode: "flexible", time: "" },
+    label: "Shalawat",
+    category: "Jumat",
+    scheduleLabel: "Jumat",
+    plannedDays: fridayOnly,
+    timing: { mode: "fixed", time: "" },
   },
-  {
-    label: "Friday Sadaqah",
-    category: "Friday Specials",
-    scheduleLabel: "Morning",
-    plannedDays: [false, false, false, false, false, true, false],
-    timing: { mode: "fixed", time: "10:00" },
-  },
-
-  // --- SUNNAH LOGGING (Optional: Tracking these as habits too) ---
-  {
-    label: "Log Sunnah Prayers",
-    category: "Daily Routine",
-    scheduleLabel: "End of Day",
-    plannedDays: [true, true, true, true, true, true, true],
-    timing: { mode: "fixed", time: "20:30" },
-  }
-];
+]
 
 export const quranShortcuts = [
   { label: "Bookmarks", icon: BookMarked },

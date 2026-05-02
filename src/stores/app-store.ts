@@ -11,7 +11,9 @@ import {
   type PartnerRole,
   type PrayerAnchor,
   APP_SETTINGS_STORAGE_KEY,
+  defaultAppSettings,
   loadAppSettings,
+  normalizeSunnahPrayers,
   saveAppSettings,
 } from "@/lib/app-settings"
 import {
@@ -125,6 +127,7 @@ type StoreState = {
   setHijriOffset: (offset: HijriOffset) => void
   addHabit: () => string
   setHabits: (habits: HabitDefinition[]) => void
+  setSunnahPrayers: (prayers: string[]) => void
   updateHabit: (id: string, patch: Partial<HabitDefinition>) => void
   deleteHabit: (id: string) => void
   setHabitFrequency: (id: string, plannedDays: boolean[]) => void
@@ -169,10 +172,10 @@ function makeHabit(): HabitDefinition {
   const timing: HabitTiming = { mode: "fixed", time: "" }
   return {
     id: `habit-${Date.now()}`,
-    label: "New Habit",
-    category: "Spiritual",
-    scheduleLabel: "Anytime",
-    plannedDays: [true, true, true, true, true, false, false],
+    label: "Kebiasaan Baru",
+    category: "Ibadah Harian",
+    scheduleLabel: "Kapan saja",
+    plannedDays: [true, true, true, true, true, true, true],
     enabled: true,
     timing,
   }
@@ -398,14 +401,19 @@ export const useAppStore = create<StoreState>((set, get) => ({
       try {
         const cloudState = await loadOwnCloudState(current.user.id)
         if (cloudState?.appSettings && cloudState.fastingState && cloudState.cycleState && !hasLocalCloudStateSources()) {
-          saveAppSettings(cloudState.appSettings)
+          const appSettings = {
+            ...defaultAppSettings,
+            ...cloudState.appSettings,
+            sunnahPrayers: normalizeSunnahPrayers(cloudState.appSettings.sunnahPrayers),
+          }
+          saveAppSettings(appSettings)
           saveFastingState(cloudState.fastingState)
           saveCycleState(cloudState.cycleState)
           if (cloudState.dailyTrackerState) {
             saveDailyTrackerState(cloudState.dailyTrackerState)
           }
           set({
-            settings: cloudState.appSettings,
+            settings: appSettings,
             fastingState: cloudState.fastingState,
             cycleState: cloudState.cycleState,
             dailyTrackerState: cloudState.dailyTrackerState ?? defaultDailyTrackerState,
@@ -585,6 +593,11 @@ export const useAppStore = create<StoreState>((set, get) => ({
   },
   setHabits: (habits) => {
     const settings = persistSettings({ ...get().settings, habits })
+    set({ settings })
+    void get().syncCloudState()
+  },
+  setSunnahPrayers: (prayers) => {
+    const settings = persistSettings({ ...get().settings, sunnahPrayers: normalizeSunnahPrayers(prayers) })
     set({ settings })
     void get().syncCloudState()
   },

@@ -25,10 +25,12 @@ export type AppSettings = {
   hijriOffset: HijriOffset
   partnerRole: PartnerRole | null
   shareCycleSupportStatus: boolean
+  sunnahPrayers: string[]
   habits: HabitDefinition[]
 }
 
 export const APP_SETTINGS_STORAGE_KEY = "amaly.settings.v1"
+export const defaultSunnahPrayers = ["Witr", "Rawatib Fajr", "Dhuha"]
 
 function slugify(value: string) {
   return value.toLowerCase().replace(/\W+/g, "-").replace(/^-|-$/g, "")
@@ -37,12 +39,32 @@ function slugify(value: string) {
 function timingFromHabitSeed(habit: (typeof dailyHabits)[number]): HabitTiming {
   const timing = habit.timing
   const schedule = habit.scheduleLabel.toLowerCase()
+  const offsetMatch = schedule.match(/(\d+)\s*(?:min|menit)/)
+  const baseOffset = offsetMatch ? Number(offsetMatch[1]) : 0
+  const offsetMinutes = schedule.includes("before") || schedule.includes("sebelum") ? -baseOffset : baseOffset
 
-  if (schedule.includes("fajr")) return { mode: "prayer", prayer: "fajr", offsetMinutes: schedule.includes("after") ? 15 : 0 }
-  if (schedule.includes("dzuhr")) return { mode: "prayer", prayer: "dzuhr", offsetMinutes: schedule.includes("after") ? 15 : 0 }
-  if (schedule.includes("ashr")) return { mode: "prayer", prayer: "ashr", offsetMinutes: schedule.includes("after") ? 15 : 0 }
-  if (schedule.includes("maghrib")) return { mode: "prayer", prayer: "maghrib", offsetMinutes: schedule.includes("after") ? 15 : 0 }
-  if (schedule.includes("isya")) return { mode: "prayer", prayer: "isya", offsetMinutes: schedule.includes("after") ? 15 : 0 }
+  if (timing.mode === "prayer") {
+    return {
+      mode: "prayer",
+      prayer:
+        timing.prayer === "fajr" || timing.prayer === "dzuhr" || timing.prayer === "ashr" || timing.prayer === "maghrib" || timing.prayer === "isya"
+          ? timing.prayer
+          : "fajr",
+      offsetMinutes: typeof timing.offsetMinutes === "number" ? timing.offsetMinutes : 0,
+    }
+  }
+
+  if (schedule.includes("fajr") || schedule.includes("shubuh") || schedule.includes("subuh")) {
+    return { mode: "prayer", prayer: "fajr", offsetMinutes }
+  }
+  if (schedule.includes("dzuhr") || schedule.includes("dzuhur")) {
+    return { mode: "prayer", prayer: "dzuhr", offsetMinutes }
+  }
+  if (schedule.includes("ashr") || schedule.includes("ashar")) {
+    return { mode: "prayer", prayer: "ashr", offsetMinutes }
+  }
+  if (schedule.includes("maghrib")) return { mode: "prayer", prayer: "maghrib", offsetMinutes }
+  if (schedule.includes("isya")) return { mode: "prayer", prayer: "isya", offsetMinutes }
 
   if (timing.mode === "fixed") {
     return { mode: "fixed", time: typeof timing.time === "string" ? timing.time : "" }
@@ -57,6 +79,7 @@ export const defaultAppSettings: AppSettings = {
   hijriOffset: 0,
   partnerRole: null,
   shareCycleSupportStatus: false,
+  sunnahPrayers: defaultSunnahPrayers,
   habits: dailyHabits.map((habit, index) => ({
     id: `habit-${slugify(habit.label) || index}`,
     label: habit.label,
@@ -178,6 +201,17 @@ function normalizeHabitCollection(value: unknown): HabitDefinition[] {
   return defaultAppSettings.habits
 }
 
+export function normalizeSunnahPrayers(value: unknown) {
+  if (!Array.isArray(value)) {
+    return defaultSunnahPrayers
+  }
+
+  const prayers = Array.from(
+    new Set(value.map((item) => (typeof item === "string" ? item.trim() : "")).filter(Boolean)),
+  )
+  return prayers.length > 0 ? prayers : defaultSunnahPrayers
+}
+
 export function loadAppSettings(): AppSettings {
   if (typeof window === "undefined") {
     return defaultAppSettings
@@ -200,6 +234,7 @@ export function loadAppSettings(): AppSettings {
         typeof parsed.shareCycleSupportStatus === "boolean"
           ? parsed.shareCycleSupportStatus
           : defaultAppSettings.shareCycleSupportStatus,
+      sunnahPrayers: normalizeSunnahPrayers(parsed.sunnahPrayers),
       habits: normalizeHabitCollection(parsed.habits),
     }
   } catch {

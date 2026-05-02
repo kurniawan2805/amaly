@@ -18,3 +18,17 @@ if (import.meta.env.PROD && "serviceWorker" in navigator) {
     void navigator.serviceWorker.register("/service-worker.js")
   })
 }
+
+window.addEventListener("error", (event) => {
+  const error = event.error as Error & { code: string }
+  if (error?.code === "MODULE_NOT_FOUND" || error?.name === "ChunkLoadError") {
+    window.location.reload()
+  }
+}, true)
+
+window.addEventListener("unhandledrejection", (event) => {
+  const reason = event.reason as Error | undefined
+  if (reason?.name === "ChunkLoadError" || reason?.message?.includes("Failed to fetch dynamically imported module")) {
+    window.location.reload()
+  }
+})

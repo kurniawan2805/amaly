@@ -1,4 +1,4 @@
-import { BookOpen, CalendarDays, Flame, Plus } from "lucide-react"
+import { BookOpen, CalendarDays, Flame, Play, Plus } from "lucide-react"
 import { type FormEvent, useState } from "react"
 
 import { Button } from "@/components/ui/button"
@@ -15,20 +15,24 @@ type QuickLogButtonsProps = {
 const copy = {
   en: {
     title: "Quick Log",
+    currentReading: "Current Reading",
     subtitle: "Salam. Keep the Quran close today.",
     page: "Page",
     juz: "Juz",
     finish: "Projected finish",
     currentPage: "Currently on page",
+    openReading: "Open reading",
     savePage: "Update",
   },
   id: {
     title: "Catat Cepat",
+    currentReading: "Bacaan Saat Ini",
     subtitle: "Salam. Dekatkan Quran hari ini.",
     page: "Halaman",
     juz: "Juz",
     finish: "Perkiraan selesai",
     currentPage: "Sekarang di halaman",
+    openReading: "Buka bacaan",
     savePage: "Perbarui",
   },
 }
@@ -45,14 +49,14 @@ export function QuickLogButtons({ language, progress, onQuickLog, onSetPage }: Q
   }
 
   return (
-    <div className="rounded-xl border border-sage/15 bg-card p-5 text-card-foreground shadow-soft">
+    <div className="rounded-xl border border-sage/15 bg-card p-4 text-card-foreground shadow-soft">
       <div className="flex items-start gap-3">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-sage-pale text-sage-deep">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sage-pale text-sage-deep">
           <BookOpen className="h-5 w-5" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-bold uppercase tracking-wide text-primary">{t.title}</p>
-          <h3 className="mt-1 font-serif text-2xl font-semibold leading-tight text-foreground">
+          <p className="text-xs font-bold uppercase tracking-wide text-primary sm:text-sm">{t.currentReading}</p>
+          <h3 className="mt-1 font-serif text-xl font-semibold leading-tight text-foreground sm:text-2xl">
             {progress.surah_name}, Ayah {progress.ayah}
           </h3>
           <p className="mt-1 text-sm font-semibold text-muted-foreground">
@@ -65,18 +69,18 @@ export function QuickLogButtons({ language, progress, onQuickLog, onSetPage }: Q
         </div>
       </div>
 
-      <p className="mt-4 text-sm leading-6 text-muted-foreground">{progress.milestone_message ?? t.subtitle}</p>
+      <p className="mt-2 text-sm leading-6 text-muted-foreground">{progress.milestone_message ?? t.subtitle}</p>
 
-      <div className="mt-4 grid grid-cols-3 gap-3">
+      <div className="mt-2 grid grid-cols-3 gap-2">
         {[1, 2, 5].map((increment) => (
-          <Button key={increment} onClick={() => onQuickLog(increment)} type="button" variant="outline">
+          <Button key={increment} onClick={() => onQuickLog(increment)} size="sm" type="button" variant="outline">
             <Plus className="h-4 w-4" />
             {increment}
           </Button>
         ))}
       </div>
 
-      <div className="mt-4 rounded-xl border border-sage/10 bg-surface-container-low px-3 py-2">
+      <div className="mt-2 rounded-xl border border-sage/10 bg-surface-container-low px-3 py-2 text-sm">
         {editingPage ? (
           <form className="flex items-center gap-2" onSubmit={submitPage}>
             <label className="min-w-0 flex-1 text-sm font-semibold text-muted-foreground">
@@ -110,11 +114,19 @@ export function QuickLogButtons({ language, progress, onQuickLog, onSetPage }: Q
         )}
       </div>
 
-      <div className="mt-4 flex items-center gap-2 rounded-xl bg-surface-container-low px-3 py-2 text-sm font-semibold text-muted-foreground">
-        <CalendarDays className="h-4 w-4 text-primary" />
-        <span>
-          {t.finish}: {progress.projected_finish_date}
-        </span>
+      <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2 rounded-xl bg-surface-container-low px-3 py-2 text-sm font-semibold text-muted-foreground">
+          <CalendarDays className="h-4 w-4 text-primary" />
+          <span>
+            {t.finish}: {progress.projected_finish_date}
+          </span>
+        </div>
+        <Button asChild className="w-full sm:w-auto" size="sm">
+          <a href={progress.continue_url} rel="noopener noreferrer" target="_blank">
+            <Play className="h-4 w-4 fill-current" />
+            {t.openReading}
+          </a>
+        </Button>
       </div>
     </div>
   )

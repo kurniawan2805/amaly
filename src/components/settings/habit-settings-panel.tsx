@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { type HabitDefinition, type HabitTiming, type PrayerAnchor } from "@/lib/app-settings"
+import { normalizeSunnahPrayers, type HabitDefinition, type HabitTiming, type PrayerAnchor } from "@/lib/app-settings"
 import { cn } from "@/lib/utils"
 import { prayerAnchors, useAppStore } from "@/stores/app-store"
 
@@ -29,6 +29,8 @@ const copy = {
     timing: "Timing",
     fixed: "Fixed Time",
     prayer: "Prayer Anchor",
+    sunnahPrayers: "Sunnah Prayers",
+    addSunnah: "Add Sunnah",
     time: "Time",
     offset: "Offset",
     delete: "Delete",
@@ -48,6 +50,8 @@ const copy = {
     timing: "Waktu",
     fixed: "Jam Tetap",
     prayer: "Patokan Shalat",
+    sunnahPrayers: "Shalat Sunnah",
+    addSunnah: "Tambah Sunnah",
     time: "Jam",
     offset: "Jarak",
     delete: "Hapus",
@@ -55,22 +59,26 @@ const copy = {
 }
 
 const dayLabels = ["S", "M", "T", "W", "T", "F", "S"]
-const categoryOptions = ["Spiritual", "Self-Care", "Family", "Household", "Learning"]
+const everyday = [true, true, true, true, true, true, true]
+const weekdays = [true, true, true, true, true, false, false]
+const fridayOnly = [false, false, false, false, false, true, false]
+const weekend = [false, false, false, false, false, true, true]
+const categoryOptions = ["Ibadah Harian", "Jumat", "Spiritual", "Self-Care", "Family", "Household", "Learning"]
 const frequencyPresets = [
-  { label: "Daily", days: [true, true, true, true, true, true, true] },
-  { label: "Friday", days: [false, false, false, false, false, true, false] },
-  { label: "Weekdays", days: [true, true, true, true, true, false, false] },
-  { label: "Weekend", days: [false, false, false, false, false, true, true] },
+  { label: "Daily", days: everyday },
+  { label: "Friday", days: fridayOnly },
+  { label: "Weekdays", days: weekdays },
+  { label: "Weekend", days: weekend },
 ]
 const prayerOffsetOptions = [-30, -15, -10, 0, 10, 15, 30]
 
 function makeDraftHabit(): HabitDefinition {
   return {
     id: `habit-${Date.now()}`,
-    label: "New Habit",
-    category: "Spiritual",
-    scheduleLabel: "Anytime",
-    plannedDays: [true, true, true, true, true, false, false],
+    label: "Kebiasaan Baru",
+    category: "Ibadah Harian",
+    scheduleLabel: "Kapan saja",
+    plannedDays: everyday,
     enabled: true,
     timing: { mode: "fixed", time: "" },
   }
@@ -86,8 +94,8 @@ function normalizeHabit(habit: HabitDefinition): HabitDefinition {
   return {
     ...habit,
     label: habit.label.trim(),
-    category: habit.category.trim() || "Spiritual",
-    plannedDays: habit.plannedDays.length === 7 ? habit.plannedDays : [true, true, true, true, true, false, false],
+    category: habit.category.trim() || "Ibadah Harian",
+    plannedDays: habit.plannedDays.length === 7 ? habit.plannedDays : everyday,
     scheduleLabel: timingLabel(habit.timing, habit.scheduleLabel),
   }
 }
@@ -147,27 +155,34 @@ function prayerTiming(timing: HabitTiming) {
 export function HabitSettingsPanel({ open, onClose }: HabitSettingsPanelProps) {
   const settings = useAppStore((state) => state.settings)
   const setHabits = useAppStore((state) => state.setHabits)
+  const setSunnahPrayers = useAppStore((state) => state.setSunnahPrayers)
   const [draftHabits, setDraftHabits] = useState<HabitDefinition[]>(settings.habits)
+  const [draftSunnahPrayers, setDraftSunnahPrayers] = useState<string[]>(settings.sunnahPrayers)
   const [expandedHabitId, setExpandedHabitId] = useState<string | null>(null)
   const habitInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
   const t = copy[settings.language]
   const normalizedDraft = useMemo(() => draftHabits.map(normalizeHabit), [draftHabits])
-  const hasChanges = JSON.stringify(normalizedDraft) !== JSON.stringify(settings.habits)
+  const normalizedDraftSunnah = useMemo(() => normalizeSunnahPrayers(draftSunnahPrayers), [draftSunnahPrayers])
+  const hasChanges =
+    JSON.stringify(normalizedDraft) !== JSON.stringify(settings.habits) ||
+    JSON.stringify(normalizedDraftSunnah) !== JSON.stringify(settings.sunnahPrayers)
   const hasInvalidHabit = normalizedDraft.some((habit) => !habit.label)
+  const hasInvalidSunnah = draftSunnahPrayers.some((prayer) => !prayer.trim())
 
   useEffect(() => {
     if (open) {
       setDraftHabits(settings.habits)
+      setDraftSunnahPrayers(settings.sunnahPrayers)
       setExpandedHabitId(null)
     }
-  }, [open, settings.habits])
+  }, [open, settings.habits, settings.sunnahPrayers])
 
   function updateDraftHabit(id: string, patch: Partial<HabitDefinition>) {
     setDraftHabits((habits) => habits.map((habit) => (habit.id === id ? normalizeHabit({ ...habit, ...patch }) : habit)))
   }
 
   function setDraftHabitFrequency(id: string, plannedDays: boolean[]) {
-    updateDraftHabit(id, { plannedDays: plannedDays.length === 7 ? plannedDays : [true, true, true, true, true, false, false] })
+    updateDraftHabit(id, { plannedDays: plannedDays.length === 7 ? plannedDays : everyday })
   }
 
   function createHabit() {
@@ -180,9 +195,22 @@ export function HabitSettingsPanel({ open, onClose }: HabitSettingsPanelProps) {
     }, 0)
   }
 
+  function updateDraftSunnahPrayer(index: number, value: string) {
+    setDraftSunnahPrayers((prayers) => prayers.map((prayer, prayerIndex) => (prayerIndex === index ? value : prayer)))
+  }
+
+  function createSunnahPrayer() {
+    setDraftSunnahPrayers((prayers) => [...prayers, ""])
+  }
+
+  function deleteSunnahPrayer(index: number) {
+    setDraftSunnahPrayers((prayers) => prayers.filter((_, prayerIndex) => prayerIndex !== index))
+  }
+
   function saveDraft() {
-    if (hasInvalidHabit) return
+    if (hasInvalidHabit || hasInvalidSunnah) return
     setHabits(normalizedDraft)
+    setSunnahPrayers(normalizedDraftSunnah)
     onClose()
   }
 
@@ -198,20 +226,51 @@ export function HabitSettingsPanel({ open, onClose }: HabitSettingsPanelProps) {
           <SheetDescription>{t.subtitle}</SheetDescription>
         </SheetHeader>
 
-        <div className="flex-1 overflow-y-auto px-6 py-6 pb-28">
-          <div className="flex items-center justify-between gap-3">
-            <h3 className="font-serif text-2xl font-semibold text-primary">{t.title}</h3>
-            <Button className="shrink-0" onClick={createHabit} size="sm" type="button" variant="outline">
-              <Plus className="h-4 w-4" />
-              {t.addHabit}
-            </Button>
-          </div>
-
+        <div className="flex-1 overflow-y-auto px-5 py-5 pb-28 sm:px-6">
           {hasChanges ? <p className="mt-2 text-sm font-semibold text-muted-foreground">{t.unsaved}</p> : null}
 
-          <div className="mt-5 flex flex-col gap-3">
+          <section className="mt-4 rounded-xl border border-sage/15 bg-card p-4 shadow-[0_8px_24px_rgba(0,0,0,0.03)]">
+            <div className="flex items-center justify-between gap-3">
+              <h4 className="text-sm font-bold text-foreground">{t.sunnahPrayers}</h4>
+              <Button onClick={createSunnahPrayer} size="sm" type="button" variant="outline">
+                <Plus className="h-4 w-4" />
+                {t.addSunnah}
+              </Button>
+            </div>
+            <div className="mt-3 grid gap-2">
+              {draftSunnahPrayers.map((prayer, index) => (
+                <div className="flex items-center gap-2" key={index}>
+                  <input
+                    className="h-10 min-w-0 flex-1 rounded-xl border border-sage/15 bg-background px-3 text-sm font-semibold text-foreground outline-none focus:border-sage"
+                    onChange={(event) => updateDraftSunnahPrayer(index, event.target.value)}
+                    value={prayer}
+                  />
+                  <Button
+                    aria-label={`${t.delete} ${prayer || t.sunnahPrayers}`}
+                    className="shrink-0 text-destructive hover:bg-destructive/10"
+                    onClick={() => deleteSunnahPrayer(index)}
+                    size="icon"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="mt-4 rounded-xl border border-sage/15 bg-card p-4 shadow-[0_8px_24px_rgba(0,0,0,0.03)]">
+            <div className="flex items-center justify-between gap-3">
+              <h4 className="text-sm font-bold text-foreground">{t.title}</h4>
+              <Button onClick={createHabit} size="sm" type="button" variant="outline">
+                <Plus className="h-4 w-4" />
+                {t.addHabit}
+              </Button>
+            </div>
+            <div className="mt-3 flex flex-col gap-2">
             {draftHabits.map((habit) => (
-              <div className="overflow-hidden rounded-xl border border-sage/15 bg-card shadow-[0_8px_24px_rgba(0,0,0,0.03)]" key={habit.id}>
+              <div className="overflow-hidden rounded-xl border border-sage/10 bg-background" key={habit.id}>
                 <button
                   className="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-sage-pale/15"
                   onClick={() => setExpandedHabitId((current) => (current === habit.id ? null : habit.id))}
@@ -384,7 +443,8 @@ export function HabitSettingsPanel({ open, onClose }: HabitSettingsPanelProps) {
                 ) : null}
               </div>
             ))}
-          </div>
+            </div>
+          </section>
         </div>
 
         <div className="border-t border-sage/10 bg-background/95 px-6 py-4 backdrop-blur">
@@ -393,7 +453,7 @@ export function HabitSettingsPanel({ open, onClose }: HabitSettingsPanelProps) {
               <X className="h-4 w-4" />
               {t.cancel}
             </Button>
-            <Button disabled={!hasChanges || hasInvalidHabit} onClick={saveDraft} type="button">
+            <Button disabled={!hasChanges || hasInvalidHabit || hasInvalidSunnah} onClick={saveDraft} type="button">
               <Save className="h-4 w-4" />
               {t.save}
             </Button>
