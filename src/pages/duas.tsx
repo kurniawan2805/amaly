@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { duaCategories, type DuaCategory, type DuaGroup, type DuaItem } from "@/data/duas"
 import type { AppLanguage } from "@/lib/app-settings"
+import { loadDuaDisplaySettings, saveDuaDisplaySettings, type DuaArabicSize } from "@/lib/dua-display-settings"
 import { isDuaFavorite, loadDuaFavorites, saveDuaFavorites, toggleDuaFavorite } from "@/lib/dua-favorites"
 import { loadDuaFlowSessions } from "@/lib/dua-flow-session"
 import { cn } from "@/lib/utils"
@@ -34,6 +35,7 @@ const copy = {
     noResults: "No duas found.",
     emptyFavorites: "No favorite duas yet. Tap the star icon on any dua to save it here.",
     all: "All",
+    arabicSize: "Arabic Size",
   },
   id: {
     title: "Doa Harian",
@@ -46,8 +48,16 @@ const copy = {
     noResults: "Doa tidak ditemukan.",
     emptyFavorites: "Belum ada doa favorit. Tap ikon bintang di doa untuk menyimpannya di sini.",
     all: "Semua",
+    arabicSize: "Ukuran Arab",
   },
 }
+
+const arabicSizeOptions: Array<{ label: string; value: DuaArabicSize }> = [
+  { label: "A-", value: "sm" },
+  { label: "A", value: "md" },
+  { label: "A+", value: "lg" },
+  { label: "A++", value: "xl" },
+]
 
 function getCategoryCount(category: DuaCategory) {
   return category.items?.length ?? category.groups?.reduce((total, group) => total + group.items.length, 0) ?? 0
@@ -111,6 +121,7 @@ export default function DuasPage({ language }: DuasPageProps) {
   const [selectedGroupId, setSelectedGroupId] = useState("all")
   const [query, setQuery] = useState("")
   const [favorites, setFavorites] = useState(() => loadDuaFavorites())
+  const [displaySettings, setDisplaySettings] = useState(() => loadDuaDisplaySettings())
   const [flowCategory, setFlowCategory] = useState<DuaCategory | null>(null)
   const selectedCategory = selectedCategoryId === favoritesCategoryId ? null : duaCategories.find((category) => category.id === selectedCategoryId) ?? duaCategories[0]
   const visibleDuas = useMemo(
@@ -135,10 +146,17 @@ export default function DuasPage({ language }: DuasPageProps) {
     saveDuaFavorites(next)
   }
 
+  function setArabicSize(arabicSize: DuaArabicSize) {
+    const next = { ...displaySettings, arabicSize }
+    setDisplaySettings(next)
+    saveDuaDisplaySettings(next)
+  }
+
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-4 px-6 py-5 pb-28">
       {flowCategory?.items ? (
         <DuaFlowMode
+          arabicSize={displaySettings.arabicSize}
           categoryId={flowCategory.id}
           categoryTitle={getCategoryTitle(flowCategory, language)}
           favoriteIds={favorites.ids}
@@ -210,6 +228,25 @@ export default function DuasPage({ language }: DuasPageProps) {
           />
         </label>
 
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <span className="text-xs font-bold uppercase tracking-wide text-muted-foreground">{t.arabicSize}</span>
+          <div className="flex rounded-xl border border-sage/15 bg-background p-1">
+            {arabicSizeOptions.map((option) => (
+              <button
+                className={cn(
+                  "h-8 rounded-lg px-3 text-sm font-bold text-muted-foreground transition",
+                  displaySettings.arabicSize === option.value && "bg-sage text-white shadow-soft",
+                )}
+                key={option.value}
+                onClick={() => setArabicSize(option.value)}
+                type="button"
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="mt-3 flex flex-wrap gap-2">
           {selectedCategory?.items && isFlowCategory(selectedCategory.id) ? (
             <Button onClick={() => setFlowCategory(selectedCategory)} size="sm" type="button">
@@ -243,6 +280,7 @@ export default function DuasPage({ language }: DuasPageProps) {
       <section className="flex flex-col gap-3">
         {visibleDuas.map(({ item, groupTitle }) => (
           <DuaCard
+            arabicSize={displaySettings.arabicSize}
             favorite={isDuaFavorite(favorites, item.id)}
             groupTitle={groupTitle}
             item={item}

@@ -5,10 +5,12 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { duaFootnotes, type DuaItem } from "@/data/duas"
 import type { AppLanguage } from "@/lib/app-settings"
+import type { DuaArabicSize } from "@/lib/dua-display-settings"
 import { loadDuaFlowSessions, saveDuaFlowSession } from "@/lib/dua-flow-session"
 import { cn } from "@/lib/utils"
 
 type DuaFlowModeProps = {
+  arabicSize: DuaArabicSize
   categoryId: string
   categoryTitle: string
   favoriteIds: string[]
@@ -16,6 +18,13 @@ type DuaFlowModeProps = {
   language: AppLanguage
   onClose: () => void
   onToggleFavorite: (id: string) => void
+}
+
+const arabicSizeClasses: Record<DuaArabicSize, string> = {
+  sm: "text-3xl leading-[2.5]",
+  md: "text-4xl leading-[2.6]",
+  lg: "text-5xl leading-[2.7]",
+  xl: "text-6xl leading-[2.8]",
 }
 
 const copy = {
@@ -45,7 +54,7 @@ function vibrate(pattern: number | number[]) {
   window.navigator.vibrate?.(pattern)
 }
 
-export function DuaFlowMode({ categoryId, categoryTitle, favoriteIds, items, language, onClose, onToggleFavorite }: DuaFlowModeProps) {
+export function DuaFlowMode({ arabicSize, categoryId, categoryTitle, favoriteIds, items, language, onClose, onToggleFavorite }: DuaFlowModeProps) {
   const t = copy[language]
   const initialSession = loadDuaFlowSessions()[categoryId]
   const safeInitialIndex = initialSession?.completed ? 0 : Math.min(initialSession?.currentIndex ?? 0, Math.max(0, items.length - 1))
@@ -222,7 +231,7 @@ export function DuaFlowMode({ categoryId, categoryTitle, favoriteIds, items, lan
             </div>
 
             {currentDua.arabic ? (
-              <p className="font-arabic whitespace-pre-line text-right text-3xl leading-[2.5] text-primary" dir="rtl" lang="ar">
+              <p className={cn("font-arabic whitespace-pre-line text-right text-primary", arabicSizeClasses[arabicSize])} dir="rtl" lang="ar">
                 {currentDua.arabic}
               </p>
             ) : null}

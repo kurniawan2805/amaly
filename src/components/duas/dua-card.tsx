@@ -4,14 +4,23 @@ import { useState } from "react"
 import { Card } from "@/components/ui/card"
 import { duaFootnotes, type DuaItem } from "@/data/duas"
 import type { AppLanguage } from "@/lib/app-settings"
+import type { DuaArabicSize } from "@/lib/dua-display-settings"
 import { cn } from "@/lib/utils"
 
 type DuaCardProps = {
+  arabicSize: DuaArabicSize
   favorite: boolean
   groupTitle?: string
   item: DuaItem
   language: AppLanguage
   onToggleFavorite: (id: string) => void
+}
+
+const arabicSizeClasses: Record<DuaArabicSize, string> = {
+  sm: "text-2xl leading-[2.4]",
+  md: "text-3xl leading-[2.5]",
+  lg: "text-4xl leading-[2.6]",
+  xl: "text-5xl leading-[2.7]",
 }
 
 const copy = {
@@ -33,7 +42,7 @@ const copy = {
   },
 }
 
-export function DuaCard({ favorite, groupTitle, item, language, onToggleFavorite }: DuaCardProps) {
+export function DuaCard({ arabicSize, favorite, groupTitle, item, language, onToggleFavorite }: DuaCardProps) {
   const [open, setOpen] = useState(false)
   const t = copy[language]
   const footnotes = item.footnoteIds
@@ -87,7 +96,7 @@ export function DuaCard({ favorite, groupTitle, item, language, onToggleFavorite
       {open ? (
         <div className="border-t border-sage/10 px-4 pb-4 pt-3">
           {item.arabic ? (
-            <p className="font-arabic whitespace-pre-line text-right text-2xl leading-[2.4] text-primary" dir="rtl" lang="ar">
+            <p className={cn("font-arabic whitespace-pre-line text-right text-primary", arabicSizeClasses[arabicSize])} dir="rtl" lang="ar">
               {item.arabic}
             </p>
           ) : null}
