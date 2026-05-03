@@ -11,6 +11,7 @@ import { AppSettings, HabitDefinition, PrayerAnchor } from "@/lib/app-settings"
 import { type CycleState, getCycleSummary } from "@/lib/cycle-progress"
 import { getDailyTrackerDay, localDailyTrackerKey, type DailyTrackerState } from "@/lib/daily-tracker"
 import { formatHijriDate } from "@/lib/hijri-date"
+import { getActiveDhikrWindow, getNowMinutes, prayers, timeToMinutes } from "@/lib/prayer-windows"
 import { shouldShowQuranEveningNudge, type QuranProgressState } from "@/lib/quran-progress"
 import { cn } from "@/lib/utils"
 
@@ -39,13 +40,6 @@ type PressActionProps = {
   ariaLabel: string
 }
 
-const prayers = [
-  { label: "Fajr", start: "04:00", end: "06:00" },
-  { label: "Dzuhr", start: "11:45", end: "15:00" },
-  { label: "Ashr", start: "15:00", end: "17:45" },
-  { label: "Maghrib", start: "17:45", end: "19:30" },
-  { label: "Isya", start: "19:00", end: "23:59" },
-]
 const flowerEmojis = ["💐", "🌸", "🌷", "🌹", "🌺", "🌼", "🪷", "🌸", "🌷", "🌹", "🌺", "🌼", "💐", "🪷"]
 const flowerConfetti = Array.from({ length: 64 }, (_, index) => ({
   emoji: flowerEmojis[index % flowerEmojis.length],
@@ -65,15 +59,6 @@ function formatGregorianDate(date: Date, language: AppSettings["language"]) {
     day: "numeric",
     year: "numeric",
   }).format(date)
-}
-
-function timeToMinutes(time: string) {
-  const [hours, minutes] = time.split(":").map(Number)
-  return hours * 60 + minutes
-}
-
-function getNowMinutes(date: Date) {
-  return date.getHours() * 60 + date.getMinutes()
 }
 
 function toHabitState(habit: HabitDefinition): Habit {
@@ -177,6 +162,10 @@ const copy = {
     follicular: "Follicular Day 4",
     logSymptoms: "Log Symptoms",
     quranNudge: "Salam! There's still time for a quick page tonight to keep your streak glowing.",
+    dhikrCtaTitle: (window: "morning" | "evening") => (window === "morning" ? "Morning dhikr window" : "Evening dhikr window"),
+    dhikrCtaBody: (window: "morning" | "evening") =>
+      window === "morning" ? "After Fajr is a gentle time for morning remembrance." : "After Ashr is a gentle time for evening remembrance.",
+    dhikrCtaAction: "Open Dzikir Flow",
   },
   id: {
     morning: (name: string) => `Ahlan, ${name || "sahabat"}`,
@@ -211,6 +200,10 @@ const copy = {
     follicular: "Hari Folikular 4",
     logSymptoms: "Catat Gejala",
     quranNudge: "Salam! Masih ada waktu untuk satu halaman malam ini agar istiqomah tetap menyala.",
+    dhikrCtaTitle: (window: "morning" | "evening") => (window === "morning" ? "Waktu dzikir pagi" : "Waktu dzikir petang"),
+    dhikrCtaBody: (window: "morning" | "evening") =>
+      window === "morning" ? "Setelah Fajr adalah waktu lembut untuk dzikir pagi." : "Setelah Ashr adalah waktu lembut untuk dzikir petang.",
+    dhikrCtaAction: "Buka Flow Dzikir",
   },
 }
 
@@ -337,6 +330,7 @@ export default function DailyPage({
   const completedHabits = useMemo(() => habits.filter((habit) => habit.completed).length, [habits])
   const hasPrayerProgress = completedPrayers.length > 0
   const nowMinutes = getNowMinutes(now)
+  const activeDhikrWindow = getActiveDhikrWindow(now)
   const availablePrayers = prayers.filter((prayer) => timeToMinutes(prayer.start) <= nowMinutes)
   const currentPrayer =
     [...prayers].reverse().find((prayer) => {
@@ -541,6 +535,19 @@ export default function DailyPage({
         </div>
         <h2 className="font-serif text-4xl font-semibold leading-tight text-primary">{t.morning(displayName)}</h2>
         <p className="max-w-lg text-lg leading-8 text-muted-foreground">{t.intro}</p>
+        {activeDhikrWindow ? (
+          <Card className="mt-2 overflow-hidden border-sage/20 bg-gradient-to-br from-sage-pale/80 to-card p-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wide text-sage">{t.dhikrCtaTitle(activeDhikrWindow)}</p>
+                <p className="mt-1 text-sm font-semibold leading-6 text-sage-deep">{t.dhikrCtaBody(activeDhikrWindow)}</p>
+              </div>
+              <Button asChild className="shrink-0" size="sm" type="button">
+                <Link to="/duas">{t.dhikrCtaAction}</Link>
+              </Button>
+            </div>
+          </Card>
+        ) : null}
         </section>
 
         <Card

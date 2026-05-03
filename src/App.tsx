@@ -4,6 +4,7 @@ import { lazy, Suspense, type CSSProperties, useEffect } from "react"
 import { BottomNav } from "@/components/layout/bottom-nav"
 import { Header } from "@/components/layout/header"
 import { type AppSettings } from "@/lib/app-settings"
+import { getActiveDhikrWindow } from "@/lib/prayer-windows"
 import { useAppStore } from "@/stores/app-store"
 
 const AccountSettingsPanel = lazy(() =>
@@ -14,6 +15,7 @@ const HabitSettingsPanel = lazy(() =>
 )
 const CyclePage = lazy(() => import("@/pages/cycle"))
 const DailyPage = lazy(() => import("@/pages/daily"))
+const DuasPage = lazy(() => import("@/pages/duas"))
 const FastingPage = lazy(() => import("@/pages/fasting"))
 const QuranPage = lazy(() => import("@/pages/quran"))
 
@@ -22,12 +24,14 @@ const titles: Record<AppSettings["language"], Record<string, string>> = {
     "/": "Amaly",
     "/quran": "Amaly",
     "/fasting": "Amaly",
+    "/duas": "Amaly",
     "/cycle": "Amaly",
   },
   id: {
     "/": "Amaly",
     "/quran": "Amaly",
     "/fasting": "Amaly",
+    "/duas": "Amaly",
     "/cycle": "Amaly",
   },
 }
@@ -95,6 +99,7 @@ export default function App() {
     (typeof user?.user_metadata?.display_name === "string" ? user.user_metadata.display_name : "") ||
     user?.email ||
     ""
+  const dhikrReminderActive = getActiveDhikrWindow(new Date()) !== null
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", settings.theme === "dark")
@@ -165,6 +170,10 @@ export default function App() {
               path="/fasting"
             />
             <Route
+              element={<DuasPage language={settings.language} />}
+              path="/duas"
+            />
+            <Route
               element={
                 <CyclePage
                   cycleState={cycleState}
@@ -182,7 +191,7 @@ export default function App() {
           </Routes>
         </Suspense>
       </main>
-      <BottomNav language={settings.language} />
+      <BottomNav dhikrReminderActive={dhikrReminderActive} language={settings.language} />
       <Suspense fallback={null}>
         {activePanel === "habits" ? <HabitSettingsPanel onClose={closePanel} open /> : null}
         {activePanel === "account" ? <AccountSettingsPanel onClose={closePanel} open /> : null}
