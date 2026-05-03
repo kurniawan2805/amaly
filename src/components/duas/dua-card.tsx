@@ -87,7 +87,7 @@ export function DuaCard({ favorite, groupTitle, item, language, onToggleFavorite
       {open ? (
         <div className="border-t border-sage/10 px-4 pb-4 pt-3">
           {item.arabic ? (
-            <p className="whitespace-pre-line text-right font-serif text-2xl leading-[2.4] text-primary" dir="rtl" lang="ar">
+            <p className="font-arabic whitespace-pre-line text-right text-2xl leading-[2.4] text-primary" dir="rtl" lang="ar">
               {item.arabic}
             </p>
           ) : null}

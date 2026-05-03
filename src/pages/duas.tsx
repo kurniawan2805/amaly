@@ -53,11 +53,24 @@ function getCategoryCount(category: DuaCategory) {
   return category.items?.length ?? category.groups?.reduce((total, group) => total + group.items.length, 0) ?? 0
 }
 
-function flattenDuas() {
+function getCategoryTitle(category: DuaCategory, language: AppLanguage) {
+  if (language === "id") return category.title
+
+  const titles: Record<string, string> = {
+    "daily-duas": "Daily Duas",
+    "evening-dhikr": "Afternoon Dhikr",
+    "morning-dhikr": "Morning Dhikr",
+  }
+
+  return titles[category.id] ?? category.title
+}
+
+function flattenDuas(language: AppLanguage) {
   const items = new Map<string, VisibleDua>()
   duaCategories.forEach((category) => {
+    const categoryTitle = getCategoryTitle(category, language)
     if (category.items) {
-      category.items.forEach((item) => items.set(item.id, { item, groupTitle: category.title }))
+      category.items.forEach((item) => items.set(item.id, { item, groupTitle: categoryTitle }))
     }
     category.groups?.forEach((group) => group.items.forEach((item) => items.set(item.id, { item, groupTitle: group.title })))
   })
@@ -73,9 +86,9 @@ function itemMatchesQuery(item: DuaItem, query: string) {
     .some((value) => value!.toLowerCase().includes(normalizedQuery))
 }
 
-function getVisibleDuas(category: DuaCategory | null, selectedGroupId: string, query: string, favoriteIds: string[]): VisibleDua[] {
+function getVisibleDuas(category: DuaCategory | null, selectedGroupId: string, query: string, favoriteIds: string[], language: AppLanguage): VisibleDua[] {
   if (!category) {
-    return flattenDuas().filter(({ item }) => favoriteIds.includes(item.id) && itemMatchesQuery(item, query))
+    return flattenDuas(language).filter(({ item }) => favoriteIds.includes(item.id) && itemMatchesQuery(item, query))
   }
 
   const groups: DuaGroup[] = category.groups ?? [{ id: "all", title: category.title, items: category.items ?? [] }]
@@ -101,13 +114,13 @@ export default function DuasPage({ language }: DuasPageProps) {
   const [flowCategory, setFlowCategory] = useState<DuaCategory | null>(null)
   const selectedCategory = selectedCategoryId === favoritesCategoryId ? null : duaCategories.find((category) => category.id === selectedCategoryId) ?? duaCategories[0]
   const visibleDuas = useMemo(
-    () => getVisibleDuas(selectedCategory, selectedGroupId, query, favorites.ids),
-    [favorites.ids, query, selectedCategory, selectedGroupId],
+    () => getVisibleDuas(selectedCategory, selectedGroupId, query, favorites.ids, language),
+    [favorites.ids, language, query, selectedCategory, selectedGroupId],
   )
   const groups = selectedCategory?.groups ?? []
   const sessions = loadDuaFlowSessions()
   const selectedFlowSession = selectedCategory ? sessions[selectedCategory.id] : null
-  const selectedCategoryTitle = selectedCategory?.title ?? t.favorites
+  const selectedCategoryTitle = selectedCategory ? getCategoryTitle(selectedCategory, language) : t.favorites
   const selectedCategoryDescription = selectedCategory?.description ?? t.emptyFavorites
 
   function selectCategory(categoryId: string) {
@@ -127,7 +140,7 @@ export default function DuasPage({ language }: DuasPageProps) {
       {flowCategory?.items ? (
         <DuaFlowMode
           categoryId={flowCategory.id}
-          categoryTitle={flowCategory.title}
+          categoryTitle={getCategoryTitle(flowCategory, language)}
           favoriteIds={favorites.ids}
           items={flowCategory.items}
           language={language}
@@ -156,7 +169,7 @@ export default function DuasPage({ language }: DuasPageProps) {
             onClick={() => selectCategory(category.id)}
             type="button"
           >
-            <span className="block text-sm font-bold">{category.title}</span>
+            <span className="block text-sm font-bold">{getCategoryTitle(category, language)}</span>
             <span className="mt-1 block text-xs font-semibold text-muted-foreground">{t.items(getCategoryCount(category))}</span>
           </button>
         ))}

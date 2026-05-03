@@ -184,8 +184,6 @@ export function DuaFlowMode({ categoryId, categoryTitle, favoriteIds, items, lan
               <ChevronRight className="h-5 w-5" />
             </span>
           </button>
-          <button className="absolute inset-y-0 left-1/5 right-1/5 z-10" onClick={handleTap} type="button" aria-label="Count dua repetition" />
-
           <Card
             className={cn(
               "flex h-full flex-col overflow-y-auto p-5 transition duration-200",
@@ -193,6 +191,15 @@ export function DuaFlowMode({ categoryId, categoryTitle, favoriteIds, items, lan
               direction === "next" ? "animate-in slide-in-from-right-4 fade-in" : "animate-in slide-in-from-left-4 fade-in",
             )}
             key={currentDua.id}
+            onClick={handleTap}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault()
+                handleTap()
+              }
+            }}
           >
             <div className="mb-4 flex items-start justify-between gap-3">
               <div className="min-w-0">
@@ -204,7 +211,10 @@ export function DuaFlowMode({ categoryId, categoryTitle, favoriteIds, items, lan
               <button
                 aria-label="Toggle favorite"
                 className={cn("rounded-full p-2 text-muted-foreground transition hover:bg-sage-pale/30 hover:text-primary", isFavorite && "bg-sage-pale text-primary")}
-                onClick={() => onToggleFavorite(currentDua.id)}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  onToggleFavorite(currentDua.id)
+                }}
                 type="button"
               >
                 <Star className={cn("h-5 w-5", isFavorite && "fill-current")} />
@@ -212,7 +222,7 @@ export function DuaFlowMode({ categoryId, categoryTitle, favoriteIds, items, lan
             </div>
 
             {currentDua.arabic ? (
-              <p className="whitespace-pre-line text-right font-serif text-3xl leading-[2.5] text-primary" dir="rtl" lang="ar">
+              <p className="font-arabic whitespace-pre-line text-right text-3xl leading-[2.5] text-primary" dir="rtl" lang="ar">
                 {currentDua.arabic}
               </p>
             ) : null}
