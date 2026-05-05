@@ -53,6 +53,7 @@ const copy = {
 }
 
 const arabicSizeOptions: Array<{ label: string; value: DuaArabicSize }> = [
+  { label: "A--", value: "xs" },
   { label: "A-", value: "sm" },
   { label: "A", value: "md" },
   { label: "A+", value: "lg" },

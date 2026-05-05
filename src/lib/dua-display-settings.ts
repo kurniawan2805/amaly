@@ -1,6 +1,6 @@
 export const DUA_DISPLAY_SETTINGS_STORAGE_KEY = "amaly.dua-display-settings.v1"
 
-export type DuaArabicSize = "sm" | "md" | "lg" | "xl"
+export type DuaArabicSize = "xs" | "sm" | "md" | "lg" | "xl"
 
 export type DuaDisplaySettings = {
   arabicSize: DuaArabicSize
@@ -10,7 +10,7 @@ export const defaultDuaDisplaySettings: DuaDisplaySettings = {
   arabicSize: "md",
 }
 
-const arabicSizes = new Set<DuaArabicSize>(["sm", "md", "lg", "xl"])
+const arabicSizes = new Set<DuaArabicSize>(["xs", "sm", "md", "lg", "xl"])
 
 function normalizeDuaDisplaySettings(value: unknown): DuaDisplaySettings {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {

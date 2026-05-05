@@ -22,6 +22,7 @@ type DuaFlowModeProps = {
 }
 
 const arabicSizeClasses: Record<DuaArabicSize, string> = {
+  xs: "text-2xl leading-[2.4]",
   sm: "text-3xl leading-[2.5]",
   md: "text-4xl leading-[2.6]",
   lg: "text-5xl leading-[2.7]",

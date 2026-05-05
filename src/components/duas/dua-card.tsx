@@ -17,6 +17,7 @@ type DuaCardProps = {
 }
 
 const arabicSizeClasses: Record<DuaArabicSize, string> = {
+  xs: "text-xl leading-[2.3]",
   sm: "text-2xl leading-[2.4]",
   md: "text-3xl leading-[2.5]",
   lg: "text-4xl leading-[2.6]",
