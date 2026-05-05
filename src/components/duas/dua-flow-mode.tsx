@@ -1,5 +1,5 @@
 import { ChevronLeft, ChevronRight, Star, X } from "lucide-react"
-import { useEffect, useRef, useState, type PointerEvent } from "react"
+import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react"
 import { useNavigate } from "react-router-dom"
 
 import { Button } from "@/components/ui/button"
@@ -154,6 +154,24 @@ export function DuaFlowMode({ arabicSize, categoryId, categoryTitle, favoriteIds
     goToIndex(currentIndex - 1, "prev", Math.max(1, previousDua?.repetition ?? 1))
   }
 
+  function clickPrevious() {
+    if (swipedRef.current) {
+      swipedRef.current = false
+      return
+    }
+
+    goPrevious()
+  }
+
+  function clickNext() {
+    if (swipedRef.current) {
+      swipedRef.current = false
+      return
+    }
+
+    goNext()
+  }
+
   function scheduleAdvance() {
     setIsAdvancing(true)
     vibrate([35, 40, 35])
@@ -207,6 +225,25 @@ export function DuaFlowMode({ arabicSize, categoryId, categoryTitle, favoriteIds
     goPrevious()
   }
 
+  function handleKeyboardNavigation(event: KeyboardEvent<HTMLDivElement>) {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault()
+      handleTap()
+      return
+    }
+
+    if (event.key === "ArrowRight") {
+      event.preventDefault()
+      goNext()
+      return
+    }
+
+    if (event.key === "ArrowLeft") {
+      event.preventDefault()
+      goPrevious()
+    }
+  }
+
   if (!currentDua) {
     return null
   }
@@ -253,15 +290,15 @@ export function DuaFlowMode({ arabicSize, categoryId, categoryTitle, favoriteIds
           </Button>
         </header>
 
-        <div className="relative min-h-0 flex-1">
-          <button aria-label={t.previous} className="absolute inset-y-0 left-0 z-20 flex w-1/5 items-center justify-start" onClick={goPrevious} type="button">
+        <div className="relative min-h-0 flex-1" onPointerCancel={() => (pointerStartRef.current = null)} onPointerDown={handlePointerDown} onPointerUp={handlePointerUp}>
+          <button aria-label={t.previous} className="absolute inset-y-0 left-0 z-20 flex w-1/5 items-center justify-start" onClick={clickPrevious} type="button">
             {currentIndex > 0 ? (
               <span className={cn("rounded-full bg-card/55 p-2 text-primary shadow-soft backdrop-blur transition-opacity", showNavHint ? "opacity-80" : "opacity-25")}>
                 <ChevronLeft className="h-5 w-5" />
               </span>
             ) : null}
           </button>
-          <button aria-label={t.next} className="absolute inset-y-0 right-0 z-20 flex w-1/5 items-center justify-end" onClick={goNext} type="button">
+          <button aria-label={t.next} className="absolute inset-y-0 right-0 z-20 flex w-1/5 items-center justify-end" onClick={clickNext} type="button">
             <span className={cn("rounded-full bg-card/55 p-2 text-primary shadow-soft backdrop-blur transition-opacity", showNavHint ? "opacity-80" : "opacity-25")}>
               <ChevronRight className="h-5 w-5" />
             </span>
@@ -274,16 +311,9 @@ export function DuaFlowMode({ arabicSize, categoryId, categoryTitle, favoriteIds
             )}
             key={currentDua.id}
             onClick={handleTap}
-            onPointerDown={handlePointerDown}
-            onPointerUp={handlePointerUp}
             role="button"
             tabIndex={0}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" || event.key === " ") {
-                event.preventDefault()
-                handleTap()
-              }
-            }}
+            onKeyDown={handleKeyboardNavigation}
           >
             <div className="mb-4 flex items-start justify-between gap-3">
               <div className="min-w-0">
