@@ -16,6 +16,7 @@ import {
   normalizeSunnahPrayers,
   saveAppSettings,
 } from "@/lib/app-settings"
+import { showBrowserNotification } from "@/lib/browser-notifications"
 import {
   CYCLE_STORAGE_KEY,
   endPeriod,
@@ -238,7 +239,17 @@ function subscribeForUser(userId: string, set: (partial: Partial<StoreState>) =>
     void supabase.removeChannel(partnerEventsChannel)
   }
 
-  partnerEventsChannel = subscribeToPartnerEvents(userId, (notice) => set({ partnerNotice: notice }))
+  partnerEventsChannel = subscribeToPartnerEvents(userId, (notice) => {
+    set({ partnerNotice: notice })
+    if (notice.type === "nudge") {
+      void showBrowserNotification({
+        title: "Partner Nudge",
+        body: notice.message,
+        tag: `partner-nudge-${notice.id}`,
+        url: "/",
+      })
+    }
+  })
 }
 
 function unsubscribePartnerEvents() {

@@ -1,4 +1,4 @@
-const CACHE_NAME = "amaly-v3"
+const CACHE_NAME = "amaly-v4"
 const APP_SHELL = ["/", "/index.html", "/manifest.webmanifest", "/favicon.svg", "/logo.svg"]
 
 self.addEventListener("install", (event) => {
@@ -46,6 +46,23 @@ self.addEventListener("fetch", (event) => {
 
         return response
       })
+    }),
+  )
+})
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close()
+
+  const targetUrl = new URL(event.notification.data?.url || "/", self.location.origin).href
+  event.waitUntil(
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
+      const existingClient = clientList.find((client) => client.url.startsWith(self.location.origin))
+      if (existingClient) {
+        existingClient.navigate(targetUrl)
+        return existingClient.focus()
+      }
+
+      return clients.openWindow(targetUrl)
     }),
   )
 })

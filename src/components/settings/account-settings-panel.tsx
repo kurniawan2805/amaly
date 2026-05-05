@@ -1,10 +1,17 @@
-import { Cloud, LogOut, Mail, UserRound, Users } from "lucide-react"
+import { Bell, BellOff, Cloud, LogOut, Mail, UserRound, Users } from "lucide-react"
 import { useEffect, useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { type PartnerRole } from "@/lib/app-settings"
+import {
+  areBrowserNotificationsEnabled,
+  disableBrowserNotifications,
+  getBrowserNotificationStatus,
+  requestBrowserNotifications,
+  type BrowserNotificationStatus,
+} from "@/lib/browser-notifications"
 import { isSupabaseConfigured } from "@/lib/supabase-sync"
 import { useAppStore } from "@/stores/app-store"
 
@@ -38,6 +45,17 @@ const copy = {
     enterCode: "Enter 6-digit code",
     acceptCode: "Connect",
     partnerConnected: "Connected with",
+    notifications: "Notifications",
+    notificationsIntro: "Get browser alerts when your partner sends a nudge.",
+    notificationsEnable: "Enable Notifications",
+    notificationsDisable: "Disable Notifications",
+    notificationsStatus: {
+      unsupported: "Notifications are not supported on this browser.",
+      default: "Notifications are not enabled yet.",
+      granted: "Notifications are enabled.",
+      muted: "Notifications are muted in Amaly.",
+      denied: "Notifications are blocked. Enable them from browser settings.",
+    },
     close: "Close account settings",
   },
   id: {
@@ -64,6 +82,17 @@ const copy = {
     enterCode: "Masukkan kode 6 digit",
     acceptCode: "Hubungkan",
     partnerConnected: "Terhubung dengan",
+    notifications: "Notifikasi",
+    notificationsIntro: "Terima notifikasi browser saat pasangan mengirim nudge.",
+    notificationsEnable: "Aktifkan Notifikasi",
+    notificationsDisable: "Matikan Notifikasi",
+    notificationsStatus: {
+      unsupported: "Notifikasi tidak didukung di browser ini.",
+      default: "Notifikasi belum aktif.",
+      granted: "Notifikasi aktif.",
+      muted: "Notifikasi dimatikan di Amaly.",
+      denied: "Notifikasi diblokir. Aktifkan dari pengaturan browser.",
+    },
     close: "Tutup pengaturan akun",
   },
 }
@@ -90,6 +119,8 @@ export function AccountSettingsPanel({ open, onClose }: AccountSettingsPanelProp
   const [displayNameInput, setDisplayNameInput] = useState("")
   const [inviteCode, setInviteCode] = useState("")
   const [role, setRole] = useState<PartnerRole>(settings.partnerRole ?? "husband")
+  const [notificationStatus, setNotificationStatus] = useState<BrowserNotificationStatus>(() => getBrowserNotificationStatus())
+  const [notificationEnabled, setNotificationEnabled] = useState(() => areBrowserNotificationsEnabled())
   const t = copy[settings.language]
   const fallbackDisplayName =
     profile?.displayName ||
@@ -102,6 +133,13 @@ export function AccountSettingsPanel({ open, onClose }: AccountSettingsPanelProp
   useEffect(() => {
     setDisplayNameInput(fallbackDisplayName)
   }, [fallbackDisplayName])
+
+  useEffect(() => {
+    if (open) {
+      setNotificationStatus(getBrowserNotificationStatus())
+      setNotificationEnabled(areBrowserNotificationsEnabled())
+    }
+  }, [open])
 
   function close(openState: boolean) {
     if (!openState) onClose()
@@ -234,6 +272,53 @@ export function AccountSettingsPanel({ open, onClose }: AccountSettingsPanelProp
                 </p>
               ) : null}
             </section>
+
+            {user ? (
+              <section className="rounded-2xl border border-sage/15 bg-card p-4">
+                <div className="mb-4 flex items-start gap-3">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sage-pale text-sage-deep dark:bg-sage/20 dark:text-sage-pale">
+                    {notificationEnabled ? <Bell className="h-5 w-5" /> : <BellOff className="h-5 w-5" />}
+                  </span>
+                  <div>
+                    <h3 className="font-serif text-2xl font-semibold text-primary">{t.notifications}</h3>
+                    <p className="mt-1 text-sm font-semibold text-muted-foreground">{t.notificationsIntro}</p>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <p className="rounded-xl bg-surface-container-low px-3 py-2 text-sm font-semibold text-muted-foreground">
+                    {notificationStatus === "granted" && !notificationEnabled ? t.notificationsStatus.muted : t.notificationsStatus[notificationStatus]}
+                  </p>
+                  {notificationEnabled ? (
+                    <Button
+                      onClick={() => {
+                        disableBrowserNotifications()
+                        setNotificationStatus(getBrowserNotificationStatus())
+                        setNotificationEnabled(areBrowserNotificationsEnabled())
+                      }}
+                      type="button"
+                      variant="outline"
+                    >
+                      <BellOff className="h-4 w-4" />
+                      {t.notificationsDisable}
+                    </Button>
+                  ) : (
+                    <Button
+                      disabled={notificationStatus === "unsupported" || notificationStatus === "denied"}
+                      onClick={() =>
+                        void requestBrowserNotifications().then((status) => {
+                          setNotificationStatus(status)
+                          setNotificationEnabled(areBrowserNotificationsEnabled())
+                        })
+                      }
+                      type="button"
+                    >
+                      <Bell className="h-4 w-4" />
+                      {t.notificationsEnable}
+                    </Button>
+                  )}
+                </div>
+              </section>
+            ) : null}
 
             {user ? (
               <section className="rounded-2xl border border-sage/15 bg-card p-4">
