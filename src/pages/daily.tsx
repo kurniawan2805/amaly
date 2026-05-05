@@ -4,6 +4,7 @@ import { Link } from "react-router-dom"
 
 import { PartnerWidget } from "@/components/partner/partner-widget"
 import { QuickLogButtons } from "@/components/quran/quick-log-buttons"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
@@ -133,6 +134,9 @@ const copy = {
     morning: (name: string) => `Ahlan, ${name || "friend"}`,
     intro: "Embrace the tranquility of today. Your spiritual journey awaits.",
     prayerCheck: "Prayer Check",
+    haidMode: "Period Mode",
+    prayerPaused: "Prayer check is paused during period mode. When you are pure again, end the period from Cycle.",
+    manageCycle: "Manage in Cycle",
     khobarEstimate: "Khobar estimate",
     options: "Prayer options",
     beforeFajr: "Have you prayed witr? Prepare your heart for the fajr prayer.",
@@ -171,6 +175,9 @@ const copy = {
     morning: (name: string) => `Ahlan, ${name || "sahabat"}`,
     intro: "Nikmati ketenangan hari ini. Perjalanan ibadahmu menanti.",
     prayerCheck: "Cek Shalat",
+    haidMode: "Mode Haid",
+    prayerPaused: "Cek shalat dijeda selama mode haid. Jika sudah suci, akhiri period dari halaman Siklus.",
+    manageCycle: "Kelola di Siklus",
     khobarEstimate: "Perkiraan Khobar",
     options: "Opsi shalat",
     beforeFajr: "Sudah shalat witr? Siapkan hati untuk shalat fajr.",
@@ -330,6 +337,7 @@ export default function DailyPage({
   )
 
   const completedHabits = useMemo(() => habits.filter((habit) => habit.completed).length, [habits])
+  const haidModeActive = Boolean(cycleState.activePeriod)
   const hasPrayerProgress = completedPrayers.length > 0
   const nowMinutes = getNowMinutes(now)
   const activeDhikrWindow = getActiveDhikrWindow(now)
@@ -555,17 +563,28 @@ export default function DailyPage({
         <Card
           className={cn(
             "overflow-hidden p-4 transition-[border-color,box-shadow] duration-1000 md:col-span-12",
-            hasPrayerProgress
-              ? "border-sage/70 shadow-[0_0_34px_rgba(139,168,136,0.24)]"
-              : "border-surface-container-highest shadow-none",
+            haidModeActive
+              ? "border-blush/20 bg-surface-container-low/70 opacity-80 shadow-none"
+              : hasPrayerProgress
+                ? "border-sage/70 shadow-[0_0_34px_rgba(139,168,136,0.24)]"
+                : "border-surface-container-highest shadow-none",
           )}
         >
-          <h3 className="font-serif text-[1.4rem] font-semibold tracking-normal text-sage sm:text-2xl">{t.prayerCheck}</h3>
-
-          <div className="mt-3 flex items-center gap-2 rounded-2xl border border-sage/30 bg-sage-pale/70 px-3 py-1.5 text-sage-deep">
-            <Clock className="h-4 w-4 shrink-0" />
-            <p className="text-xs font-semibold leading-5">{prayerReminder}</p>
+          <div className="flex items-center justify-between gap-3">
+            <h3 className={cn("font-serif text-[1.4rem] font-semibold tracking-normal text-sage sm:text-2xl", haidModeActive && "text-muted-foreground")}>{t.prayerCheck}</h3>
+            {haidModeActive ? <Badge className="shrink-0 bg-blush/20 text-accent-foreground">{t.haidMode}</Badge> : null}
           </div>
+
+          <div className={cn("mt-3 flex items-center gap-2 rounded-2xl border px-3 py-1.5", haidModeActive ? "border-blush/20 bg-blush/10 text-muted-foreground" : "border-sage/30 bg-sage-pale/70 text-sage-deep")}>
+            <Clock className="h-4 w-4 shrink-0" />
+            <p className="text-xs font-semibold leading-5">{haidModeActive ? t.prayerPaused : prayerReminder}</p>
+          </div>
+
+          {haidModeActive ? (
+            <Button asChild className="mt-3" size="sm" type="button" variant="outline">
+              <Link to="/cycle">{t.manageCycle}</Link>
+            </Button>
+          ) : null}
 
           <div className="mt-4 grid grid-cols-5 gap-2 sm:gap-3">
             {prayers.map((prayer) => {
@@ -573,7 +592,7 @@ export default function DailyPage({
               const isAvailable = timeToMinutes(prayer.start) <= nowMinutes
               const isFuture = !isAvailable
               const isCurrent = currentPrayer?.label === prayer.label
-              const isDisabled = isFuture && !isCompleted
+              const isDisabled = haidModeActive || (isFuture && !isCompleted)
               return (
                 <PressAction
                   key={prayer.label}
@@ -586,7 +605,7 @@ export default function DailyPage({
                   }
                   className={cn(
                     "flex min-w-0 flex-col items-center gap-1.5 transition",
-                    isDisabled && "cursor-not-allowed opacity-55",
+                    isDisabled && "cursor-not-allowed opacity-45 grayscale",
                   )}
                   disabled={isDisabled}
                   onLongPress={() => {
@@ -601,8 +620,9 @@ export default function DailyPage({
                       className={cn(
                         "flex aspect-square w-full max-w-[50px] items-center justify-center rounded-full border bg-surface text-muted-foreground shadow-[0_10px_28px_rgb(0,0,0,0.04)] transition sm:max-w-[56px]",
                         isCompleted ? "border-sage bg-sage text-white" : "border-surface-container-highest",
-                        isCurrent && !isCompleted && "border-sage/80 text-sage shadow-[0_0_26px_rgba(139,168,136,0.2)]",
+                        isCurrent && !isCompleted && !haidModeActive && "border-sage/80 text-sage shadow-[0_0_26px_rgba(139,168,136,0.2)]",
                         isFuture && "border-surface-container-highest bg-surface-container text-muted-foreground/50",
+                        haidModeActive && "border-muted bg-muted/60 text-muted-foreground shadow-none",
                       )}
                     >
                       {isCompleted ? (
@@ -645,7 +665,9 @@ export default function DailyPage({
                   className={cn(
                     "flex shrink-0 items-center gap-2 rounded-xl border border-sage/30 bg-sage-pale/70 px-3 py-2 text-sm font-bold text-sage-deep transition",
                     isSelected && "border-sage bg-sage text-white",
+                    haidModeActive && "cursor-not-allowed border-muted bg-muted/60 text-muted-foreground opacity-55 grayscale",
                   )}
+                  disabled={haidModeActive}
                   onClick={() => toggleSunnah(prayer)}
                   type="button"
                 >
