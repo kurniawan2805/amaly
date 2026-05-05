@@ -14,6 +14,7 @@ const CyclePage = lazy(() => import("@/pages/cycle"))
 const DailyPage = lazy(() => import("@/pages/daily"))
 const FastingPage = lazy(() => import("@/pages/fasting"))
 const QuranPage = lazy(() => import("@/pages/quran"))
+const ReportPage = lazy(() => import("@/pages/report"))
 
 const titles: Record<AppSettings["language"], Record<string, string>> = {
   en: {
@@ -22,6 +23,7 @@ const titles: Record<AppSettings["language"], Record<string, string>> = {
     "/fasting": "Amaly",
     "/duas": "Amaly",
     "/cycle": "Amaly",
+    "/report": "Amaly",
   },
   id: {
     "/": "Amaly",
@@ -29,6 +31,7 @@ const titles: Record<AppSettings["language"], Record<string, string>> = {
     "/fasting": "Amaly",
     "/duas": "Amaly",
     "/cycle": "Amaly",
+    "/report": "Amaly",
   },
 }
 
@@ -191,10 +194,22 @@ export default function App() {
               }
               path="/cycle"
             />
+            <Route
+              element={
+                <ReportPage
+                  cycleState={cycleState}
+                  dailyTrackerState={dailyTrackerState}
+                  fastingState={fastingState}
+                  quranProgress={quranProgress}
+                  settings={settings}
+                />
+              }
+              path="/report"
+            />
           </Routes>
         </Suspense>
       </main>
-      <BottomNav dhikrReminderActive={dhikrReminderActive} language={settings.language} />
+      <BottomNav cycleModeActive={Boolean(cycleState.activePeriod)} dhikrReminderActive={dhikrReminderActive} language={settings.language} />
       <Suspense fallback={null}>
         {activePanel === "habits" ? <HabitSettingsPanel initialSection={habitSettingsInitialSection} onClose={closePanel} open /> : null}
         {activePanel === "account" ? <AccountSettingsPanel onClose={closePanel} open /> : null}
