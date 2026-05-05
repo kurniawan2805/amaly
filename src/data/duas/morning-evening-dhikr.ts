@@ -12,8 +12,8 @@ const sharedItems: DuaItem[] = [
   {
     id: "ayat-kursi",
     title: "Ayat Kursi",
-    arabic: `اللَّهُ لاَ إِلَهَ إِلاَّ هُوَ الْحَيُّ الْقَيُّومُ، لاَ تَأْخُذُهُ سِنَةٌ وَلاَ نَوْمٌ، لَهُ مَا فِي السَّمَاوَاتِ وَمَا فِي الْأَرْضِ، مَنْ ذَا الَّذِي يَشْفَعُ عِنْدَهُ إِلاَّ بِإِذْنِهِ، يَعْلَمُ مَا بَيْنَ أَيْدِيهِمْ وَمَا خَلْفَهُمْ، وَلَا يُحِيطُونَ بِشَيْءٍ مِنْ عِلْمِهِ إِلاَّ بِمَا شَاءَ، وَسِعَ كُرْسِيُّهُ السَّمَاوَاتِ وَالْأَرْضَ، وَلَا يَئُودُهُ حِفْظُهُمَا، وَهُوَ الْعَلِيُّ الْعَظِيمُ`,
-    translation: `Allah tidak ada Ilah yang berhak diibadahi melainkan Dia Yang Hidup Kekal lagi terus menerus mengurus makhluk-Nya; tidak mengantuk dan tidak tidur. Kepunyaan-Nya apa yang ada di langit dan di bumi. Tidak ada yang dapat memberi syafa'at di sisi Allah tanpa izin-Nya. Allah mengetahui apa-apa yang berada dihadapan mereka, dan dibelakang mereka dan mereka tidak mengetahui apa-apa dari Ilmu Allah melainkan apa yang dikehendaki-Nya. Kursi Allah meliputi langit dan bumi. Dan Allah tidak merasa berat memelihara keduanya, Allah Mahatinggi lagi Mahabesar.`,
+    arabic: `اللَّهُ لاَ إِلَهَ إِلاَّ هُوَ الْحَيُّ الْقَيُّومُ، لاَ تَأْخُذُهُ سِنَةٌ وَلاَ نَوْمٌ، لَهُ مَا فِي السَّمَاوَاتِ وَمَا فِي الْأَرْضِ، مَنْ ذَا الَّذِي يَشْفَعُ عِنْدَهُ إِلاَّ بِإِذْنِهِ، يَعْلَمُ مَا بَيْنَ أَيْدِيهِمْ وَمَا خَلْفَهُمْ، وَلَا يُحِيطُونَ بِشَيْءٍ مِنْ عِلْمِهِ إِلاَّ بِمَا شَاءَ، وَسِعَ كُرْسِيُّهُ السَّمَاوَاتِ وَالْأَرْضَ، وَلَا يَئُودُهُ حِفْظُهُمَا، وَهُوَ الْعَلِيُّ الْعَظِيمُ ۝٢٥٥`,
+    translation: `(255) Allah tidak ada Ilah yang berhak diibadahi melainkan Dia Yang Hidup Kekal lagi terus menerus mengurus makhluk-Nya; tidak mengantuk dan tidak tidur. Kepunyaan-Nya apa yang ada di langit dan di bumi. Tidak ada yang dapat memberi syafa'at di sisi Allah tanpa izin-Nya. Allah mengetahui apa-apa yang berada dihadapan mereka, dan dibelakang mereka dan mereka tidak mengetahui apa-apa dari Ilmu Allah melainkan apa yang dikehendaki-Nya. Kursi Allah meliputi langit dan bumi. Dan Allah tidak merasa berat memelihara keduanya, Allah Mahatinggi lagi Mahabesar.`,
     times: ["morning", "evening"],
     repetition: 1,
     source: "Al-Baqarah/2:255",
@@ -24,8 +24,8 @@ const sharedItems: DuaItem[] = [
     id: "al-ikhlas",
     title: "Surat Al-Ikhlas",
     arabic: `بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ
-قُلْ هُوَ اللَّهُ أَحَدٌ اللَّهُ الصَّمَدُ لَمْ يَلِدْ وَلَمْ يُولَدْ وَلَمْ يَكُن لَّهُ كُفُوًا أَحَدٌ`,
-    translation: `Katakanlah, Dia-lah Allah Yang Maha Esa. Allah adalah Rabb yang segala sesuatu bergantung kepada-Nya. Dia tidak beranak dan tidak pula diperanakkan. Dan tidak ada seorang pun yang setara dengan-Nya.`,
+قُلْ هُوَ اللَّهُ أَحَدٌ ۝١ اللَّهُ الصَّمَدُ ۝٢ لَمْ يَلِدْ وَلَمْ يُولَدْ ۝٣ وَلَمْ يَكُن لَّهُ كُفُوًا أَحَدٌ ۝٤`,
+    translation: `(1) Katakanlah, Dia-lah Allah Yang Maha Esa. (2) Allah adalah Rabb yang segala sesuatu bergantung kepada-Nya. (3) Dia tidak beranak dan tidak pula diperanakkan. (4) Dan tidak ada seorang pun yang setara dengan-Nya.`,
     times: ["morning", "evening"],
     repetition: 3,
     source: "Al-Ikhlash/112:1-4",
@@ -36,8 +36,8 @@ const sharedItems: DuaItem[] = [
     id: "al-falaq",
     title: "Surat Al-Falaq",
     arabic: `بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ
-قُلْ أَعُوذُ بِرَبِّ الْفَلَقِ مِن شَرِّ مَا خَلَقَ وَمِن شَرِّ غَاسِقٍ إِذَا وَقَبَ وَمِن شَرِّ النَّفَّاثَاتِ فِي الْعُقَدِ وَمِن شَرِّ حَاسِدٍ إِذَا حَسَدَ`,
-    translation: `Katakanlah: Aku berlindung kepada Rabb Yang menguasai waktu Shubuh dari kejahatan makhluk-Nya. Dan dari kejahatan malam apabila telah gelap gulita. Dan dari kejahatan wanita-wanita tukang sihir yang menghembus pada buhul-buhul. Serta dari kejahatan orang yang dengki apabila dia dengki.`,
+قُلْ أَعُوذُ بِرَبِّ الْفَلَقِ ۝١ مِن شَرِّ مَا خَلَقَ ۝٢ وَمِن شَرِّ غَاسِقٍ إِذَا وَقَبَ ۝٣ وَمِن شَرِّ النَّفَّاثَاتِ فِي الْعُقَدِ ۝٤ وَمِن شَرِّ حَاسِدٍ إِذَا حَسَدَ ۝٥`,
+    translation: `(1) Katakanlah: Aku berlindung kepada Rabb Yang menguasai waktu Shubuh. (2) Dari kejahatan makhluk-Nya. (3) Dan dari kejahatan malam apabila telah gelap gulita. (4) Dan dari kejahatan wanita-wanita tukang sihir yang menghembus pada buhul-buhul. (5) Serta dari kejahatan orang yang dengki apabila dia dengki.`,
     times: ["morning", "evening"],
     repetition: 3,
     source: "Al-Falaq/113:1-5",
@@ -48,8 +48,8 @@ const sharedItems: DuaItem[] = [
     id: "an-naas",
     title: "Surat An-Naas",
     arabic: `بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ
-قُلْ أَعُوذُ بِرَبِّ النَّاسِ مَلِكِ النَّاسِ إِلَهِ النَّاسِ مِن شَرِّ الْوَسْوَاسِ الْخَنَّاسِ الَّذِي يُوَسْوِسُ فِي صُدُورِ النَّاسِ مِنَ الْجِنَّةِ وَ النَّاسِ`,
-    translation: `Katakanlah, Aku berlindung kepada Rabb manusia. Raja manusia. Sembahan manusia. Dari kejahatan bisikan syaitan yang biasa bersembunyi. Yang membisikkan kejahatan ke dalam dada-dada manusia. Dari golongan jin dan manusia.`,
+قُلْ أَعُوذُ بِرَبِّ النَّاسِ ۝١ مَلِكِ النَّاسِ ۝٢ إِلَهِ النَّاسِ ۝٣ مِن شَرِّ الْوَسْوَاسِ الْخَنَّاسِ ۝٤ الَّذِي يُوَسْوِسُ فِي صُدُورِ النَّاسِ ۝٥ مِنَ الْجِنَّةِ وَ النَّاسِ ۝٦`,
+    translation: `(1) Katakanlah, Aku berlindung kepada Rabb manusia. (2) Raja manusia. (3) Sembahan manusia. (4) Dari kejahatan bisikan syaitan yang biasa bersembunyi. (5) Yang membisikkan kejahatan ke dalam dada-dada manusia. (6) Dari golongan jin dan manusia.`,
     times: ["morning", "evening"],
     repetition: 3,
     source: "An-Naas/114:1-6",

@@ -1,5 +1,5 @@
-const CACHE_NAME = "amaly-v2"
-const APP_SHELL = ["/", "/index.html", "/manifest.webmanifest", "/favicon.svg"]
+const CACHE_NAME = "amaly-v3"
+const APP_SHELL = ["/", "/index.html", "/manifest.webmanifest", "/favicon.svg", "/logo.svg"]
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)))

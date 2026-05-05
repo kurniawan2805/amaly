@@ -1,4 +1,4 @@
-import { BookOpen, Check, ChevronDown, Clock, Lock, MoreHorizontal, Moon, Plus, Quote, Settings, Sparkles, Sun } from "lucide-react"
+import { BookOpen, Check, ChevronDown, Clock, Lock, Moon, Plus, Quote, Settings, Sparkles, Sun } from "lucide-react"
 import { CSSProperties, PointerEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react"
 import { Link } from "react-router-dom"
 
@@ -283,7 +283,8 @@ type DailyPageProps = {
   onToggleSunnahSelection: (prayer: string, dateKey?: string) => void
   onSetHabitCompleted: (habitId: string, completed: boolean, completedAt: string | null, dateKey?: string) => void
   onSetHabitsCompleted: (habitIds: string[], completedAt: string, dateKey?: string) => void
-  onOpenSettings: () => void
+  onOpenHabitSettings: () => void
+  onOpenSunnahSettings: () => void
 }
 
 export default function DailyPage({
@@ -298,7 +299,8 @@ export default function DailyPage({
   onToggleSunnahSelection,
   onSetHabitCompleted,
   onSetHabitsCompleted,
-  onOpenSettings,
+  onOpenHabitSettings,
+  onOpenSunnahSettings,
 }: DailyPageProps) {
   const [flowerBursts, setFlowerBursts] = useState<FlowerBurst[]>([])
   const [cycleRevealed, setCycleRevealed] = useState(false)
@@ -558,12 +560,7 @@ export default function DailyPage({
               : "border-surface-container-highest shadow-none",
           )}
         >
-          <div className="flex items-start justify-between gap-4">
-            <h3 className="font-serif text-[1.4rem] font-semibold tracking-normal text-sage sm:text-2xl">{t.prayerCheck}</h3>
-            <Button aria-label={t.options} className="text-sage" onClick={onOpenSettings} size="icon" type="button" variant="ghost">
-              <MoreHorizontal className="h-5 w-5" />
-            </Button>
-          </div>
+          <h3 className="font-serif text-[1.4rem] font-semibold tracking-normal text-sage sm:text-2xl">{t.prayerCheck}</h3>
 
           <div className="mt-3 flex items-center gap-2 rounded-2xl border border-sage/30 bg-sage-pale/70 px-3 py-1.5 text-sage-deep">
             <Clock className="h-4 w-4 shrink-0" />
@@ -634,7 +631,9 @@ export default function DailyPage({
 
           <div className="no-scrollbar flex items-center gap-2 overflow-x-auto pb-1">
             <div className="mr-1 flex shrink-0 items-center gap-2 text-sage">
-              <Settings className="h-4 w-4" />
+              <Button aria-label={t.options} className="h-8 w-8 text-sage" onClick={onOpenSunnahSettings} size="icon" type="button" variant="ghost">
+                <Settings className="h-4 w-4" />
+              </Button>
               <h4 className="text-base font-bold tracking-wide">{t.sunnah}</h4>
             </div>
             {settings.sunnahPrayers.map((prayer) => {
@@ -689,7 +688,7 @@ export default function DailyPage({
                 {completedHabits} of {habits.length} {t.completed}
               </p>
             </div>
-            <Button aria-label={t.manageHabits} className="text-sage" onClick={onOpenSettings} size="icon" variant="ghost">
+            <Button aria-label={t.manageHabits} className="text-sage" onClick={onOpenHabitSettings} size="icon" variant="ghost">
               <Settings className="h-5 w-5" />
             </Button>
           </div>

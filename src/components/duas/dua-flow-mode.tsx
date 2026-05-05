@@ -1,12 +1,13 @@
 import { ChevronLeft, ChevronRight, Star, X } from "lucide-react"
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, type PointerEvent } from "react"
+import { useNavigate } from "react-router-dom"
 
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { duaFootnotes, type DuaItem } from "@/data/duas"
 import type { AppLanguage } from "@/lib/app-settings"
 import type { DuaArabicSize } from "@/lib/dua-display-settings"
-import { loadDuaFlowSessions, saveDuaFlowSession } from "@/lib/dua-flow-session"
+import { clearDuaFlowSession, loadDuaFlowSessions, saveDuaFlowSession } from "@/lib/dua-flow-session"
 import { cn } from "@/lib/utils"
 
 type DuaFlowModeProps = {
@@ -37,6 +38,9 @@ const copy = {
     source: "Source",
     benefit: "Benefit",
     note: "Note",
+    completionTitle: (period: "morning" | "evening") => `Alhamdulillah, your ${period} dhikr is complete.`,
+    completionBody: "May Allah keep you guarded and surrounded by His protection.",
+    backDashboard: "Back to Dashboard",
   },
   id: {
     close: "Tutup mode flow",
@@ -47,6 +51,9 @@ const copy = {
     source: "Sumber",
     benefit: "Manfaat",
     note: "Catatan",
+    completionTitle: (period: "morning" | "evening") => `Alhamdulillah, dzikir ${period === "morning" ? "pagi" : "petang"} selesai.`,
+    completionBody: "Semoga Allah senantiasa menjaga dan melindungimu.",
+    backDashboard: "Kembali ke Dashboard",
   },
 }
 
@@ -56,41 +63,65 @@ function vibrate(pattern: number | number[]) {
 
 export function DuaFlowMode({ arabicSize, categoryId, categoryTitle, favoriteIds, items, language, onClose, onToggleFavorite }: DuaFlowModeProps) {
   const t = copy[language]
+  const navigate = useNavigate()
   const initialSession = loadDuaFlowSessions()[categoryId]
   const safeInitialIndex = initialSession?.completed ? 0 : Math.min(initialSession?.currentIndex ?? 0, Math.max(0, items.length - 1))
   const [currentIndex, setCurrentIndex] = useState(safeInitialIndex)
   const [currentCount, setCurrentCount] = useState(initialSession?.completed ? 0 : initialSession?.currentCount ?? 0)
   const [isAdvancing, setIsAdvancing] = useState(false)
+  const [completionSplash, setCompletionSplash] = useState(false)
   const [tapPulse, setTapPulse] = useState(false)
   const [direction, setDirection] = useState<"next" | "prev">("next")
   const [showNavHint, setShowNavHint] = useState(true)
   const lastTapAtRef = useRef(0)
   const hintTimerRef = useRef<number | null>(null)
   const advanceTimerRef = useRef<number | null>(null)
+  const completionTimerRef = useRef<number | null>(null)
+  const pointerStartRef = useRef<{ x: number; y: number } | null>(null)
+  const swipedRef = useRef(false)
   const currentDua = items[currentIndex]
   const targetCount = Math.max(1, currentDua?.repetition ?? 1)
   const progress = items.length > 0 ? ((currentIndex + 1) / items.length) * 100 : 0
   const isFavorite = currentDua ? favoriteIds.includes(currentDua.id) : false
   const isMorning = categoryId.includes("morning")
+  const dhikrPeriod = isMorning ? "morning" : "evening"
   const footnotes = currentDua?.footnoteIds
     ?.map((id) => duaFootnotes.find((footnote) => footnote.id === id))
     .filter((footnote): footnote is NonNullable<typeof footnote> => Boolean(footnote))
 
   useEffect(() => {
-    if (!currentDua) return
+    if (!currentDua || completionSplash) return
     saveDuaFlowSession(categoryId, {
       currentIndex,
       currentCount,
       completed: false,
     })
-  }, [categoryId, currentCount, currentDua, currentIndex])
+  }, [categoryId, completionSplash, currentCount, currentDua, currentIndex])
 
   useEffect(() => {
     return () => {
       if (hintTimerRef.current) window.clearTimeout(hintTimerRef.current)
       if (advanceTimerRef.current) window.clearTimeout(advanceTimerRef.current)
+      if (completionTimerRef.current) window.clearTimeout(completionTimerRef.current)
     }
   }, [])
+
+  function returnToDashboard() {
+    if (completionTimerRef.current) window.clearTimeout(completionTimerRef.current)
+    clearDuaFlowSession(categoryId)
+    onClose()
+    navigate("/")
+  }
+
+  function completeFlow() {
+    if (advanceTimerRef.current) window.clearTimeout(advanceTimerRef.current)
+    clearDuaFlowSession(categoryId)
+    setCurrentCount(targetCount)
+    setIsAdvancing(false)
+    setCompletionSplash(true)
+    if (completionTimerRef.current) window.clearTimeout(completionTimerRef.current)
+    completionTimerRef.current = window.setTimeout(returnToDashboard, 5000)
+  }
 
   function resetNavHint() {
     setShowNavHint(false)
@@ -110,13 +141,7 @@ export function DuaFlowMode({ arabicSize, categoryId, categoryTitle, favoriteIds
   function goNext() {
     if (advanceTimerRef.current) window.clearTimeout(advanceTimerRef.current)
     if (currentIndex >= items.length - 1) {
-      saveDuaFlowSession(categoryId, {
-        currentIndex,
-        currentCount: targetCount,
-        completed: true,
-      })
-      setCurrentCount(targetCount)
-      setIsAdvancing(false)
+      completeFlow()
       return
     }
 
@@ -133,12 +158,17 @@ export function DuaFlowMode({ arabicSize, categoryId, categoryTitle, favoriteIds
     setIsAdvancing(true)
     vibrate([35, 40, 35])
     if (advanceTimerRef.current) window.clearTimeout(advanceTimerRef.current)
-    advanceTimerRef.current = window.setTimeout(goNext, 400)
+    advanceTimerRef.current = window.setTimeout(goNext, 700)
   }
 
   function handleTap() {
+    if (swipedRef.current) {
+      swipedRef.current = false
+      return
+    }
+
     const now = Date.now()
-    if (!currentDua || isAdvancing || now - lastTapAtRef.current < 180) return
+    if (!currentDua || completionSplash || isAdvancing || now - lastTapAtRef.current < 180) return
     lastTapAtRef.current = now
     resetNavHint()
     setTapPulse(true)
@@ -154,8 +184,51 @@ export function DuaFlowMode({ arabicSize, categoryId, categoryTitle, favoriteIds
     vibrate(18)
   }
 
+  function handlePointerDown(event: PointerEvent<HTMLDivElement>) {
+    pointerStartRef.current = { x: event.clientX, y: event.clientY }
+    swipedRef.current = false
+  }
+
+  function handlePointerUp(event: PointerEvent<HTMLDivElement>) {
+    const start = pointerStartRef.current
+    pointerStartRef.current = null
+    if (!start || completionSplash) return
+
+    const deltaX = event.clientX - start.x
+    const deltaY = event.clientY - start.y
+    if (Math.abs(deltaX) < 48 || Math.abs(deltaX) < Math.abs(deltaY) * 1.2) return
+
+    swipedRef.current = true
+    if (deltaX < 0) {
+      goNext()
+      return
+    }
+
+    goPrevious()
+  }
+
   if (!currentDua) {
     return null
+  }
+
+  if (completionSplash) {
+    return (
+      <div
+        className={cn(
+          "fixed inset-0 z-[90] flex items-center justify-center overflow-hidden px-5 py-5 text-foreground",
+          isMorning ? "bg-[#fbf7eb] dark:bg-[#1c1b16]" : "bg-[#f5f0fa] dark:bg-[#18151c]",
+        )}
+      >
+        <Card className="mx-auto max-w-sm p-6 text-center shadow-2xl">
+          <p className="text-xs font-bold uppercase tracking-wide text-sage">{categoryTitle}</p>
+          <h2 className="mt-3 font-serif text-3xl font-semibold leading-tight text-primary">{t.completionTitle(dhikrPeriod)}</h2>
+          <p className="mt-4 text-sm font-semibold leading-6 text-muted-foreground">{t.completionBody}</p>
+          <Button className="mt-6 w-full" onClick={returnToDashboard} type="button">
+            {t.backDashboard}
+          </Button>
+        </Card>
+      </div>
+    )
   }
 
   return (
@@ -201,6 +274,8 @@ export function DuaFlowMode({ arabicSize, categoryId, categoryTitle, favoriteIds
             )}
             key={currentDua.id}
             onClick={handleTap}
+            onPointerDown={handlePointerDown}
+            onPointerUp={handlePointerUp}
             role="button"
             tabIndex={0}
             onKeyDown={(event) => {
@@ -213,9 +288,7 @@ export function DuaFlowMode({ arabicSize, categoryId, categoryTitle, favoriteIds
             <div className="mb-4 flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <h3 className="font-serif text-2xl font-semibold text-primary">{currentDua.title}</h3>
-                <p className="mt-1 text-sm font-bold text-muted-foreground">
-                  {currentCount} / {targetCount}
-                </p>
+                <p className="mt-1 text-sm font-bold text-muted-foreground">{currentCount >= targetCount ? t.done : `${currentCount} / ${targetCount}`}</p>
               </div>
               <button
                 aria-label="Toggle favorite"

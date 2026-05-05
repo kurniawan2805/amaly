@@ -122,6 +122,7 @@ export default function DuasPage({ language }: DuasPageProps) {
   const [query, setQuery] = useState("")
   const [favorites, setFavorites] = useState(() => loadDuaFavorites())
   const [displaySettings, setDisplaySettings] = useState(() => loadDuaDisplaySettings())
+  const [flowSessions, setFlowSessions] = useState(() => loadDuaFlowSessions())
   const [flowCategory, setFlowCategory] = useState<DuaCategory | null>(null)
   const selectedCategory = selectedCategoryId === favoritesCategoryId ? null : duaCategories.find((category) => category.id === selectedCategoryId) ?? duaCategories[0]
   const visibleDuas = useMemo(
@@ -129,8 +130,7 @@ export default function DuasPage({ language }: DuasPageProps) {
     [favorites.ids, language, query, selectedCategory, selectedGroupId],
   )
   const groups = selectedCategory?.groups ?? []
-  const sessions = loadDuaFlowSessions()
-  const selectedFlowSession = selectedCategory ? sessions[selectedCategory.id] : null
+  const selectedFlowSession = selectedCategory ? flowSessions[selectedCategory.id] : null
   const selectedCategoryTitle = selectedCategory ? getCategoryTitle(selectedCategory, language) : t.favorites
   const selectedCategoryDescription = selectedCategory?.description ?? t.emptyFavorites
 
@@ -152,6 +152,11 @@ export default function DuasPage({ language }: DuasPageProps) {
     saveDuaDisplaySettings(next)
   }
 
+  function closeFlow() {
+    setFlowCategory(null)
+    setFlowSessions(loadDuaFlowSessions())
+  }
+
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-4 px-6 py-5 pb-28">
       {flowCategory?.items ? (
@@ -162,7 +167,7 @@ export default function DuasPage({ language }: DuasPageProps) {
           favoriteIds={favorites.ids}
           items={flowCategory.items}
           language={language}
-          onClose={() => setFlowCategory(null)}
+          onClose={closeFlow}
           onToggleFavorite={toggleFavorite}
         />
       ) : null}

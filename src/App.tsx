@@ -1,10 +1,12 @@
 import { Route, Routes, useLocation } from "react-router-dom"
-import { lazy, Suspense, type CSSProperties, useEffect } from "react"
+import { lazy, Suspense, type CSSProperties, useEffect, useState } from "react"
 
 import { BottomNav } from "@/components/layout/bottom-nav"
 import { Header } from "@/components/layout/header"
+import type { HabitSettingsInitialSection } from "@/components/settings/habit-settings-panel"
 import { type AppSettings } from "@/lib/app-settings"
 import { getActiveDhikrWindow } from "@/lib/prayer-windows"
+import DuasPage from "@/pages/duas"
 import { useAppStore } from "@/stores/app-store"
 
 const AccountSettingsPanel = lazy(() =>
@@ -15,7 +17,6 @@ const HabitSettingsPanel = lazy(() =>
 )
 const CyclePage = lazy(() => import("@/pages/cycle"))
 const DailyPage = lazy(() => import("@/pages/daily"))
-const DuasPage = lazy(() => import("@/pages/duas"))
 const FastingPage = lazy(() => import("@/pages/fasting"))
 const QuranPage = lazy(() => import("@/pages/quran"))
 
@@ -68,6 +69,7 @@ export default function App() {
   const activePanel = useAppStore((state) => state.activePanel)
   const quranBurst = useAppStore((state) => state.quranBurst)
   const partnerNotice = useAppStore((state) => state.partnerNotice)
+  const [habitSettingsInitialSection, setHabitSettingsInitialSection] = useState<HabitSettingsInitialSection>("all")
   const initializeAuth = useAppStore((state) => state.initializeAuth)
   const openPanel = useAppStore((state) => state.openPanel)
   const closePanel = useAppStore((state) => state.closePanel)
@@ -109,12 +111,17 @@ export default function App() {
     void initializeAuth()
   }, [initializeAuth])
 
+  function openHabitSettings(initialSection: HabitSettingsInitialSection) {
+    setHabitSettingsInitialSection(initialSection)
+    openPanel("habits")
+  }
+
   return (
     <div className="flex min-h-screen flex-col">
       <Header
         language={settings.language}
         onOpenAccount={() => openPanel("account")}
-        onOpenHabits={() => openPanel("habits")}
+        onOpenHabits={() => openHabitSettings("all")}
         onToggleLanguage={() => setLanguage(settings.language === "en" ? "id" : "en")}
         onToggleTheme={() => setTheme(settings.theme === "dark" ? "day" : "dark")}
         theme={settings.theme}
@@ -126,7 +133,8 @@ export default function App() {
             <Route
               element={
                 <DailyPage
-                  onOpenSettings={() => openPanel("habits")}
+                  onOpenHabitSettings={() => openHabitSettings("habits")}
+                  onOpenSunnahSettings={() => openHabitSettings("sunnah")}
                   onQuickLog={quickLogQuran}
                   onSetQuranPage={setQuranPage}
                   onSetPrayerCompleted={setPrayerCompleted}
@@ -193,7 +201,7 @@ export default function App() {
       </main>
       <BottomNav dhikrReminderActive={dhikrReminderActive} language={settings.language} />
       <Suspense fallback={null}>
-        {activePanel === "habits" ? <HabitSettingsPanel onClose={closePanel} open /> : null}
+        {activePanel === "habits" ? <HabitSettingsPanel initialSection={habitSettingsInitialSection} onClose={closePanel} open /> : null}
         {activePanel === "account" ? <AccountSettingsPanel onClose={closePanel} open /> : null}
       </Suspense>
       {partnerNotice ? (

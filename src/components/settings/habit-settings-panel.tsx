@@ -8,7 +8,10 @@ import { normalizeSunnahPrayers, type HabitDefinition, type HabitTiming, type Pr
 import { cn } from "@/lib/utils"
 import { prayerAnchors, useAppStore } from "@/stores/app-store"
 
+export type HabitSettingsInitialSection = "all" | "habits" | "sunnah"
+
 type HabitSettingsPanelProps = {
+  initialSection?: HabitSettingsInitialSection
   open: boolean
   onClose: () => void
 }
@@ -152,12 +155,14 @@ function prayerTiming(timing: HabitTiming) {
   return timing.mode === "prayer" ? timing : { mode: "prayer" as const, prayer: "fajr" as const, offsetMinutes: 0 }
 }
 
-export function HabitSettingsPanel({ open, onClose }: HabitSettingsPanelProps) {
+export function HabitSettingsPanel({ initialSection = "all", open, onClose }: HabitSettingsPanelProps) {
   const settings = useAppStore((state) => state.settings)
   const setHabits = useAppStore((state) => state.setHabits)
   const setSunnahPrayers = useAppStore((state) => state.setSunnahPrayers)
   const [draftHabits, setDraftHabits] = useState<HabitDefinition[]>(settings.habits)
   const [draftSunnahPrayers, setDraftSunnahPrayers] = useState<string[]>(settings.sunnahPrayers)
+  const [sunnahOpen, setSunnahOpen] = useState(initialSection !== "habits")
+  const [habitsOpen, setHabitsOpen] = useState(initialSection !== "sunnah")
   const [expandedHabitId, setExpandedHabitId] = useState<string | null>(null)
   const habitInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
   const t = copy[settings.language]
@@ -173,9 +178,11 @@ export function HabitSettingsPanel({ open, onClose }: HabitSettingsPanelProps) {
     if (open) {
       setDraftHabits(settings.habits)
       setDraftSunnahPrayers(settings.sunnahPrayers)
+      setSunnahOpen(initialSection !== "habits")
+      setHabitsOpen(initialSection !== "sunnah")
       setExpandedHabitId(null)
     }
-  }, [open, settings.habits, settings.sunnahPrayers])
+  }, [initialSection, open, settings.habits, settings.sunnahPrayers])
 
   function updateDraftHabit(id: string, patch: Partial<HabitDefinition>) {
     setDraftHabits((habits) => habits.map((habit) => (habit.id === id ? normalizeHabit({ ...habit, ...patch }) : habit)))
@@ -187,6 +194,7 @@ export function HabitSettingsPanel({ open, onClose }: HabitSettingsPanelProps) {
 
   function createHabit() {
     const habit = makeDraftHabit()
+    setHabitsOpen(true)
     setDraftHabits((habits) => [habit, ...habits])
     setExpandedHabitId(habit.id)
     window.setTimeout(() => {
@@ -200,6 +208,7 @@ export function HabitSettingsPanel({ open, onClose }: HabitSettingsPanelProps) {
   }
 
   function createSunnahPrayer() {
+    setSunnahOpen(true)
     setDraftSunnahPrayers((prayers) => [...prayers, ""])
   }
 
@@ -231,44 +240,52 @@ export function HabitSettingsPanel({ open, onClose }: HabitSettingsPanelProps) {
 
           <section className="mt-4 rounded-xl border border-sage/15 bg-card p-4 shadow-[0_8px_24px_rgba(0,0,0,0.03)]">
             <div className="flex items-center justify-between gap-3">
-              <h4 className="text-sm font-bold text-foreground">{t.sunnahPrayers}</h4>
+              <button className="flex min-w-0 flex-1 items-center gap-2 text-left" onClick={() => setSunnahOpen((current) => !current)} type="button">
+                <h4 className="text-sm font-bold text-foreground">{t.sunnahPrayers}</h4>
+                <ChevronDown className={cn("h-4 w-4 shrink-0 text-muted-foreground transition", sunnahOpen && "rotate-180")} />
+              </button>
               <Button onClick={createSunnahPrayer} size="sm" type="button" variant="outline">
                 <Plus className="h-4 w-4" />
                 {t.addSunnah}
               </Button>
             </div>
-            <div className="mt-3 grid gap-2">
-              {draftSunnahPrayers.map((prayer, index) => (
-                <div className="flex items-center gap-2" key={index}>
-                  <input
-                    className="h-10 min-w-0 flex-1 rounded-xl border border-sage/15 bg-background px-3 text-sm font-semibold text-foreground outline-none focus:border-sage"
-                    onChange={(event) => updateDraftSunnahPrayer(index, event.target.value)}
-                    value={prayer}
-                  />
-                  <Button
-                    aria-label={`${t.delete} ${prayer || t.sunnahPrayers}`}
-                    className="shrink-0 text-destructive hover:bg-destructive/10"
-                    onClick={() => deleteSunnahPrayer(index)}
-                    size="icon"
-                    type="button"
-                    variant="ghost"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
-            </div>
+            {sunnahOpen ? (
+              <div className="mt-3 grid gap-2">
+                {draftSunnahPrayers.map((prayer, index) => (
+                  <div className="flex items-center gap-2" key={index}>
+                    <input
+                      className="h-10 min-w-0 flex-1 rounded-xl border border-sage/15 bg-background px-3 text-sm font-semibold text-foreground outline-none focus:border-sage"
+                      onChange={(event) => updateDraftSunnahPrayer(index, event.target.value)}
+                      value={prayer}
+                    />
+                    <Button
+                      aria-label={`${t.delete} ${prayer || t.sunnahPrayers}`}
+                      className="shrink-0 text-destructive hover:bg-destructive/10"
+                      onClick={() => deleteSunnahPrayer(index)}
+                      size="icon"
+                      type="button"
+                      variant="ghost"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            ) : null}
           </section>
 
           <section className="mt-4 rounded-xl border border-sage/15 bg-card p-4 shadow-[0_8px_24px_rgba(0,0,0,0.03)]">
             <div className="flex items-center justify-between gap-3">
-              <h4 className="text-sm font-bold text-foreground">{t.title}</h4>
+              <button className="flex min-w-0 flex-1 items-center gap-2 text-left" onClick={() => setHabitsOpen((current) => !current)} type="button">
+                <h4 className="text-sm font-bold text-foreground">{t.title}</h4>
+                <ChevronDown className={cn("h-4 w-4 shrink-0 text-muted-foreground transition", habitsOpen && "rotate-180")} />
+              </button>
               <Button onClick={createHabit} size="sm" type="button" variant="outline">
                 <Plus className="h-4 w-4" />
                 {t.addHabit}
               </Button>
             </div>
-            <div className="mt-3 flex flex-col gap-2">
+            {habitsOpen ? <div className="mt-3 flex flex-col gap-2">
             {draftHabits.map((habit) => (
               <div className="overflow-hidden rounded-xl border border-sage/10 bg-background" key={habit.id}>
                 <button
@@ -443,7 +460,7 @@ export function HabitSettingsPanel({ open, onClose }: HabitSettingsPanelProps) {
                 ) : null}
               </div>
             ))}
-            </div>
+            </div> : null}
           </section>
         </div>
 
