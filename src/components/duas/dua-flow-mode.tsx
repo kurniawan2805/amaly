@@ -1,5 +1,5 @@
 import { ChevronLeft, ChevronRight, Star, X } from "lucide-react"
-import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react"
+import { useEffect, useRef, useState, type PointerEvent, type TouchEvent } from "react"
 import { useNavigate } from "react-router-dom"
 
 import { Button } from "@/components/ui/button"
@@ -78,7 +78,9 @@ export function DuaFlowMode({ arabicSize, categoryId, categoryTitle, favoriteIds
   const advanceTimerRef = useRef<number | null>(null)
   const completionTimerRef = useRef<number | null>(null)
   const pointerStartRef = useRef<{ x: number; y: number } | null>(null)
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null)
   const swipedRef = useRef(false)
+  const lastSwipeAtRef = useRef(0)
   const currentDua = items[currentIndex]
   const targetCount = Math.max(1, currentDua?.repetition ?? 1)
   const progress = items.length > 0 ? ((currentIndex + 1) / items.length) * 100 : 0
@@ -212,10 +214,32 @@ export function DuaFlowMode({ arabicSize, categoryId, categoryTitle, favoriteIds
     pointerStartRef.current = null
     if (!start || completionSplash) return
 
-    const deltaX = event.clientX - start.x
-    const deltaY = event.clientY - start.y
-    if (Math.abs(deltaX) < 48 || Math.abs(deltaX) < Math.abs(deltaY) * 1.2) return
+    handleSwipe(event.clientX - start.x, event.clientY - start.y)
+  }
 
+  function handleTouchStart(event: TouchEvent<HTMLDivElement>) {
+    const touch = event.touches[0]
+    if (!touch) return
+
+    touchStartRef.current = { x: touch.clientX, y: touch.clientY }
+    swipedRef.current = false
+  }
+
+  function handleTouchEnd(event: TouchEvent<HTMLDivElement>) {
+    const start = touchStartRef.current
+    const touch = event.changedTouches[0]
+    touchStartRef.current = null
+    if (!start || !touch || completionSplash) return
+
+    handleSwipe(touch.clientX - start.x, touch.clientY - start.y)
+  }
+
+  function handleSwipe(deltaX: number, deltaY: number) {
+    const now = Date.now()
+    if (now - lastSwipeAtRef.current < 250) return
+    if (Math.abs(deltaX) < 44 || Math.abs(deltaX) < Math.abs(deltaY) * 1.1) return
+
+    lastSwipeAtRef.current = now
     swipedRef.current = true
     if (deltaX < 0) {
       goNext()
@@ -225,7 +249,10 @@ export function DuaFlowMode({ arabicSize, categoryId, categoryTitle, favoriteIds
     goPrevious()
   }
 
-  function handleKeyboardNavigation(event: KeyboardEvent<HTMLDivElement>) {
+  function handleKeyboardNavigation(event: KeyboardEvent) {
+    const target = event.target
+    if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement) return
+
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault()
       handleTap()
@@ -243,6 +270,11 @@ export function DuaFlowMode({ arabicSize, categoryId, categoryTitle, favoriteIds
       goPrevious()
     }
   }
+
+  useEffect(() => {
+    window.addEventListener("keydown", handleKeyboardNavigation)
+    return () => window.removeEventListener("keydown", handleKeyboardNavigation)
+  })
 
   if (!currentDua) {
     return null
@@ -290,7 +322,16 @@ export function DuaFlowMode({ arabicSize, categoryId, categoryTitle, favoriteIds
           </Button>
         </header>
 
-        <div className="relative min-h-0 flex-1" onPointerCancel={() => (pointerStartRef.current = null)} onPointerDown={handlePointerDown} onPointerUp={handlePointerUp}>
+        <div
+          className="relative min-h-0 flex-1"
+          onPointerCancel={() => (pointerStartRef.current = null)}
+          onPointerDown={handlePointerDown}
+          onPointerUp={handlePointerUp}
+          onTouchCancel={() => (touchStartRef.current = null)}
+          onTouchEnd={handleTouchEnd}
+          onTouchStart={handleTouchStart}
+          style={{ touchAction: "pan-y" }}
+        >
           <button aria-label={t.previous} className="absolute inset-y-0 left-0 z-20 flex w-1/5 items-center justify-start" onClick={clickPrevious} type="button">
             {currentIndex > 0 ? (
               <span className={cn("rounded-full bg-card/55 p-2 text-primary shadow-soft backdrop-blur transition-opacity", showNavHint ? "opacity-80" : "opacity-25")}>
@@ -313,7 +354,6 @@ export function DuaFlowMode({ arabicSize, categoryId, categoryTitle, favoriteIds
             onClick={handleTap}
             role="button"
             tabIndex={0}
-            onKeyDown={handleKeyboardNavigation}
           >
             <div className="mb-4 flex items-start justify-between gap-3">
               <div className="min-w-0">

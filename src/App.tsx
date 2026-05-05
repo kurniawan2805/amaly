@@ -3,18 +3,13 @@ import { lazy, Suspense, type CSSProperties, useEffect, useState } from "react"
 
 import { BottomNav } from "@/components/layout/bottom-nav"
 import { Header } from "@/components/layout/header"
-import type { HabitSettingsInitialSection } from "@/components/settings/habit-settings-panel"
+import { AccountSettingsPanel } from "@/components/settings/account-settings-panel"
+import { HabitSettingsPanel, type HabitSettingsInitialSection } from "@/components/settings/habit-settings-panel"
 import { type AppSettings } from "@/lib/app-settings"
 import { getActiveDhikrWindow } from "@/lib/prayer-windows"
 import DuasPage from "@/pages/duas"
 import { useAppStore } from "@/stores/app-store"
 
-const AccountSettingsPanel = lazy(() =>
-  import("@/components/settings/account-settings-panel").then((module) => ({ default: module.AccountSettingsPanel })),
-)
-const HabitSettingsPanel = lazy(() =>
-  import("@/components/settings/habit-settings-panel").then((module) => ({ default: module.HabitSettingsPanel })),
-)
 const CyclePage = lazy(() => import("@/pages/cycle"))
 const DailyPage = lazy(() => import("@/pages/daily"))
 const FastingPage = lazy(() => import("@/pages/fasting"))
