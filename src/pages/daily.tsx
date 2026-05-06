@@ -3,7 +3,6 @@ import { CSSProperties, PointerEvent, ReactNode, useEffect, useMemo, useRef, use
 import { Link } from "react-router-dom"
 
 import { PartnerWidget } from "@/components/partner/partner-widget"
-import { QuickLogButtons } from "@/components/quran/quick-log-buttons"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -149,6 +148,12 @@ const copy = {
     prayerMark: (prayer: string) => `Mark ${prayer} complete.`,
     sunnah: "Sunnah",
     dailyHabits: "Daily Habits",
+    quran: "Quran",
+    quranContinue: "Continue",
+    quranToday: "Today progress",
+    quranPage: "Page",
+    quranJuz: "Juz",
+    quranPages: "pages",
     earlierToday: "Earlier Today",
     eveningNight: "Evening & Night",
     phaseDone: (done: number, total: number) => `${done} of ${total} Done`,
@@ -190,6 +195,12 @@ const copy = {
     prayerMark: (prayer: string) => `Tandai ${prayer} selesai.`,
     sunnah: "Sunnah",
     dailyHabits: "Kebiasaan Harian",
+    quran: "Quran",
+    quranContinue: "Lanjutkan",
+    quranToday: "Progress hari ini",
+    quranPage: "Halaman",
+    quranJuz: "Juz",
+    quranPages: "halaman",
     earlierToday: "Tadi Hari Ini",
     eveningNight: "Sore & Malam",
     phaseDone: (done: number, total: number) => `${done} dari ${total} selesai`,
@@ -300,8 +311,6 @@ export default function DailyPage({
   dailyTrackerState,
   displayName = "",
   quranProgress,
-  onQuickLog,
-  onSetQuranPage,
   onSetPrayerCompleted,
   onToggleSunnahSelection,
   onSetHabitCompleted,
@@ -393,6 +402,7 @@ export default function DailyPage({
   const activeCompletedHabits = activeHabits.filter((habit) => habit.completed).length
   const earlierCompletedHabits = earlierHabits.filter((habit) => habit.completed).length
   const activeProgress = activeHabits.length > 0 ? (activeCompletedHabits / activeHabits.length) * 100 : 0
+  const quranGoalProgress = Math.min(100, (quranProgress.pages_read_today / quranProgress.daily_goal) * 100)
 
   useEffect(() => {
     const interval = window.setInterval(() => {
@@ -688,12 +698,35 @@ export default function DailyPage({
 
       <section className="grid grid-cols-1 gap-4 md:grid-cols-12">
         <div className="md:col-span-12">
-          <QuickLogButtons
-            language={settings.language}
-            onQuickLog={onQuickLog}
-            onSetPage={onSetQuranPage}
-            progress={quranProgress}
-          />
+          <Card className="overflow-hidden p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-sage">
+                  <BookOpen className="h-4 w-4" />
+                  {t.quran}
+                </div>
+                <h3 className="mt-1 truncate font-serif text-xl font-semibold leading-tight text-primary">
+                  {quranProgress.surah_name}, Ayah {quranProgress.ayah}
+                </h3>
+                <p className="mt-1 text-sm font-semibold text-muted-foreground">
+                  {t.quranPage} {quranProgress.page} - {t.quranJuz} {quranProgress.juz}
+                </p>
+              </div>
+              <Button asChild className="shrink-0" size="sm" type="button">
+                <Link to="/quran">{t.quranContinue}</Link>
+              </Button>
+            </div>
+
+            <div className="mt-3 space-y-2">
+              <div className="flex items-center justify-between gap-3 text-sm font-semibold">
+                <span className="text-muted-foreground">{t.quranToday}</span>
+                <span className="text-primary">
+                  {quranProgress.pages_read_today} / {quranProgress.daily_goal} {t.quranPages}
+                </span>
+              </div>
+              <Progress className="h-2" value={quranGoalProgress} />
+            </div>
+          </Card>
           {shouldShowQuranEveningNudge(quranProgress) ? (
             <div className="mt-3 rounded-xl border border-sage/20 bg-sage-pale/70 px-4 py-3 text-sm font-semibold text-sage-deep">
               {t.quranNudge}
