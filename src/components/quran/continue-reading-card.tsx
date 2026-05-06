@@ -1,4 +1,4 @@
-import { BookOpen, Pencil } from "lucide-react"
+import { BookOpen, Pencil, Plus } from "lucide-react"
 import { type FormEvent, useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 
@@ -11,6 +11,7 @@ import type { QuranProgressState } from "@/lib/quran-progress"
 type ContinueReadingCardProps = {
   language: AppLanguage
   progress: QuranProgressState
+  onQuickLog: (increment: number) => void
   onSetDailyGoal: (goal: number) => void
 }
 
@@ -19,10 +20,13 @@ const copy = {
     ayah: "Ayah",
     cancel: "Cancel",
     continueReading: "Continue Reading",
-    dailyGoal: "Daily Goal",
+    completed: "Completed",
+    dailyGoalProgress: "Daily goal progress",
     goalAchieved: "MashaAllah! Daily Goal Achieved!",
     goalHelp: "Set a gentle page target for today.",
-    pagesLoggedToday: "pages logged today",
+    juz: "Juz",
+    page: "Page",
+    pages: "pages",
     save: "Save",
     startReading: "Start Reading",
     updateGoal: "Update daily goal",
@@ -31,22 +35,26 @@ const copy = {
     ayah: "Ayat",
     cancel: "Batal",
     continueReading: "Lanjut Membaca",
-    dailyGoal: "Target Harian",
+    completed: "Selesai",
+    dailyGoalProgress: "Progress target harian",
     goalAchieved: "MashaAllah! Target harian tercapai!",
     goalHelp: "Atur target halaman yang ringan untuk hari ini.",
-    pagesLoggedToday: "halaman dicatat hari ini",
+    juz: "Juz",
+    page: "Halaman",
+    pages: "halaman",
     save: "Simpan",
     startReading: "Mulai Membaca",
     updateGoal: "Ubah target harian",
   },
 }
 
-export function ContinueReadingCard({ language, progress, onSetDailyGoal }: ContinueReadingCardProps) {
+export function ContinueReadingCard({ language, progress, onQuickLog, onSetDailyGoal }: ContinueReadingCardProps) {
   const t = copy[language]
   const navigate = useNavigate()
   const [goalOpen, setGoalOpen] = useState(false)
   const [goalInput, setGoalInput] = useState(String(progress.daily_goal))
   const goalPercent = Math.min(100, (progress.pages_read_today / progress.daily_goal) * 100)
+  const actionLabel = progress.pages_read_today > 0 ? t.continueReading : t.startReading
 
   useEffect(() => {
     setGoalInput(String(progress.daily_goal))
@@ -65,7 +73,7 @@ export function ContinueReadingCard({ language, progress, onSetDailyGoal }: Cont
   return (
     <>
       <Card
-        className="flex cursor-pointer flex-col justify-between p-4 transition hover:bg-sage-pale/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="flex cursor-pointer flex-col gap-4 p-4 transition hover:bg-sage-pale/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         onClick={openReadingPage}
         onKeyDown={(event) => {
           if (event.key === "Enter" || event.key === " ") {
@@ -76,16 +84,23 @@ export function ContinueReadingCard({ language, progress, onSetDailyGoal }: Cont
         role="link"
         tabIndex={0}
       >
-        <div className="mb-4 flex items-start justify-between gap-3">
-          <div>
-            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-secondary">{t.continueReading}</p>
-            <h2 className="font-serif text-2xl font-medium text-primary">{progress.surah_name}</h2>
-            <p className="text-sm text-muted-foreground">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="font-serif text-2xl font-medium leading-tight text-primary">{progress.surah_name}</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
               {t.ayah} {progress.ayah_range} • {progress.surah_english_name}
             </p>
-            <p className="mt-1 text-sm font-semibold text-muted-foreground">
-              Page {progress.page} • Juz {progress.juz}
-            </p>
+            <div className="mt-2 flex flex-wrap gap-2 text-xs font-bold text-muted-foreground">
+              <span className="rounded-full bg-surface-container-low px-2.5 py-1">
+                {t.page} {progress.page}
+              </span>
+              <span className="rounded-full bg-surface-container-low px-2.5 py-1">
+                {t.juz} {progress.juz}
+              </span>
+              <span className="rounded-full bg-sage/10 px-2.5 py-1 text-primary">
+                {progress.progress_percent}% {t.completed}
+              </span>
+            </div>
           </div>
           <div className="rounded-full bg-sage/10 p-2 text-primary">
             <BookOpen className="h-5 w-5" />
@@ -94,7 +109,12 @@ export function ContinueReadingCard({ language, progress, onSetDailyGoal }: Cont
 
         <div className="space-y-2">
           <div className="flex items-center justify-between gap-3">
-            <span className="text-sm font-semibold text-muted-foreground">{t.dailyGoal}</span>
+            <span className="text-sm font-semibold text-muted-foreground">
+              {progress.goal_completed_today ? t.goalAchieved : t.dailyGoalProgress}
+            </span>
+            <span className="text-sm font-bold text-primary">
+              {progress.pages_read_today} / {progress.daily_goal} {t.pages}
+            </span>
             <button
               aria-label={t.updateGoal}
               className="inline-flex h-8 w-8 items-center justify-center rounded-full text-primary transition hover:bg-surface-container"
@@ -108,15 +128,26 @@ export function ContinueReadingCard({ language, progress, onSetDailyGoal }: Cont
             </button>
           </div>
           <Progress className="h-2" value={goalPercent} />
-          <div className="flex justify-between gap-3 text-sm font-semibold text-muted-foreground">
-            <span>{progress.goal_completed_today ? t.goalAchieved : t.dailyGoal}</span>
-            <span>
-              {progress.pages_read_today} / {progress.daily_goal} {t.pagesLoggedToday}
-            </span>
-          </div>
         </div>
 
-        <div className="mt-4 flex justify-end">
+        <div className="grid grid-cols-3 gap-2">
+          {[1, 2, 5].map((increment) => (
+            <Button
+              key={increment}
+              onClick={(event) => {
+                event.stopPropagation()
+                onQuickLog(increment)
+              }}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              <Plus className="h-4 w-4" />+{increment}
+            </Button>
+          ))}
+        </div>
+
+        <div className="flex justify-end">
           <Button
             onClick={(event) => {
               event.stopPropagation()
@@ -124,7 +155,7 @@ export function ContinueReadingCard({ language, progress, onSetDailyGoal }: Cont
             }}
             type="button"
           >
-            {t.startReading}
+            {actionLabel}
           </Button>
         </div>
       </Card>
@@ -140,7 +171,7 @@ export function ContinueReadingCard({ language, progress, onSetDailyGoal }: Cont
               <p className="text-sm leading-6 text-muted-foreground">{t.goalHelp}</p>
             </div>
             <label className="mt-5 block text-sm font-semibold text-muted-foreground">
-              {t.dailyGoal}
+              {t.dailyGoalProgress}
               <input
                 autoFocus
                 className="mt-2 h-11 w-full rounded-xl border border-sage/20 bg-background px-3 text-base font-bold text-foreground outline-none focus:border-sage"
