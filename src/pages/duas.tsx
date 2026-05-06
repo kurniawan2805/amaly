@@ -1,5 +1,6 @@
 import { Play, Search, Sparkles, Star } from "lucide-react"
 import { useMemo, useState } from "react"
+import { useSearchParams } from "react-router-dom"
 
 import { DuaCard } from "@/components/duas/dua-card"
 import { DuaFlowMode } from "@/components/duas/dua-flow-mode"
@@ -14,6 +15,7 @@ import { cn } from "@/lib/utils"
 
 type DuasPageProps = {
   language: AppLanguage
+  onCompleteDhikrFlow?: (categoryId: string) => void
 }
 
 type VisibleDua = {
@@ -116,16 +118,19 @@ function isFlowCategory(categoryId: string) {
   return categoryId === "morning-dhikr" || categoryId === "evening-dhikr"
 }
 
-export default function DuasPage({ language }: DuasPageProps) {
+export default function DuasPage({ language, onCompleteDhikrFlow }: DuasPageProps) {
   const t = copy[language]
-  const [selectedCategoryId, setSelectedCategoryId] = useState(duaCategories[0]?.id ?? "")
+  const [searchParams] = useSearchParams()
+  const initialCategoryId = searchParams.get("category") ?? duaCategories[0]?.id ?? ""
+  const [selectedCategoryId, setSelectedCategoryId] = useState(initialCategoryId)
   const [selectedGroupId, setSelectedGroupId] = useState("all")
   const [query, setQuery] = useState("")
   const [favorites, setFavorites] = useState(() => loadDuaFavorites())
   const [displaySettings, setDisplaySettings] = useState(() => loadDuaDisplaySettings())
   const [flowSessions, setFlowSessions] = useState(() => loadDuaFlowSessions())
-  const [flowCategory, setFlowCategory] = useState<DuaCategory | null>(null)
   const selectedCategory = selectedCategoryId === favoritesCategoryId ? null : duaCategories.find((category) => category.id === selectedCategoryId) ?? duaCategories[0]
+  const initialFlowCategory = searchParams.get("flow") === "1" && selectedCategory?.items && isFlowCategory(selectedCategory.id) ? selectedCategory : null
+  const [flowCategory, setFlowCategory] = useState<DuaCategory | null>(initialFlowCategory)
   const visibleDuas = useMemo(
     () => getVisibleDuas(selectedCategory, selectedGroupId, query, favorites.ids, language),
     [favorites.ids, language, query, selectedCategory, selectedGroupId],
@@ -169,6 +174,7 @@ export default function DuasPage({ language }: DuasPageProps) {
           items={flowCategory.items}
           language={language}
           onClose={closeFlow}
+          onCompleteFlow={onCompleteDhikrFlow}
           onToggleFavorite={toggleFavorite}
         />
       ) : null}

@@ -1,5 +1,5 @@
-import { BookOpen, Check, ChevronDown, Clock, Lock, Moon, Plus, Quote, Settings, Sparkles, Sun } from "lucide-react"
-import { CSSProperties, PointerEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react"
+import { BookOpen, Check, Clock, Lock, Moon, Plus, Quote, Settings, Sparkles, Sun } from "lucide-react"
+import { CSSProperties, FormEvent, PointerEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react"
 import { Link } from "react-router-dom"
 
 import { PartnerWidget } from "@/components/partner/partner-widget"
@@ -83,33 +83,11 @@ function getActiveHabitPhase(nowMinutes: number) {
   return nowMinutes >= timeToMinutes("15:00") ? "night" : "morning"
 }
 
-function getHabitPhase(habit: Habit, activePhase: "morning" | "night") {
-  if (habit.timing.mode !== "prayer") {
-    return activePhase
-  }
-
-  return habit.timing.prayer === "fajr" || habit.timing.prayer === "dzuhr" ? "morning" : "night"
-}
-
-function getHabitSortValue(habit: Habit, activePhase: "morning" | "night", currentPrayer: string | null) {
-  if (habit.timing.mode !== "prayer") {
-    return activePhase === "night" ? timeToMinutes("15:00") : 0
-  }
-
-  const anchorLabel = habit.timing.prayer
-  const boost = currentPrayer?.toLowerCase() === anchorLabel ? -1000 : 0
-  return prayerToMinutes(anchorLabel) + habit.timing.offsetMinutes + boost
-}
-
 function formatTime(date: Date, language: AppSettings["language"]) {
   return new Intl.DateTimeFormat(language === "id" ? "id-ID" : "en-US", {
     hour: "numeric",
     minute: "2-digit",
   }).format(date)
-}
-
-function formatAnchor(prayer: PrayerAnchor) {
-  return prayer.charAt(0).toUpperCase() + prayer.slice(1)
 }
 
 function HabitMark({ habit }: { habit: Habit }) {
@@ -150,6 +128,12 @@ const copy = {
     dailyHabits: "Daily Habits",
     quran: "Quran",
     quranContinue: "Continue",
+    quranCustom: "Custom",
+    quranTarget: "Daily Quran Target",
+    quranTargetHelp: "Set your gentle page target for each day.",
+    editQuranTarget: "Edit daily Quran target",
+    cancel: "Cancel",
+    save: "Save",
     quranToday: "Today progress",
     quranPage: "Page",
     quranJuz: "Juz",
@@ -175,6 +159,12 @@ const copy = {
     dhikrCtaBody: (window: "morning" | "evening") =>
       window === "morning" ? "After Fajr is a gentle time for morning remembrance." : "After Ashr is a gentle time for evening remembrance.",
     dhikrCtaAction: "Open Dzikir Flow",
+    now: "Now",
+    upcoming: "Upcoming",
+    available: "Available",
+    flexible: "Flexible",
+    missed: "Missed",
+    completedStatus: "Completed",
   },
   id: {
     morning: (name: string) => `Ahlan, ${name || "sahabat"}`,
@@ -197,6 +187,12 @@ const copy = {
     dailyHabits: "Kebiasaan Harian",
     quran: "Quran",
     quranContinue: "Lanjutkan",
+    quranCustom: "Custom",
+    quranTarget: "Target Quran Harian",
+    quranTargetHelp: "Atur target halaman ringan untuk setiap hari.",
+    editQuranTarget: "Ubah target Quran harian",
+    cancel: "Batal",
+    save: "Simpan",
     quranToday: "Progress hari ini",
     quranPage: "Halaman",
     quranJuz: "Juz",
@@ -222,6 +218,12 @@ const copy = {
     dhikrCtaBody: (window: "morning" | "evening") =>
       window === "morning" ? "Setelah Fajr adalah waktu lembut untuk dzikir pagi." : "Setelah Ashr adalah waktu lembut untuk dzikir petang.",
     dhikrCtaAction: "Buka Flow Dzikir",
+    now: "Sekarang",
+    upcoming: "Nanti",
+    available: "Tersedia",
+    flexible: "Fleksibel",
+    missed: "Terlewat",
+    completedStatus: "Selesai",
   },
 }
 
@@ -289,6 +291,67 @@ function PressAction({ children, className, disabled = false, onPress, onLongPre
   )
 }
 
+type HabitStatus = "upcoming" | "available" | "completed" | "missed" | "flexible"
+
+type HabitSummary = {
+  habit: Habit
+  sort: number
+  status: HabitStatus
+  windowLabel: string
+}
+
+function formatMinutes(minutes: number) {
+  const safe = Math.max(0, Math.min(1439, minutes))
+  const hours = Math.floor(safe / 60)
+  const mins = safe % 60
+  return `${String(hours).padStart(2, "0")}:${String(mins).padStart(2, "0")}`
+}
+
+function getPrayerStart(prayer: PrayerAnchor) {
+  return prayers.find((item) => item.label.toLowerCase() === prayer)?.start
+}
+
+function getPrayerEnd(prayer: PrayerAnchor) {
+  return prayers.find((item) => item.label.toLowerCase() === prayer)?.end
+}
+
+function getHabitSummary(habit: Habit, nowMinutes: number): HabitSummary {
+  if (habit.completed) {
+    return { habit, sort: 3000, status: "completed", windowLabel: habit.scheduleLabel }
+  }
+
+  if (habit.timing.mode === "flexible") {
+    const customStart = habit.timing.customStart ? timeToMinutes(habit.timing.customStart) : null
+    const customEnd = habit.timing.customEnd ? timeToMinutes(habit.timing.customEnd) : null
+    const hasCustomWindow = customStart !== null && customEnd !== null
+    const status = hasCustomWindow && nowMinutes < customStart ? "upcoming" : hasCustomWindow && nowMinutes > customEnd ? "missed" : "flexible"
+    return { habit, sort: hasCustomWindow ? customStart : 2000, status, windowLabel: hasCustomWindow ? `${formatMinutes(customStart)} - ${formatMinutes(customEnd)}` : habit.scheduleLabel }
+  }
+
+  const range = (() => {
+    if (habit.timing.mode === "fixed_time") {
+      return { end: timeToMinutes(habit.timing.end), start: timeToMinutes(habit.timing.start) }
+    }
+
+    if (habit.timing.mode === "prayer_based_time") {
+      const start = timeToMinutes(getPrayerStart(habit.timing.prayer) ?? habit.timing.fallbackStart) + (habit.timing.startOffsetMinutes ?? 0)
+      const end = habit.timing.untilPrayer ? getPrayerStart(habit.timing.untilPrayer) : habit.timing.window === "untilPrayerEnd" ? getPrayerEnd(habit.timing.prayer) : habit.timing.fallbackEnd
+      return { end: timeToMinutes(end ?? habit.timing.fallbackEnd) + (habit.timing.endOffsetMinutes ?? 0), start }
+    }
+
+    if (habit.timing.mode === "prayer") {
+      const start = prayerToMinutes(habit.timing.prayer) + habit.timing.offsetMinutes
+      return { end: Math.min(1439, start + 90), start }
+    }
+
+    const start = habit.timing.time ? timeToMinutes(habit.timing.time) : 0
+    return { end: start > 0 ? Math.min(1439, start + 90) : 1439, start }
+  })()
+
+  const status: HabitStatus = nowMinutes < range.start ? "upcoming" : nowMinutes > range.end ? "missed" : "available"
+  return { habit, sort: range.start, status, windowLabel: `${formatMinutes(range.start)} - ${formatMinutes(range.end)}` }
+}
+
 type DailyPageProps = {
   settings: AppSettings
   cycleState: CycleState
@@ -296,11 +359,10 @@ type DailyPageProps = {
   displayName?: string
   quranProgress: QuranProgressState
   onQuickLog: (increment: number) => void
-  onSetQuranPage: (page: number) => void
+  onSetQuranDailyGoal: (goal: number) => void
   onSetPrayerCompleted: (prayer: string, completed: boolean, dateKey?: string) => void
   onToggleSunnahSelection: (prayer: string, dateKey?: string) => void
   onSetHabitCompleted: (habitId: string, completed: boolean, completedAt: string | null, dateKey?: string) => void
-  onSetHabitsCompleted: (habitIds: string[], completedAt: string, dateKey?: string) => void
   onOpenHabitSettings: () => void
   onOpenSunnahSettings: () => void
 }
@@ -311,16 +373,19 @@ export default function DailyPage({
   dailyTrackerState,
   displayName = "",
   quranProgress,
+  onQuickLog,
+  onSetQuranDailyGoal,
   onSetPrayerCompleted,
   onToggleSunnahSelection,
   onSetHabitCompleted,
-  onSetHabitsCompleted,
   onOpenHabitSettings,
   onOpenSunnahSettings,
 }: DailyPageProps) {
   const [flowerBursts, setFlowerBursts] = useState<FlowerBurst[]>([])
   const [cycleRevealed, setCycleRevealed] = useState(false)
   const [now, setNow] = useState(() => new Date())
+  const [quranTargetOpen, setQuranTargetOpen] = useState(false)
+  const [quranTargetInput, setQuranTargetInput] = useState(String(quranProgress.daily_goal))
   const t = copy[settings.language]
   const todayKey = localDailyTrackerKey(now)
   const todayTracker = useMemo(() => getDailyTrackerDay(dailyTrackerState, todayKey), [dailyTrackerState, todayKey])
@@ -338,11 +403,11 @@ export default function DailyPage({
         const completion = todayTracker.habitCompletions[habit.id]
         return {
           ...toHabitState(habit),
-          completed: Boolean(completion?.completed),
+          completed: habit.label === "Quran Reading" ? quranProgress.goal_completed_today : Boolean(completion?.completed),
           completedAt: completion?.completedAt ?? null,
         }
       }),
-    [todayTracker.habitCompletions, visibleHabitDefinitions],
+    [quranProgress.goal_completed_today, todayTracker.habitCompletions, visibleHabitDefinitions],
   )
 
   const completedHabits = useMemo(() => habits.filter((habit) => habit.completed).length, [habits])
@@ -383,25 +448,12 @@ export default function DailyPage({
   })()
   const cycleSummary = useMemo(() => getCycleSummary(cycleState, now), [cycleState, now])
   const cyclePrivate = cycleState.settings.privacyEnabled && !cycleRevealed
-  const morningHabits = useMemo(
-    () =>
-      habits
-        .filter((habit) => getHabitPhase(habit, activeHabitPhase) === "morning")
-        .sort((a, b) => getHabitSortValue(a, activeHabitPhase, currentPrayer?.label ?? null) - getHabitSortValue(b, activeHabitPhase, currentPrayer?.label ?? null)),
-    [activeHabitPhase, currentPrayer?.label, habits],
-  )
-  const nightHabits = useMemo(
-    () =>
-      habits
-        .filter((habit) => getHabitPhase(habit, activeHabitPhase) === "night")
-        .sort((a, b) => getHabitSortValue(a, activeHabitPhase, currentPrayer?.label ?? null) - getHabitSortValue(b, activeHabitPhase, currentPrayer?.label ?? null)),
-    [activeHabitPhase, currentPrayer?.label, habits],
-  )
-  const activeHabits = activeHabitPhase === "night" ? nightHabits : morningHabits
-  const earlierHabits = activeHabitPhase === "night" ? morningHabits : []
-  const activeCompletedHabits = activeHabits.filter((habit) => habit.completed).length
-  const earlierCompletedHabits = earlierHabits.filter((habit) => habit.completed).length
-  const activeProgress = activeHabits.length > 0 ? (activeCompletedHabits / activeHabits.length) * 100 : 0
+  const habitSummaries = useMemo(() => habits.map((habit) => getHabitSummary(habit, nowMinutes)).sort((a, b) => a.sort - b.sort), [habits, nowMinutes])
+  const activeHabits = habitSummaries.filter((item) => item.status === "available" || item.status === "flexible")
+  const upcomingHabits = habitSummaries.filter((item) => item.status === "upcoming")
+  const missedHabits = habitSummaries.filter((item) => item.status === "missed")
+  const completedHabitSummaries = habitSummaries.filter((item) => item.status === "completed")
+  const activeProgress = habitSummaries.length > 0 ? (completedHabitSummaries.length / habitSummaries.length) * 100 : 0
   const quranGoalProgress = Math.min(100, (quranProgress.pages_read_today / quranProgress.daily_goal) * 100)
 
   useEffect(() => {
@@ -412,37 +464,22 @@ export default function DailyPage({
     return () => window.clearInterval(interval)
   }, [])
 
+  useEffect(() => {
+    setQuranTargetInput(String(quranProgress.daily_goal))
+  }, [quranProgress.daily_goal])
+
+  function saveQuranTarget(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    onSetQuranDailyGoal(Number(quranTargetInput))
+    setQuranTargetOpen(false)
+  }
+
   function completeHabit(id: string) {
     onSetHabitCompleted(id, true, formatTime(new Date(), settings.language), todayKey)
   }
 
   function uncompleteHabit(id: string) {
     onSetHabitCompleted(id, false, null, todayKey)
-  }
-
-  function completeHabits(ids: string[]) {
-    onSetHabitsCompleted(ids, formatTime(new Date(), settings.language), todayKey)
-  }
-
-  function habitTimeLabel(habit: Habit) {
-    if (habit.completed && habit.completedAt) {
-      return t.doneAt(habit.completedAt)
-    }
-
-    if (habit.timing.mode !== "prayer") {
-      return t.anytimeActive
-    }
-
-    const anchor = formatAnchor(habit.timing.prayer)
-    if (habit.timing.offsetMinutes > 0) {
-      return t.upcomingAfter(anchor)
-    }
-
-    if (habit.timing.offsetMinutes < 0) {
-      return t.upcomingBefore(anchor)
-    }
-
-    return t.upcomingDuring(anchor)
   }
 
   function completePrayer(prayer: string) {
@@ -471,36 +508,42 @@ export default function DailyPage({
     onToggleSunnahSelection(prayer, todayKey)
   }
 
-  function renderHabitItem(habit: Habit) {
-    const isCurrentAnchor = habit.timing.mode === "prayer" && currentPrayer?.label.toLowerCase() === habit.timing.prayer
+  function renderHabitItem(item: HabitSummary) {
+    const habit = item.habit
+    const statusLabel = item.status === "completed" ? t.completedStatus : item.status === "missed" ? t.missed : item.status === "upcoming" ? t.upcoming : item.status === "flexible" ? t.flexible : t.available
+    const isQuranHabit = habit.label === "Quran Reading"
+    const dhikrCategory = habit.label === "Morning Dhikr" ? "morning-dhikr" : habit.label === "Evening Dhikr" ? "evening-dhikr" : null
+    const href = isQuranHabit ? "/quran" : dhikrCategory ? `/duas?category=${dhikrCategory}&flow=1` : null
+    const windowLabel = isQuranHabit ? `${quranProgress.pages_read_today} / ${quranProgress.daily_goal} ${t.quranPages} today` : habit.completed && habit.completedAt ? t.doneAt(habit.completedAt) : item.windowLabel
+    const rowContent = (
+      <>
+        <span className="block truncate text-sm font-bold">{habit.label}</span>
+        <span className="block truncate text-xs font-semibold text-muted-foreground">{windowLabel}</span>
+      </>
+    )
 
     return (
       <li
         key={habit.id}
         className={cn(
-          "group flex items-center gap-3 rounded-xl border border-sage/10 bg-card px-3 py-3 transition hover:border-sage/20 hover:bg-surface-container-low/70",
-          isCurrentAnchor && !habit.completed && "border-sage/45 bg-sage-pale/35 dark:bg-sage/10",
+          "group flex items-center gap-3 rounded-xl border border-sage/10 bg-card px-3 py-2.5 transition hover:border-sage/20 hover:bg-surface-container-low/70",
+          item.status === "available" && "border-sage/45 bg-sage-pale/35 dark:bg-sage/10",
+          item.status === "missed" && "opacity-70",
         )}
       >
         <HabitMark habit={habit} />
         <div className="min-w-0 flex-1">
-          <PressAction
-            ariaLabel={
-              habit.completed
-                ? `${habit.label} ${t.completed}. Long press to uncheck.`
-                : `Mark ${habit.label} ${t.completed}.`
-            }
-            className={cn(
-              "block min-w-0 text-left transition",
-              habit.completed ? "text-foreground/60 line-through" : "text-foreground",
-            )}
-            onLongPress={() => uncompleteHabit(habit.id)}
-            onPress={() => completeHabit(habit.id)}
-          >
-            <span className="block truncate text-sm font-bold">{habit.label}</span>
-            <span className="block truncate text-xs font-semibold text-muted-foreground">{habitTimeLabel(habit)}</span>
-          </PressAction>
+          {href ? (
+            <Link className={cn("block min-w-0 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring", habit.completed ? "text-foreground/60 line-through" : "text-foreground")} to={href}>
+              {rowContent}
+            </Link>
+          ) : (
+            <PressAction ariaLabel={habit.completed ? `${habit.label} ${t.completed}. Long press to uncheck.` : `Mark ${habit.label} ${t.completed}.`} className={cn("block min-w-0 text-left transition", habit.completed ? "text-foreground/60 line-through" : "text-foreground")} onLongPress={() => uncompleteHabit(habit.id)} onPress={() => completeHabit(habit.id)}>
+              {rowContent}
+            </PressAction>
+          )}
         </div>
+        <span className={cn("shrink-0 rounded-full px-2 py-1 text-[0.68rem] font-bold", item.status === "available" || item.status === "flexible" ? "bg-sage-pale text-sage-deep" : "bg-surface-container-low text-muted-foreground")}>{statusLabel}</span>
         <PressAction
           ariaLabel={
             habit.completed
@@ -712,7 +755,7 @@ export default function DailyPage({
                   {t.quranPage} {quranProgress.page} - {t.quranJuz} {quranProgress.juz}
                 </p>
               </div>
-              <Button asChild className="shrink-0" size="sm" type="button">
+              <Button asChild className="shrink-0" size="sm" type="button" variant="outline">
                 <Link to="/quran">{t.quranContinue}</Link>
               </Button>
             </div>
@@ -720,16 +763,42 @@ export default function DailyPage({
             <div className="mt-3 space-y-2">
               <div className="flex items-center justify-between gap-3 text-sm font-semibold">
                 <span className="text-muted-foreground">{t.quranToday}</span>
-                <span className="text-primary">
+                <button aria-label={t.editQuranTarget} className="rounded-lg px-2 py-1 text-primary transition hover:bg-sage-pale/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" onClick={() => setQuranTargetOpen(true)} type="button">
                   {quranProgress.pages_read_today} / {quranProgress.daily_goal} {t.quranPages}
-                </span>
+                </button>
               </div>
               <Progress className="h-2" value={quranGoalProgress} />
+            </div>
+            <div className="mt-3 grid grid-cols-4 gap-2">
+              {[1, 2, 5].map((increment) => (
+                <Button key={increment} onClick={() => onQuickLog(increment)} size="sm" type="button" variant="outline">
+                  <Plus className="h-4 w-4" />+{increment}
+                </Button>
+              ))}
+              <Button asChild size="sm" type="button" variant="ghost">
+                <Link to="/quran">{t.quranCustom}</Link>
+              </Button>
             </div>
           </Card>
           {shouldShowQuranEveningNudge(quranProgress) ? (
             <div className="mt-3 rounded-xl border border-sage/20 bg-sage-pale/70 px-4 py-3 text-sm font-semibold text-sage-deep">
               {t.quranNudge}
+            </div>
+          ) : null}
+          {quranTargetOpen ? (
+            <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/25 px-4 pb-4 sm:items-center sm:pb-0">
+              <form className="w-full max-w-sm rounded-2xl border border-sage/20 bg-card p-5 text-card-foreground shadow-2xl" onSubmit={saveQuranTarget}>
+                <h3 className="font-serif text-2xl font-semibold text-primary">{t.quranTarget}</h3>
+                <p className="mt-1 text-sm leading-6 text-muted-foreground">{t.quranTargetHelp}</p>
+                <label className="mt-4 block text-sm font-semibold text-muted-foreground">
+                  {t.quranPages}
+                  <input autoFocus className="mt-2 h-11 w-full rounded-xl border border-sage/20 bg-background px-3 text-base font-bold text-foreground outline-none focus:border-sage" inputMode="numeric" max={30} min={1} onChange={(event) => setQuranTargetInput(event.target.value)} type="number" value={quranTargetInput} />
+                </label>
+                <div className="mt-5 flex justify-end gap-2">
+                  <Button onClick={() => setQuranTargetOpen(false)} type="button" variant="ghost">{t.cancel}</Button>
+                  <Button type="submit">{t.save}</Button>
+                </div>
+              </form>
             </div>
           ) : null}
         </div>
@@ -747,66 +816,50 @@ export default function DailyPage({
               <Settings className="h-5 w-5" />
             </Button>
           </div>
-          <div className="relative z-10 mt-6 rounded-2xl border border-sage/15 bg-surface-container-low/70 p-4">
+          <div className="relative z-10 mt-4 rounded-2xl border border-sage/15 bg-surface-container-low/70 p-3">
             <div className="mb-3 flex items-center justify-between gap-3">
               <div className="flex items-center gap-2 text-sm font-bold text-primary">
                 {activeHabitPhase === "night" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-                <span>{activeHabitPhase === "night" ? t.nightPhase : t.morningComplete}</span>
+                <span>{t.now}</span>
               </div>
               <span className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                {t.phaseDone(activeCompletedHabits, activeHabits.length)}
+                {t.phaseDone(completedHabitSummaries.length, habitSummaries.length)}
               </span>
             </div>
             <Progress value={activeProgress} />
           </div>
 
-          <div className="relative z-10 mt-5 flex flex-col gap-3">
-            {earlierHabits.length > 0 ? (
-              <details className="group rounded-2xl border border-sage/10 bg-card">
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3">
-                  <div>
-                    <p className="text-sm font-bold text-foreground">{t.earlierToday}</p>
-                    <p className="text-xs font-semibold text-muted-foreground">
-                      {t.phaseDone(earlierCompletedHabits, earlierHabits.length)}
-                    </p>
-                  </div>
-                  <ChevronDown className="h-4 w-4 text-muted-foreground transition group-open:rotate-180" />
-                </summary>
-                <div className="border-t border-sage/10 p-3">
-                  <Button
-                    className="mb-3 w-full"
-                    onClick={() => completeHabits(earlierHabits.map((habit) => habit.id))}
-                    size="sm"
-                    type="button"
-                    variant="outline"
-                  >
-                    <Sun className="h-4 w-4" />
-                    {t.logAllMorning}
-                  </Button>
-                  <ul className="flex flex-col gap-2">{earlierHabits.map(renderHabitItem)}</ul>
-                </div>
-              </details>
-            ) : null}
-
-            <section
-              className={cn(
-                "rounded-2xl border bg-card p-3",
-                activeHabitPhase === "night" ? "border-sage/25 shadow-[0_0_24px_rgba(88,112,83,0.1)]" : "border-sage/10",
-              )}
-            >
+          <div className="relative z-10 mt-4 flex flex-col gap-3">
+            <section className="rounded-2xl border border-sage/25 bg-card p-3">
               <div className="mb-3 flex items-center justify-between gap-3 px-1">
                 <div className="flex items-center gap-2">
                   {activeHabitPhase === "night" ? <Moon className="h-4 w-4 text-primary" /> : <Sun className="h-4 w-4 text-primary" />}
-                  <h4 className="text-sm font-bold text-foreground">
-                    {activeHabitPhase === "night" ? t.eveningNight : t.dailyHabits}
-                  </h4>
+                  <h4 className="text-sm font-bold text-foreground">{t.now}</h4>
                 </div>
                 <span className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                  {t.phaseDone(activeCompletedHabits, activeHabits.length)}
+                  {activeHabits.length}
                 </span>
               </div>
               <ul className="flex flex-col gap-2">{activeHabits.map(renderHabitItem)}</ul>
             </section>
+            {upcomingHabits.length > 0 ? (
+              <section className="rounded-2xl border border-sage/10 bg-card p-3">
+                <h4 className="mb-2 px-1 text-sm font-bold text-foreground">{t.upcoming}</h4>
+                <ul className="flex flex-col gap-2">{upcomingHabits.map(renderHabitItem)}</ul>
+              </section>
+            ) : null}
+            {missedHabits.length > 0 ? (
+              <section className="rounded-2xl border border-sage/10 bg-card p-3">
+                <h4 className="mb-2 px-1 text-sm font-bold text-foreground">{t.missed}</h4>
+                <ul className="flex flex-col gap-2">{missedHabits.map(renderHabitItem)}</ul>
+              </section>
+            ) : null}
+            {completedHabitSummaries.length > 0 ? (
+              <section className="rounded-2xl border border-sage/10 bg-card p-3">
+                <h4 className="mb-2 px-1 text-sm font-bold text-foreground">{t.completedStatus}</h4>
+                <ul className="flex flex-col gap-2">{completedHabitSummaries.map(renderHabitItem)}</ul>
+              </section>
+            ) : null}
           </div>
         </Card>
 

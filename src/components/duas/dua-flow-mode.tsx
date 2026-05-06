@@ -18,6 +18,7 @@ type DuaFlowModeProps = {
   items: DuaItem[]
   language: AppLanguage
   onClose: () => void
+  onCompleteFlow?: (categoryId: string) => void
   onToggleFavorite: (id: string) => void
 }
 
@@ -62,7 +63,7 @@ function vibrate(pattern: number | number[]) {
   window.navigator.vibrate?.(pattern)
 }
 
-export function DuaFlowMode({ arabicSize, categoryId, categoryTitle, favoriteIds, items, language, onClose, onToggleFavorite }: DuaFlowModeProps) {
+export function DuaFlowMode({ arabicSize, categoryId, categoryTitle, favoriteIds, items, language, onClose, onCompleteFlow, onToggleFavorite }: DuaFlowModeProps) {
   const t = copy[language]
   const navigate = useNavigate()
   const initialSession = loadDuaFlowSessions()[categoryId]
@@ -119,6 +120,7 @@ export function DuaFlowMode({ arabicSize, categoryId, categoryTitle, favoriteIds
   function completeFlow() {
     if (advanceTimerRef.current) window.clearTimeout(advanceTimerRef.current)
     clearDuaFlowSession(categoryId)
+    onCompleteFlow?.(categoryId)
     setCurrentCount(targetCount)
     setIsAdvancing(false)
     setCompletionSplash(true)

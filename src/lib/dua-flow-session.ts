@@ -11,8 +11,8 @@ export type DuaFlowSession = {
 export type DuaFlowSessionState = Record<string, DuaFlowSession>
 
 const dhikrSessionWindows: Record<string, { startMinutes: number; endMinutes: number }> = {
-  "morning-dhikr": { startMinutes: 3 * 60 + 15, endMinutes: 11 * 60 + 59 },
-  "evening-dhikr": { startMinutes: 14 * 60 + 30, endMinutes: 23 * 60 + 59 },
+  "morning-dhikr": { startMinutes: 5 * 60 + 10, endMinutes: 11 * 60 + 30 },
+  "evening-dhikr": { startMinutes: 16 * 60, endMinutes: 20 * 60 + 30 },
 }
 
 function localDateKey(date: Date) {

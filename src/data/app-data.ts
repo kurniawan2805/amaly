@@ -16,18 +16,25 @@ const fridayOnly = [false, false, false, false, false, true, false]
 
 export const dailyHabits = [
   {
-    label: "Dzikir pagi",
+    label: "Morning Dhikr",
     category: "Ibadah Harian",
-    scheduleLabel: "10 menit setelah Shubuh",
+    scheduleLabel: "After Fajr until sunrise",
     plannedDays: everyday,
-    timing: { mode: "prayer", prayer: "fajr", offsetMinutes: 10 },
+    timing: { endOffsetMinutes: -30, fallbackEnd: "11:30", fallbackStart: "05:10", mode: "prayer_based_time", prayer: "fajr", startOffsetMinutes: 10, untilPrayer: "dzuhr" },
   },
   {
-    label: "Dzikir petang",
+    label: "Evening Dhikr",
     category: "Ibadah Harian",
-    scheduleLabel: "10 menit setelah Ashar",
+    scheduleLabel: "After Asr until Maghrib",
     plannedDays: everyday,
-    timing: { mode: "prayer", prayer: "ashr", offsetMinutes: 10 },
+    timing: { endOffsetMinutes: 30, fallbackEnd: "20:30", fallbackStart: "16:00", mode: "prayer_based_time", prayer: "ashr", startOffsetMinutes: 0, untilPrayer: "isya" },
+  },
+  {
+    label: "Quran Reading",
+    category: "Ibadah Harian",
+    scheduleLabel: "Anytime today",
+    plannedDays: everyday,
+    timing: { mode: "flexible" },
   },
   {
     label: "Shalat Witr",

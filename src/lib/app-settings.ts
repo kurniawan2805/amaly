@@ -6,6 +6,9 @@ export type HijriOffset = -2 | -1 | 0 | 1 | 2
 export type PartnerRole = "husband" | "wife"
 export type PrayerAnchor = "fajr" | "dzuhr" | "ashr" | "maghrib" | "isya"
 export type HabitTiming =
+  | { mode: "flexible"; customEnd?: string; customStart?: string }
+  | { mode: "fixed_time"; end: string; start: string }
+  | { endOffsetMinutes?: number; fallbackEnd: string; fallbackStart: string; mode: "prayer_based_time"; prayer: PrayerAnchor; startOffsetMinutes?: number; untilPrayer?: PrayerAnchor; window?: "untilPrayerEnd" }
   | { mode: "fixed"; time: string }
   | { mode: "prayer"; prayer: PrayerAnchor; offsetMinutes: number }
 
@@ -37,11 +40,42 @@ function slugify(value: string) {
 }
 
 function timingFromHabitSeed(habit: (typeof dailyHabits)[number]): HabitTiming {
-  const timing = habit.timing
+  const timing = habit.timing as Partial<HabitTiming> & Record<string, unknown>
   const schedule = habit.scheduleLabel.toLowerCase()
   const offsetMatch = schedule.match(/(\d+)\s*(?:min|menit)/)
   const baseOffset = offsetMatch ? Number(offsetMatch[1]) : 0
   const offsetMinutes = schedule.includes("before") || schedule.includes("sebelum") ? -baseOffset : baseOffset
+
+  if (timing.mode === "flexible") {
+    return {
+      customEnd: typeof timing.customEnd === "string" ? timing.customEnd : undefined,
+      customStart: typeof timing.customStart === "string" ? timing.customStart : undefined,
+      mode: "flexible",
+    }
+  }
+
+  if (timing.mode === "fixed_time") {
+    return {
+      end: typeof timing.end === "string" ? timing.end : "",
+      mode: "fixed_time",
+      start: typeof timing.start === "string" ? timing.start : "",
+    }
+  }
+
+  if (timing.mode === "prayer_based_time") {
+    const prayer = timing.prayer
+    const untilPrayer = timing.untilPrayer
+    return {
+      fallbackEnd: typeof timing.fallbackEnd === "string" ? timing.fallbackEnd : "",
+      fallbackStart: typeof timing.fallbackStart === "string" ? timing.fallbackStart : "",
+      endOffsetMinutes: typeof timing.endOffsetMinutes === "number" && Number.isFinite(timing.endOffsetMinutes) ? Math.round(timing.endOffsetMinutes) : undefined,
+      mode: "prayer_based_time",
+      prayer: prayer === "fajr" || prayer === "dzuhr" || prayer === "ashr" || prayer === "maghrib" || prayer === "isya" ? prayer : "fajr",
+      startOffsetMinutes: typeof timing.startOffsetMinutes === "number" && Number.isFinite(timing.startOffsetMinutes) ? Math.round(timing.startOffsetMinutes) : undefined,
+      untilPrayer: untilPrayer === "fajr" || untilPrayer === "dzuhr" || untilPrayer === "ashr" || untilPrayer === "maghrib" || untilPrayer === "isya" ? untilPrayer : undefined,
+      window: timing.window === "untilPrayerEnd" ? "untilPrayerEnd" : undefined,
+    }
+  }
 
   if (timing.mode === "prayer") {
     return {

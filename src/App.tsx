@@ -88,7 +88,6 @@ export default function App() {
   const setPrayerCompleted = useAppStore((state) => state.setPrayerCompleted)
   const toggleSunnahSelection = useAppStore((state) => state.toggleSunnahSelection)
   const setHabitCompleted = useAppStore((state) => state.setHabitCompleted)
-  const setHabitsCompleted = useAppStore((state) => state.setHabitsCompleted)
   const startPeriod = useAppStore((state) => state.startPeriod)
   const endPeriod = useAppStore((state) => state.endPeriod)
   const saveCycleRange = useAppStore((state) => state.saveCycleRange)
@@ -118,6 +117,18 @@ export default function App() {
     openPanel("habits")
   }
 
+  function completeDhikrFlow(categoryId: string) {
+    const label = categoryId === "morning-dhikr" ? "Morning Dhikr" : categoryId === "evening-dhikr" ? "Evening Dhikr" : null
+    const habit = label ? settings.habits.find((item) => item.label === label) : null
+    if (!habit) return
+
+    const completedAt = new Intl.DateTimeFormat(settings.language === "id" ? "id-ID" : "en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+    }).format(new Date())
+    setHabitCompleted(habit.id, true, completedAt)
+  }
+
   return (
     <div className="flex min-h-screen flex-col">
       {focusMode ? null : (
@@ -140,11 +151,10 @@ export default function App() {
                   onOpenHabitSettings={() => openHabitSettings("habits")}
                   onOpenSunnahSettings={() => openHabitSettings("sunnah")}
                   onQuickLog={quickLogQuran}
-                  onSetQuranPage={setQuranPage}
+                  onSetQuranDailyGoal={setQuranDailyGoal}
                   onSetPrayerCompleted={setPrayerCompleted}
                   onToggleSunnahSelection={toggleSunnahSelection}
                   onSetHabitCompleted={setHabitCompleted}
-                  onSetHabitsCompleted={setHabitsCompleted}
                   cycleState={cycleState}
                   dailyTrackerState={dailyTrackerState}
                   displayName={displayName}
@@ -186,7 +196,7 @@ export default function App() {
               path="/fasting"
             />
             <Route
-              element={<DuasPage language={settings.language} />}
+              element={<DuasPage language={settings.language} onCompleteDhikrFlow={completeDhikrFlow} />}
               path="/duas"
             />
             <Route

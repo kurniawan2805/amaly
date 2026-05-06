@@ -161,6 +161,9 @@ function persistSettings(settings: AppSettings) {
 }
 
 function timingLabel(timing: HabitTiming, fallback: string) {
+  if (timing.mode === "flexible") return fallback || "Anytime"
+  if (timing.mode === "fixed_time") return `${timing.start} - ${timing.end}`
+  if (timing.mode === "prayer_based_time") return fallback || `After ${timing.prayer}`
   if (timing.mode === "fixed") {
     return timing.time || fallback || "Anytime"
   }

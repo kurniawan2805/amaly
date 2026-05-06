@@ -88,6 +88,9 @@ function makeDraftHabit(): HabitDefinition {
 }
 
 function timingLabel(timing: HabitTiming, fallback: string) {
+  if (timing.mode === "flexible") return fallback || "Anytime"
+  if (timing.mode === "fixed_time") return `${timing.start} - ${timing.end}`
+  if (timing.mode === "prayer_based_time") return fallback || `After ${timing.prayer}`
   if (timing.mode === "fixed") return timing.time || fallback || "Anytime"
   const prefix = timing.offsetMinutes === 0 ? "At" : timing.offsetMinutes > 0 ? `${timing.offsetMinutes} min after` : `${Math.abs(timing.offsetMinutes)} min before`
   return `${prefix} ${timing.prayer}`
@@ -381,7 +384,7 @@ export function HabitSettingsPanel({ initialSection = "all", open, onClose }: Ha
                             className="h-10 rounded-xl border border-sage/15 bg-background px-3 text-sm font-semibold normal-case tracking-normal text-foreground outline-none focus:border-sage"
                             onChange={(event) => updateDraftHabit(habit.id, { timing: { mode: "fixed", time: event.target.value } })}
                             type="time"
-                            value={habit.timing.time}
+                            value={habit.timing.mode === "fixed" ? habit.timing.time : ""}
                           />
                         </label>
                       ) : (
@@ -391,7 +394,7 @@ export function HabitSettingsPanel({ initialSection = "all", open, onClose }: Ha
                             <select
                               className="h-10 rounded-xl border border-sage/15 bg-background px-3 text-sm font-semibold normal-case tracking-normal text-foreground outline-none focus:border-sage"
                               onChange={(event) => updateDraftHabit(habit.id, { timing: { ...prayerTiming(habit.timing), prayer: event.target.value as PrayerAnchor } })}
-                              value={habit.timing.prayer}
+                              value={prayerTiming(habit.timing).prayer}
                             >
                               {prayerAnchors().map((prayer) => (
                                 <option key={prayer} value={prayer}>
