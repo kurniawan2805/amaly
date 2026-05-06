@@ -1,4 +1,4 @@
-import { createHafs, getSurahNames, type Juz, type Page, type Surah } from "quran-meta"
+import { clampQuranPage, findQuranJuz, findQuranPage, getQuranJuzFirstKey, getQuranPageVerseKeys, getSurahMeta, getSurahName } from "@/lib/quran-static-meta"
 
 export const QURAN_READER_CACHE_NAME = "amaly-quran-reader-v1"
 export const QURAN_NORMAL_WORDS_URL = "https://static.quranwbw.com/data/v4/words-data/arabic/1.json?version=5"
@@ -14,6 +14,7 @@ export type QuranReaderVerse = {
   ayah: number
   key: string
   page: number
+  revelation: 1 | 2
   surah: number
   surahName: string
 }
@@ -39,6 +40,7 @@ export type QuranReaderLine = {
 export type QuranReaderChapterStart = {
   firstAyah: number
   line: number
+  revelation: 1 | 2
   showBismillah: boolean
   surah: number
   surahName: string
@@ -62,9 +64,6 @@ export type QuranReaderNavigationItem = {
   value: number
 }
 
-const quran = createHafs()
-const surahNames = getSurahNames("en")
-
 let mushafWordsPromise: Promise<QuranWbwMushafWords> | null = null
 const mushafFontPromises = new Map<number, Promise<string>>()
 let chapterHeaderFontPromise: Promise<string> | null = null
@@ -85,7 +84,7 @@ const centeredPageLines = new Set([
 ])
 
 function clampPage(page: number) {
-  return Math.max(1, Math.min(604, Number.isFinite(page) ? Math.round(page) : 1))
+  return clampQuranPage(page)
 }
 
 async function fetchWithCache(url: string) {
@@ -175,35 +174,19 @@ export function loadBismillahFont() {
   return bismillahFontPromise
 }
 
-function verseKeysForPage(page: number) {
-  const meta = quran.getPageMeta(clampPage(page) as Page)
-  const keys: Array<{ surah: number; ayah: number }> = []
-  let surah = meta.first[0]
-  let ayah = meta.first[1]
-
-  while (surah < meta.last[0] || (surah === meta.last[0] && ayah <= meta.last[1])) {
-    keys.push({ surah, ayah })
-    if (ayah >= quran.getAyahCountInSurah(surah)) {
-      surah += 1
-      ayah = 1
-    } else {
-      ayah += 1
-    }
-  }
-
-  return { keys, meta }
-}
-
 export async function getQuranReaderPage(page: number): Promise<QuranReaderPage> {
   const safePage = clampPage(page)
   const mushafWords = await loadMushafWords()
-  const { keys, meta } = verseKeysForPage(safePage)
+  const keys = getQuranPageVerseKeys(safePage)
+  const firstKey = keys[0] ?? { surah: 1, ayah: 1 }
+  const lastKey = keys[keys.length - 1] ?? firstKey
   const verses = keys.map(({ surah, ayah }) => ({
     ayah,
     key: `${surah}:${ayah}`,
     page: safePage,
+    revelation: getSurahMeta(surah).revelation,
     surah,
-    surahName: surahNames[surah]?.[0] ?? `Surah ${surah}`,
+    surahName: getSurahName(surah),
   }))
   const verseMap = new Map(verses.map((verse) => [verse.key, verse]))
   const lineMap = new Map<number, QuranReaderWord[]>()
@@ -219,6 +202,7 @@ export async function getQuranReaderPage(page: number): Promise<QuranReaderPage>
       chapterStartMap.set(lines[0], {
         firstAyah: ayah,
         line: lines[0],
+        revelation: verse.revelation,
         showBismillah: surah !== 1 && surah !== 9,
         surah,
         surahName: verse.surahName,
@@ -270,11 +254,11 @@ export async function getQuranReaderPage(page: number): Promise<QuranReaderPage>
   })
 
   return {
-    firstAyah: meta.first[1],
-    firstSurah: meta.first[0],
-    juz: quran.findJuz(meta.first[0], meta.first[1]),
-    lastAyah: meta.last[1],
-    lastSurah: meta.last[0],
+    firstAyah: firstKey.ayah,
+    firstSurah: firstKey.surah,
+    juz: findQuranJuz(firstKey.surah, firstKey.ayah),
+    lastAyah: lastKey.ayah,
+    lastSurah: lastKey.surah,
     lines,
     page: safePage,
     verses,
@@ -284,11 +268,11 @@ export async function getQuranReaderPage(page: number): Promise<QuranReaderPage>
 export function getQuranReaderSurahNavigation(): QuranReaderNavigationItem[] {
   return Array.from({ length: 114 }, (_, index) => {
     const surah = index + 1
-    const meta = quran.getSurahMeta(surah as Surah)
+    const meta = getSurahMeta(surah)
     return {
       ayah: 1,
-      label: meta.name,
-      page: quran.findPage(surah as Surah, 1),
+      label: meta.transliteration,
+      page: findQuranPage(surah, 1),
       value: surah,
     }
   })
@@ -297,11 +281,11 @@ export function getQuranReaderSurahNavigation(): QuranReaderNavigationItem[] {
 export function getQuranReaderJuzNavigation(): QuranReaderNavigationItem[] {
   return Array.from({ length: 30 }, (_, index) => {
     const juz = index + 1
-    const meta = quran.getJuzMeta(juz as Juz)
+    const firstKey = getQuranJuzFirstKey(juz)
     return {
-      ayah: meta.first[1],
+      ayah: firstKey.ayah,
       label: `Juz ${juz}`,
-      page: quran.findPage(meta.first[0], meta.first[1]),
+      page: findQuranPage(firstKey.surah, firstKey.ayah),
       value: juz,
     }
   })

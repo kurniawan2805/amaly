@@ -1,13 +1,9 @@
-import { createHafs, getSurahNames, type Page, type Surah } from "quran-meta"
-
 import type { AppLanguage, HijriOffset } from "@/lib/app-settings"
 import { dateFromGregorianKey, formatHijriDate } from "@/lib/hijri-date"
-
-const quran = createHafs()
-const surahNames = getSurahNames("en")
+import { findQuranJuz, getAyahId, getQuranJuzFirstKey, getQuranJuzLastKey, getQuranPageEnd, getQuranPageStart, getSurahEnglishName, getSurahName, QURAN_TOTAL_PAGES as STATIC_QURAN_TOTAL_PAGES } from "@/lib/quran-static-meta"
 
 export const QURAN_PROGRESS_STORAGE_KEY = "amaly.quran-progress.v1"
-export const QURAN_TOTAL_PAGES = 604
+export const QURAN_TOTAL_PAGES = STATIC_QURAN_TOTAL_PAGES
 export const QURAN_DAILY_GOAL = 5
 export const QURAN_STREAK_GRACE_PAGES = QURAN_DAILY_GOAL * 2
 
@@ -237,11 +233,11 @@ function rangeFromTo(from: number, to: number) {
 
 function completedThroughJuzForPage(page: number) {
   const safePage = clampPage(page)
-  const pageMeta = quran.getPageMeta(safePage as Page)
-  const pageEndJuz = quran.findJuz(pageMeta.last[0], pageMeta.last[1])
-  const pageEndJuzMeta = quran.getJuzMeta(pageEndJuz)
+  const pageEnd = getQuranPageEnd(safePage)
+  const pageEndJuz = findQuranJuz(pageEnd.surah, pageEnd.ayah)
+  const juzEnd = getQuranJuzLastKey(pageEndJuz)
 
-  return pageMeta.lastAyahId >= pageEndJuzMeta.lastAyahId ? pageEndJuz : Math.max(0, pageEndJuz - 1)
+  return getAyahId(pageEnd.surah, pageEnd.ayah) >= getAyahId(juzEnd.surah, juzEnd.ayah) ? pageEndJuz : Math.max(0, pageEndJuz - 1)
 }
 
 function completedJuzRange(fromPage: number, toPage: number) {
@@ -312,15 +308,19 @@ function calculateStreak(logs: QuranProgressLog[], language: AppLanguage) {
 
 export function getQuranPageDetails(page: number, language: AppLanguage = "en") {
   const safePage = clampPage(page)
-  const pageMeta = quran.getPageMeta(safePage as Page)
-  const [surah, ayah] = pageMeta.first
-  const juz = quran.findJuz(surah, ayah)
-  const surahName = surahNames[surah]?.[0] ?? quran.getSurahMeta(surah as Surah).name
-  const surahEnglishName = surahNames[surah]?.[1] ?? ""
-  const juzMeta = quran.getJuzMeta(juz)
+  const pageStart = getQuranPageStart(safePage)
+  const pageEnd = getQuranPageEnd(safePage)
+  const { surah, ayah } = pageStart
+  const juz = findQuranJuz(surah, ayah)
+  const surahName = getSurahName(surah)
+  const surahEnglishName = getSurahEnglishName(surah)
+  const juzStart = getQuranJuzFirstKey(juz)
+  const juzEnd = getQuranJuzLastKey(juz)
+  const juzStartAyahId = getAyahId(juzStart.surah, juzStart.ayah)
+  const juzEndAyahId = getAyahId(juzEnd.surah, juzEnd.ayah)
   const currentJuzProgress = Math.min(
     100,
-    Math.max(0, ((pageMeta.firstAyahId - juzMeta.firstAyahId + 1) / (juzMeta.lastAyahId - juzMeta.firstAyahId + 1)) * 100),
+    Math.max(0, ((getAyahId(surah, ayah) - juzStartAyahId + 1) / (juzEndAyahId - juzStartAyahId + 1)) * 100),
   )
 
   return {
@@ -328,7 +328,7 @@ export function getQuranPageDetails(page: number, language: AppLanguage = "en") 
     surah_name: surahName,
     surah_english_name: surahEnglishName,
     ayah,
-    ayah_range: rangeFromTo(pageMeta.first[1], pageMeta.last[1]),
+    ayah_range: rangeFromTo(pageStart.ayah, pageEnd.ayah),
     juz,
     page: safePage,
     progress_percent: Math.round((safePage / QURAN_TOTAL_PAGES) * 100),
@@ -365,7 +365,7 @@ export function setProgressToPage(
   const newPage = hasReadingProgress ? clampPage(targetPage) : 0
   const detailPage = newPage || 1
   const pagesAdded = Math.max(0, newPage - previousPage)
-  const oldJuz = previousPage > 0 ? quran.findJuz(...quran.getPageMeta(previousPage as Page).first) : 1
+  const oldJuz = previousPage > 0 ? findQuranJuz(getQuranPageStart(previousPage).surah, getQuranPageStart(previousPage).ayah) : 1
   const completedJuzsThisUpdate = pagesAdded > 0 ? completedJuzRange(previousPage, newPage) : []
   const normalizedLogs = logs.map((log) => normalizeLog(log, language)).filter((log): log is QuranProgressLog => Boolean(log))
   const safeDailyGoal = normalizeDailyGoal(dailyGoal)

@@ -49,6 +49,26 @@ function pageFromParams(value: string | null) {
   return Math.max(1, Math.min(604, Number(value) || 1))
 }
 
+function MeccaIcon() {
+  return (
+    <svg aria-hidden="true" className="h-3 w-3 fill-amber-700 text-amber-700 dark:fill-amber-200 dark:text-amber-200" viewBox="0 0 100 100">
+      <path d="M4.53,81.42l45,15s0,0,0,0c.15,.05,.31,.08,.47,.08s.32-.03,.47-.08c0,0,0,0,0,0l45-15c.61-.2,1.03-.78,1.03-1.42V20c0-.14-.03-.28-.07-.42-.01-.04-.03-.08-.04-.12-.04-.09-.08-.18-.14-.27-.02-.04-.04-.07-.07-.11-.07-.1-.16-.18-.25-.26-.02-.01-.03-.03-.04-.04,0,0,0,0,0,0-.11-.08-.24-.14-.37-.19-.01,0-.02-.01-.03-.02L50.47,3.58c-.31-.1-.64-.1-.95,0L4.53,18.58s-.02,.01-.03,.02c-.13,.05-.25,.11-.37,.19,0,0,0,0,0,0-.02,.01-.03,.03-.04,.04-.1,.08-.18,.16-.25,.26-.03,.03-.05,.07-.07,.11-.06,.09-.1,.17-.14,.27-.02,.04-.03,.08-.04,.12-.04,.14-.07,.28-.07,.42v60c0,.65,.41,1.22,1.03,1.42Zm35.96,8.82l-11.49-3.84v-25.17l11.49,3.84v25.17Zm8.01-40.41v4.34L6.5,40.17v-4.34l42,14Zm45-9.66l-42,14v-4.34l42-14v4.34Zm-43.5-6.75L9.74,20,50,6.58l40.26,13.42-40.26,13.42Z" />
+    </svg>
+  )
+}
+
+function MadinahIcon() {
+  return (
+    <svg aria-hidden="true" className="-mt-0.5 h-4 w-4 fill-amber-700 text-amber-700 dark:fill-amber-200 dark:text-amber-200" viewBox="-5 -10 110 110">
+      <path d="m80.699 69.102c0-14.699-22.898-30.699-29.199-34.699v-5.6992-0.10156c3.6016-0.39844 6.5-2.8008 7.8008-6-1.1016.39844-2.3008.69922-3.6016.69922-5.3008 0-9.6992-4.3984-9.6992-9.6992 0-1.3008.19922-2.5.69922-3.6016-3.6016 1.3984-6.1016 4.8984-6.1016 9 0 4.6992 3.3984 8.6016 7.8984 9.5v0.19922 5.6992c-6.1992 4.1016-29.199 20.102-29.199 34.699 0 3.8008.69922 7.5 2 10.898h-8.6016l.003907 10.004h74.602v-10.102h-8.6016c1.3008-3.2969 2-7 2-10.797z" />
+    </svg>
+  )
+}
+
+function RevelationIcon({ revelation }: { revelation: 1 | 2 }) {
+  return revelation === 1 ? <MeccaIcon /> : <MadinahIcon />
+}
+
 export default function QuranReaderPage({ language, onSetPage }: QuranReaderPageProps) {
   const t = copy[language]
   const navigate = useNavigate()
@@ -67,6 +87,9 @@ export default function QuranReaderPage({ language, onSetPage }: QuranReaderPage
   const [bookmarks, setBookmarks] = useState(() => loadQuranReaderBookmarks())
   const longPressTimerRef = useRef<number | null>(null)
   const pointerStartRef = useRef<{ x: number; y: number } | null>(null)
+  const pageSurahs = readerPage
+    ? Array.from(new Map(readerPage.verses.map((verse) => [verse.surah, { name: verse.surahName, revelation: verse.revelation, surah: verse.surah }])).values())
+    : []
 
   useEffect(() => {
     let cancelled = false
@@ -211,18 +234,28 @@ export default function QuranReaderPage({ language, onSetPage }: QuranReaderPage
           </div>
         </div>
         {readerPage ? (
-          <div className="flex min-h-9 items-center justify-between border-t border-amber-900/10 px-4 text-xs font-semibold text-foreground/80 dark:border-amber-200/10">
-            <button className="rounded-lg px-2 py-1 underline decoration-amber-700/20 underline-offset-4 transition hover:bg-amber-900/5 hover:text-primary dark:hover:bg-amber-100/5" onClick={() => setNavigationPicker("surah")} type="button">
-              {readerPage.verses.map((verse) => verse.surahName).filter((name, index, names) => names.indexOf(name) === index).join(" · ")}
+          <div className="border-t border-amber-900/10 text-xs font-semibold text-foreground/80 dark:border-amber-200/10">
+            <div className="mx-auto flex min-h-9 max-w-screen-lg items-center justify-between px-6">
+            <button className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 rounded-lg px-2 py-1 text-left underline decoration-amber-700/20 underline-offset-4 transition hover:bg-amber-900/5 hover:text-primary dark:hover:bg-amber-100/5" onClick={() => setNavigationPicker("surah")} type="button">
+              {pageSurahs.map((surah, index) => (
+                <Fragment key={surah.surah}>
+                  {index > 0 ? <span className="opacity-50">·</span> : null}
+                  <span className="inline-flex items-center gap-1 whitespace-nowrap">
+                    <RevelationIcon revelation={surah.revelation} />
+                    {surah.name}
+                  </span>
+                </Fragment>
+              ))}
             </button>
             <button className="rounded-lg px-2 py-1 underline decoration-amber-700/20 underline-offset-4 transition hover:bg-amber-900/5 hover:text-primary dark:hover:bg-amber-100/5" onClick={() => setNavigationPicker("juz")} type="button">
               {t.juz} {readerPage.juz}
             </button>
+            </div>
           </div>
         ) : null}
       </header>
 
-      <main className="mx-auto max-w-3xl px-0 py-4 sm:px-0">
+      <main className="mx-auto max-w-screen-lg px-0 py-1 sm:px-0">
         {loading ? (
           <Card className="flex flex-col items-center justify-center p-8 text-center">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -234,7 +267,7 @@ export default function QuranReaderPage({ language, onSetPage }: QuranReaderPage
         {error ? <Card className="p-4 text-sm font-semibold text-muted-foreground">{error}</Card> : null}
 
         {readerPage ? (
-          <div onPointerCancel={clearLongPress} onPointerDown={(event) => (pointerStartRef.current = { x: event.clientX, y: event.clientY })} onPointerUp={handlePointerUp} style={{ touchAction: "pan-y" }}>
+          <div className="mt-2 mb-14 overflow-x-hidden overflow-y-hidden text-center text-xl" onPointerCancel={clearLongPress} onPointerDown={(event) => (pointerStartRef.current = { x: event.clientX, y: event.clientY })} onPointerUp={handlePointerUp} style={{ touchAction: "pan-y" }}>
             {mushafFontReady ? (
               <style>{`
                 @font-palette-values --amaly-mushaf-words-${page}{font-family:p${page};base-palette:3;}
@@ -245,43 +278,43 @@ export default function QuranReaderPage({ language, onSetPage }: QuranReaderPage
                 .amaly-mushaf-page-${page} .amaly-chapter-header{font-palette:--amaly-header-palette;}
               `}</style>
             ) : null}
-            <Card className="relative mt-0 overflow-hidden border-amber-900/10 bg-[#fffdf8] px-2 pb-3 pt-3 shadow-none dark:border-amber-200/10 dark:bg-[#141c27] sm:px-2">
+            <div className="relative mt-1 space-y-2 overflow-hidden pb-2">
               <button
                 aria-label={t.next}
-                className="absolute left-0 top-1/2 z-20 flex h-28 w-12 -translate-y-1/2 items-center justify-center rounded-r-2xl border-y border-r border-dashed border-amber-900/10 bg-amber-900/0 text-amber-900/35 transition hover:bg-amber-900/5 hover:text-amber-900/70 disabled:pointer-events-none disabled:opacity-0 dark:border-amber-100/10 dark:text-amber-100/35 dark:hover:bg-amber-100/5 dark:hover:text-amber-100/70"
+                className="absolute inset-y-0 left-0 z-20 flex w-[18%] items-center justify-start bg-gradient-to-r from-amber-900/0 via-amber-900/0 to-transparent pl-1 text-amber-900/20 transition hover:from-amber-900/5 hover:text-amber-900/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-0 dark:from-amber-100/0 dark:via-amber-100/0 dark:text-amber-100/25 dark:hover:from-amber-100/5 dark:hover:text-amber-100/60 sm:w-[14%]"
                 disabled={page >= 604}
                 onClick={() => goToPage(page + 1)}
                 type="button"
               >
-                <ChevronLeft className="h-8 w-8" />
+                <ChevronLeft className="h-7 w-7" />
               </button>
               <button
                 aria-label={t.previous}
-                className="absolute right-0 top-1/2 z-20 flex h-28 w-12 -translate-y-1/2 items-center justify-center rounded-l-2xl border-y border-l border-dashed border-amber-900/10 bg-amber-900/0 text-amber-900/35 transition hover:bg-amber-900/5 hover:text-amber-900/70 disabled:pointer-events-none disabled:opacity-0 dark:border-amber-100/10 dark:text-amber-100/35 dark:hover:bg-amber-100/5 dark:hover:text-amber-100/70"
+                className="absolute inset-y-0 right-0 z-20 flex w-[18%] items-center justify-end bg-gradient-to-l from-amber-900/0 via-amber-900/0 to-transparent pr-1 text-amber-900/20 transition hover:from-amber-900/5 hover:text-amber-900/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-0 dark:from-amber-100/0 dark:via-amber-100/0 dark:text-amber-100/25 dark:hover:from-amber-100/5 dark:hover:text-amber-100/60 sm:w-[14%]"
                 disabled={page <= 1}
                 onClick={() => goToPage(page - 1)}
                 type="button"
               >
-                <ChevronRight className="h-8 w-8" />
+                <ChevronRight className="h-7 w-7" />
               </button>
               <div
-                className={cn("mx-auto flex max-w-[40rem] flex-col text-primary", mushafFontReady ? `amaly-mushaf-page-${page} text-[5.4vw] leading-none md:text-[36px] lg:text-[36px]` : "font-arabic text-[5.2vw] leading-none md:text-[35px]")}
+                className={cn("mx-auto flex max-w-3xl flex-col pb-2 text-primary md:max-w-[40rem]", page === 1 ? "space-y-1" : "space-y-2", mushafFontReady ? `amaly-mushaf-page-${page} text-[5.4vw] leading-none md:text-[36px] lg:text-[36px]` : "font-arabic text-[5.2vw] leading-none md:text-[35px]")}
                 dir="rtl"
                 lang="ar"
               >
                 {readerPage.lines.map((line) => (
                   <Fragment key={line.line}>
                     {line.chapterStart ? (
-                      <div className="flex flex-col text-center">
+                      <div className={cn("flex flex-col text-center", line.line !== readerPage.lines[0]?.line && "-mt-1")}>
                         <div
-                          className={cn("amaly-chapter-header pb-1 pt-0 text-[28vw] leading-[0.55] text-primary md:pb-1 md:pt-0 md:text-[195px] lg:text-[195px]", !extrasFontReady && "font-serif text-[0.52em] font-bold leading-tight")}
+                          className={cn("amaly-chapter-header -mt-1 mb-0 pb-0 pt-0 text-[28vw] leading-[0.5] text-primary md:-mt-2 md:mb-0 md:pb-0 md:pt-0 md:text-[195px] lg:text-[195px]", !extrasFontReady && "font-serif text-[0.52em] font-bold leading-tight")}
                           style={extrasFontReady ? { fontFamily: "chapter-headers" } : undefined}
                         >
                           {extrasFontReady ? QURAN_CHAPTER_HEADER_CODES[line.chapterStart.surah] : `سورة ${line.chapterStart.surahName}`}
                         </div>
                         {line.chapterStart.showBismillah ? (
                           <div
-                            className={cn("block flex-col flex-wrap text-center text-[5vw] leading-normal text-foreground", page === 1 || page === 2 ? "md:mt-1" : "mt-0 md:mt-1", page === 2 ? "md:text-[36px] lg:text-[36px]" : "md:text-[32px] lg:text-[36px]", !extrasFontReady && "font-arabic")}
+                            className={cn("block flex-col flex-wrap text-center text-[5vw] leading-normal text-foreground", page === 1 || page === 2 ? "mt-2 md:mt-2" : "mt-2 md:mt-6", page === 2 ? "md:text-[36px] lg:text-[36px]" : "md:text-[32px] lg:text-[36px]", !extrasFontReady && "font-arabic")}
                             style={extrasFontReady ? { fontFamily: "bismillah" } : undefined}
                           >
                             {extrasFontReady ? getBismillahCode(line.chapterStart.surah) : "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ"}
@@ -289,7 +322,7 @@ export default function QuranReaderPage({ language, onSetPage }: QuranReaderPage
                         ) : null}
                       </div>
                     ) : null}
-                    <div className={cn("flex flex-nowrap items-center px-2 text-center whitespace-nowrap", line.words.length > 0 && "min-h-[1.28em]", line.centered ? "justify-center gap-0" : "justify-between gap-0")}>
+                    <div className={cn("flex flex-nowrap px-2 text-center", line.centered ? "justify-center" : "justify-between")}>
                       {line.words.map((word) => {
                         const bookmarked = isQuranVerseBookmarked(bookmarks, word.verse)
                         return (
@@ -319,12 +352,12 @@ export default function QuranReaderPage({ language, onSetPage }: QuranReaderPage
                   </Fragment>
                 ))}
               </div>
-              <div className="mx-auto mt-2 flex max-w-[40rem] items-center justify-center text-sm text-muted-foreground">
+              <div className="mx-auto flex max-w-3xl items-center justify-center text-sm text-muted-foreground md:max-w-[40rem]">
                 <div className="flex-1 border-t border-amber-900/15 dark:border-amber-200/15" />
                 <span className="px-3">{page}</span>
                 <div className="flex-1 border-t border-amber-900/15 dark:border-amber-200/15" />
               </div>
-            </Card>
+            </div>
 
           </div>
         ) : null}

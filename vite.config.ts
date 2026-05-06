@@ -28,7 +28,7 @@ export default defineConfig({
         manualChunks(id) {
           if (!id.includes("node_modules")) return undefined
           if (id.includes("@supabase")) return "supabase"
-          if (id.includes("quran-meta") || id.includes("@umalqura")) return "islamic-data"
+          if (id.includes("@umalqura")) return "islamic-data"
           if (id.includes("@radix-ui")) return "radix-ui"
           if (id.includes("lucide-react")) return "icons"
           return "vendor"

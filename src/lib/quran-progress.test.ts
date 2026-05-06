@@ -9,6 +9,7 @@ import {
   updateProgress,
   updateQuranDailyGoal,
 } from "@/lib/quran-progress"
+import { getQuranPageStart, quranPageStartKeys } from "@/lib/quran-static-meta"
 
 describe("quran progress", () => {
   afterEach(() => {
@@ -91,5 +92,10 @@ describe("quran progress", () => {
     expect(updateQuranDailyGoal(progress, 0).daily_goal).toBe(1)
     expect(updateQuranDailyGoal(progress, 8.6).daily_goal).toBe(9)
     expect(updateQuranDailyGoal(progress, 50).daily_goal).toBe(30)
+  })
+
+  it("uses QuranWBW static page boundaries", () => {
+    expect(quranPageStartKeys).toHaveLength(QURAN_TOTAL_PAGES)
+    expect(getQuranPageStart(600)).toEqual({ surah: 100, ayah: 6 })
   })
 })
