@@ -1,5 +1,6 @@
 import { BookOpen, CalendarDays, Flame, Play, Plus } from "lucide-react"
 import { type FormEvent, useState } from "react"
+import { Link } from "react-router-dom"
 
 import { Button } from "@/components/ui/button"
 import type { AppLanguage } from "@/lib/app-settings"
@@ -122,10 +123,10 @@ export function QuickLogButtons({ language, progress, onQuickLog, onSetPage }: Q
           </span>
         </div>
         <Button asChild className="w-full sm:w-auto" size="sm">
-          <a href={progress.continue_url} rel="noopener noreferrer" target="_blank">
+          <Link to={progress.continue_url}>
             <Play className="h-4 w-4 fill-current" />
             {t.openReading}
-          </a>
+          </Link>
         </Button>
       </div>
     </div>

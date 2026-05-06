@@ -14,12 +14,14 @@ const CyclePage = lazy(() => import("@/pages/cycle"))
 const DailyPage = lazy(() => import("@/pages/daily"))
 const FastingPage = lazy(() => import("@/pages/fasting"))
 const QuranPage = lazy(() => import("@/pages/quran"))
+const QuranReaderPage = lazy(() => import("@/pages/quran-reader"))
 const ReportPage = lazy(() => import("@/pages/report"))
 
 const titles: Record<AppSettings["language"], Record<string, string>> = {
   en: {
     "/": "Amaly",
     "/quran": "Amaly",
+    "/quran/read": "Amaly",
     "/fasting": "Amaly",
     "/duas": "Amaly",
     "/cycle": "Amaly",
@@ -28,6 +30,7 @@ const titles: Record<AppSettings["language"], Record<string, string>> = {
   id: {
     "/": "Amaly",
     "/quran": "Amaly",
+    "/quran/read": "Amaly",
     "/fasting": "Amaly",
     "/duas": "Amaly",
     "/cycle": "Amaly",
@@ -94,6 +97,7 @@ export default function App() {
   const toggleCyclePrivacy = useAppStore((state) => state.toggleCyclePrivacy)
   const toggleCycleSymptom = useAppStore((state) => state.toggleCycleSymptom)
   const title = titles[settings.language][location.pathname] ?? "Amaly"
+  const focusMode = location.pathname === "/quran/read"
   const displayName =
     profile?.displayName ||
     (typeof user?.user_metadata?.display_name === "string" ? user.user_metadata.display_name : "") ||
@@ -116,15 +120,17 @@ export default function App() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <Header
-        language={settings.language}
-        onOpenAccount={() => openPanel("account")}
-        onOpenHabits={() => openHabitSettings("all")}
-        onToggleLanguage={() => setLanguage(settings.language === "en" ? "id" : "en")}
-        onToggleTheme={() => setTheme(settings.theme === "dark" ? "day" : "dark")}
-        theme={settings.theme}
-        title={title}
-      />
+      {focusMode ? null : (
+        <Header
+          language={settings.language}
+          onOpenAccount={() => openPanel("account")}
+          onOpenHabits={() => openHabitSettings("all")}
+          onToggleLanguage={() => setLanguage(settings.language === "en" ? "id" : "en")}
+          onToggleTheme={() => setTheme(settings.theme === "dark" ? "day" : "dark")}
+          theme={settings.theme}
+          title={title}
+        />
+      )}
       <main className="flex-1">
         <Suspense fallback={<AppLoading />}>
           <Routes>
@@ -160,6 +166,10 @@ export default function App() {
                 />
               }
               path="/quran"
+            />
+            <Route
+              element={<QuranReaderPage language={settings.language} onSetPage={setQuranPage} />}
+              path="/quran/read"
             />
             <Route
               element={
@@ -209,7 +219,7 @@ export default function App() {
           </Routes>
         </Suspense>
       </main>
-      <BottomNav cycleModeActive={Boolean(cycleState.activePeriod)} dhikrReminderActive={dhikrReminderActive} language={settings.language} />
+      {focusMode ? null : <BottomNav cycleModeActive={Boolean(cycleState.activePeriod)} dhikrReminderActive={dhikrReminderActive} language={settings.language} />}
       <Suspense fallback={null}>
         {activePanel === "habits" ? <HabitSettingsPanel initialSection={habitSettingsInitialSection} onClose={closePanel} open /> : null}
         {activePanel === "account" ? <AccountSettingsPanel onClose={closePanel} open /> : null}

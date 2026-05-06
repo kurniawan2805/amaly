@@ -1,5 +1,6 @@
 import { BookOpen, Pencil } from "lucide-react"
 import { type FormEvent, useEffect, useState } from "react"
+import { useNavigate } from "react-router-dom"
 
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -42,6 +43,7 @@ const copy = {
 
 export function ContinueReadingCard({ language, progress, onSetDailyGoal }: ContinueReadingCardProps) {
   const t = copy[language]
+  const navigate = useNavigate()
   const [goalOpen, setGoalOpen] = useState(false)
   const [goalInput, setGoalInput] = useState(String(progress.daily_goal))
   const goalPercent = Math.min(100, (progress.pages_read_today / progress.daily_goal) * 100)
@@ -57,7 +59,7 @@ export function ContinueReadingCard({ language, progress, onSetDailyGoal }: Cont
   }
 
   function openReadingPage() {
-    window.open(progress.continue_url, "_blank", "noopener,noreferrer")
+    navigate(progress.continue_url)
   }
 
   return (

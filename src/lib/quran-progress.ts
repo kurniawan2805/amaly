@@ -12,7 +12,7 @@ export const QURAN_DAILY_GOAL = 5
 export const QURAN_STREAK_GRACE_PAGES = QURAN_DAILY_GOAL * 2
 
 function quranReadingUrl(page: number) {
-  return `https://quranwbw.com/page?id=${clampPage(page || 1)}`
+  return `/quran/read?page=${clampPage(page || 1)}`
 }
 
 export type QuranProgressLog = {
