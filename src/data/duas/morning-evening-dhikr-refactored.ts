@@ -1,6 +1,11 @@
 import type { DuaCategory, DuaFootnote, DuaItem } from "./types"
 
-const sharedItems: DuaItem[] = [
+/** 
+ * DZIKIR PAGI - Urutkan doa di sini sesuai keinginan Anda
+ * Ubah urutan dengan memindahkan items ke posisi yang diinginkan
+ */
+const morningDhikrItems: DuaItem[] = [
+  // Shared items (dipakai pagi dan sore)
   {
     id: "istiadhah",
     title: "Ta'awudz",
@@ -12,7 +17,7 @@ const sharedItems: DuaItem[] = [
   {
     id: "ayat-kursi",
     title: "Ayat Kursi",
-    arabic: `اللَّهُ لاَ إِلَهَ إِلاَّ هُوَ الْحَيُّ الْقَيُّومُ، لاَ تَأْخُذُهُ سِنَةٌ وَلاَ نَوْمٌ، لَهُ مَا فِي السَّمَاوَاتِ وَمَا فِي الْأَرْضِ، مَنْ ذَا الَّذِي يَشْفَعُ عِنْدَهُ إِلاَّ بِإِذْنِهِ، يَعْلَمُ مَا بَيْنَ أَيْدِيهِمْ وَمَا خَلْفَهُمْ، وَلَا يُحِيطُونَ بِشَيْءٍ مِنْ عِلْمِهِ إِلاَّ بِمَا شَاءَ، وَسِعَ كُرْسِيُّهُ السَّمَاوَاتِ وَالْأَرْضَ، وَلَا يَئُودُهُ حِفْظُهُمَا، وَهُوَ الْعَلِيُّ الْعَظِيمُ ۝٢٥٥`,
+    arabic: `اللَّهُ لاَ إِلَهَ إِلاَّ هُوَ الْحَيُّ الْقَيُّومُ، لاَ تَأْخُذُهُ سِنَةٌ وَلاَ نَوْمٌ، لَهُ مَا فِي السَّمَاوَاتِ وَمَا فِي الْأَرْضِ، مَنْ ذَا الَّذِي يَشْفَعُ عِنْدَهُ إِلاَّ بِإِذْنِهِ، يَعْلَمُ مَا بَيْنَ أَيْدِيهِمْ وَمَا خَلْفَهُمْ، وَلاَ يُحِيطُونَ بِشَيْءٍ مِنْ عِلْمِهِ إِلاَّ بِمَا شَاءَ، وَسِعَ كُرْسِيُّهُ السَّمَاوَاتِ وَالْأَرْضَ، وَلاَ يَئُودُهُ حِفْظُهُمَا، وَهُوَ الْعَلِيُّ الْعَظِيمُ ۝٢٥٥`,
     translation: `(255) Allah tidak ada Ilah yang berhak diibadahi melainkan Dia Yang Hidup Kekal lagi terus menerus mengurus makhluk-Nya; tidak mengantuk dan tidak tidur. Kepunyaan-Nya apa yang ada di langit dan di bumi. Tidak ada yang dapat memberi syafa'at di sisi Allah tanpa izin-Nya. Allah mengetahui apa-apa yang berada dihadapan mereka, dan dibelakang mereka dan mereka tidak mengetahui apa-apa dari Ilmu Allah melainkan apa yang dikehendaki-Nya. Kursi Allah meliputi langit dan bumi. Dan Allah tidak merasa berat memelihara keduanya, Allah Mahatinggi lagi Mahabesar.`,
     times: ["morning", "evening"],
     repetition: 1,
@@ -57,9 +62,27 @@ const sharedItems: DuaItem[] = [
     footnoteIds: [4],
   },
   {
+    id: "asbahna-wa-asbahal-mulk",
+    title: "Memasuki Waktu Pagi",
+    arabic: `أَصْبَحْنَا وَأَصْبَحَ الْمُلْكُ لِلَّهِ، وَالْحَمْدُ لِلَّهِ، لاَ إِلَـهَ إِلاَّ اللهُ وَحْدَهُ لاَ شَرِيْكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيْرُ. رَبِّ أَسْأَلُكَ خَيْرَ مَا فِيْ هَذَا الْيَوْمِ وَخَيْرَ مَا بَعْدَهُ، وَأَعُوْذُ بِكَ مِنْ شَرِّ مَا فِيْ هَذَا الْيَوْمِ وَشَرِّ مَا بَعْدَهُ، رَبِّ أَعُوْذُ بِكَ مِنَ الْكَسَلِ وَسُوْءِ الْكِبَرِ، رَبِّ أَعُوْذُ بِكَ مِنْ عَذَابٍ فِي النَّارِ وَعَذَابٍ فِي الْقَبْرِ.`,
+    translation: `Kami telah memasuki waktu pagi dan kerajaan hanya milik Allah, segala puji hanya milik Allah. Tidak ada ilah yang berhak diibadahi dengan benar kecuali Allah Yang Maha Esa, tiada sekutu bagi-Nya. Bagi-Nya kerajaan dan bagi-Nya pujian. Dia-lah Yang Mahakuasa atas segala sesuatu. Wahai Rabb, aku mohon kepada-Mu kebaikan di hari ini dan kebaikan sesudahnya. Aku berlindung kepada-Mu dari kejahatan hari ini dan kejahatan sesudahnya. Wahai Rabb, aku berlindung kepada-Mu dari kemalasan dan kejelekan di hari tua. Wahai Rabb, aku berlindung kepada-Mu dari siksaan di Neraka dan siksaan di kubur.`,
+    times: ["morning"],
+    repetition: 1,
+    footnoteIds: [5],
+  },
+  {
+    id: "allahumma-bika-asbahna",
+    title: "Dengan-Mu Kami Memasuki Pagi",
+    arabic: `اَللَّهُمَّ بِكَ أَصْبَحْنَا، وَبِكَ أَمْسَيْنَا، وَبِكَ نَحْيَا، وَبِكَ نَمُوْتُ وَإِلَيْكَ النُّشُوْرُ`,
+    translation: `Ya Allah, dengan rahmat dan pertolongan-Mu kami memasuki waktu pagi, dan dengan rahmat dan pertolongan-Mu kami memasuki waktu sore. Dengan rahmat dan kehendak-Mu kami hidup dan dengan rahmat dan kehendak-Mu kami mati. Dan kepada-Mu kebangkitan bagi semua makhluk.`,
+    times: ["morning"],
+    repetition: 1,
+    footnoteIds: [6],
+  },
+  {
     id: "sayyidul-istighfar",
     title: "Sayyidul Istighfar",
-    arabic: `اَللَّهُمَّ أَنْتَ رَبِّيْ لاَ إِلَـهَ إِلاَّ أَنْتَ، خَلَقْتَنِيْ وَأَنَا عَبْدُكَ، وَأَنَا عَلَى عَهْدِكَ وَوَعْدِكَ مَا اسْتَطَعْتُ، أَعُوْذُ بِكَ مِنْ شَرِّ مَا صَنَعْتُ، أَبُوْءُ لَكَ بِنِعْمَتِكَ عَلَيَّ، وَأَبُوْءُ بِذَنْبِيْ فَاغْفِرْ لِيْ فَإِنَّهُ لاَ يَغْفِرُ الذُّنُوْبَ إِلاَّ أَنْتَ`,
+    arabic: `اَللَّهُمَّ أَنْتَ رَبِّيْ لاَ إِلَـهَ إِلاَّ أَنْتَ، خَلَقْتَنِيْ وَأَنَا عَبْدُكَ، وَأَنَا عَلَى عَهْدِكَ وَوَعْدِكَ مَا اسْتَطَعْتُ， أَعُوْذُ بِكَ مِنْ شَرِّ مَا صَنَعْتُ， أَبُوْءُ لَكَ بِنِعْمَتِكَ عَلَيَّ， وَأَبُوْءُ بِذَنْبِيْ فَاغْفِرْ لِيْ فَإِنَّهُ لاَ يَغْفِرُ الذُّنُوْبَ إِلاَّ أَنْتَ`,
     translation: `Ya Allah, Engkau adalah Rabb-ku, tidak ada Ilah yang berhak diibadahi dengan benar kecuali Engkau, Engkau-lah yang menciptakanku. Aku adalah hamba-Mu. Aku akan setia pada perjanjianku dengan-Mu semampuku. Aku berlindung kepada-Mu dari kejelekan apa yang kuperbuat. Aku mengakui nikmat-Mu yang diberikan kepadaku dan aku mengakui dosaku, oleh karena itu, ampunilah aku. Sesungguhnya tidak ada yang dapat mengampuni dosa kecuali Engkau.`,
     times: ["morning", "evening"],
     repetition: 1,
@@ -123,6 +146,15 @@ const sharedItems: DuaItem[] = [
     footnoteIds: [13],
   },
   {
+    id: "fitrah-islam-pagi",
+    title: "Di Atas Fitrah Islam Pagi Hari",
+    arabic: `أَصْبَحْنَا عَلَى فِطْرَةِ اْلإِسْلاَمِ وَعَلَى كَلِمَةِ اْلإِخْلاَصِ، وَعَلَى دِيْنِ نَبِيِّنَا مُحَمَّدٍ صَلَّى اللهُ عَلَيْهِ وَسَلَّمَ، وَعَلَى مِلَّةِ أَبِيْنَا إِبْرَاهِيْمَ، حَنِيْفًا مُسْلِمًا وَمَا كَانَ مِنَ الْمُشْرِكِيْنَ`,
+    translation: `Di waktu pagi kami berada di atas fitrah agama Islam, kalimat ikhlas, agama Nabi kami Muhammad shallallahu 'alaihi wa sallam dan agama ayah kami, Ibrahim, yang berdiri di atas jalan yang lurus, muslim dan tidak tergolong orang-orang musyrik.`,
+    times: ["morning"],
+    repetition: 1,
+    footnoteIds: [14],
+  },
+  {
     id: "tahlil-10",
     title: "Tahlil 10 Kali atau 1 Kali",
     arabic: `لاَ إِلَـهَ إِلاَّ اللهُ وَحْدَهُ لاَ شَرِيْكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيْرُ.`,
@@ -133,43 +165,13 @@ const sharedItems: DuaItem[] = [
     footnoteIds: [15, 16],
   },
   {
-    id: "subhanallah-wa-bihamdihi-100",
-    title: "Subhanallah wa Bihamdihi",
-    arabic: `سُبْحَانَ اللهِ وَبِحَمْدِهِ`,
-    translation: `Mahasuci Allah, aku memuji-Nya.`,
-    times: ["morning", "evening"],
+    id: "tahlil-100",
+    title: "Tahlil 100 Kali",
+    arabic: `لاَ إِلَـهَ إِلاَّ اللهُ وَحْدَهُ لاَ شَرِيْكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيْرُ.`,
+    translation: `Tidak ada Ilah yang berhak diibadahi dengan benar selain Allah Yang Maha Esa, tidak ada sekutu bagi-Nya. Bagi-Nya kerajaan dan bagi-Nya segala puji. Dan Dia Maha kuasa atas segala sesuatu.`,
+    times: ["daily"],
     repetition: 100,
-    footnoteIds: [20],
-  },
-]
-
-const morningOnlyItems: DuaItem[] = [
-  {
-    id: "asbahna-wa-asbahal-mulk",
-    title: "Memasuki Waktu Pagi",
-    arabic: `أَصْبَحْنَا وَأَصْبَحَ الْمُلْكُ لِلَّهِ، وَالْحَمْدُ لِلَّهِ، لاَ إِلَـهَ إِلاَّ اللهُ وَحْدَهُ لاَ شَرِيْكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيْرُ. رَبِّ أَسْأَلُكَ خَيْرَ مَا فِيْ هَذَا الْيَوْمِ وَخَيْرَ مَا بَعْدَهُ، وَأَعُوْذُ بِكَ مِنْ شَرِّ مَا فِيْ هَذَا الْيَوْمِ وَشَرِّ مَا بَعْدَهُ، رَبِّ أَعُوْذُ بِكَ مِنَ الْكَسَلِ وَسُوْءِ الْكِبَرِ، رَبِّ أَعُوْذُ بِكَ مِنْ عَذَابٍ فِي النَّارِ وَعَذَابٍ فِي الْقَبْرِ.`,
-    translation: `Kami telah memasuki waktu pagi dan kerajaan hanya milik Allah, segala puji hanya milik Allah. Tidak ada ilah yang berhak diibadahi dengan benar kecuali Allah Yang Maha Esa, tiada sekutu bagi-Nya. Bagi-Nya kerajaan dan bagi-Nya pujian. Dia-lah Yang Mahakuasa atas segala sesuatu. Wahai Rabb, aku mohon kepada-Mu kebaikan di hari ini dan kebaikan sesudahnya. Aku berlindung kepada-Mu dari kejahatan hari ini dan kejahatan sesudahnya. Wahai Rabb, aku berlindung kepada-Mu dari kemalasan dan kejelekan di hari tua. Wahai Rabb, aku berlindung kepada-Mu dari siksaan di Neraka dan siksaan di kubur.`,
-    times: ["morning"],
-    repetition: 1,
-    footnoteIds: [5],
-  },
-  {
-    id: "allahumma-bika-asbahna",
-    title: "Dengan-Mu Kami Memasuki Pagi",
-    arabic: `اَللَّهُمَّ بِكَ أَصْبَحْنَا، وَبِكَ أَمْسَيْنَا، وَبِكَ نَحْيَا، وَبِكَ نَمُوْتُ وَإِلَيْكَ النُّشُوْرُ`,
-    translation: `Ya Allah, dengan rahmat dan pertolongan-Mu kami memasuki waktu pagi, dan dengan rahmat dan pertolongan-Mu kami memasuki waktu sore. Dengan rahmat dan kehendak-Mu kami hidup dan dengan rahmat dan kehendak-Mu kami mati. Dan kepada-Mu kebangkitan bagi semua makhluk.`,
-    times: ["morning"],
-    repetition: 1,
-    footnoteIds: [6],
-  },
-  {
-    id: "fitrah-islam-pagi",
-    title: "Di Atas Fitrah Islam Pagi Hari",
-    arabic: `أَصْبَحْنَا عَلَى فِطْرَةِ اْلإِسْلاَمِ وَعَلَى كَلِمَةِ اْلإِخْلاَصِ، وَعَلَى دِيْنِ نَبِيِّنَا مُحَمَّدٍ صَلَّى اللهُ عَلَيْهِ وَسَلَّمَ، وَعَلَى مِلَّةِ أَبِيْنَا إِبْرَاهِيْمَ، حَنِيْفًا مُسْلِمًا وَمَا كَانَ مِنَ الْمُشْرِكِيْنَ`,
-    translation: `Di waktu pagi kami berada di atas fitrah agama Islam, kalimat ikhlas, agama Nabi kami Muhammad shallallahu 'alaihi wa sallam dan agama ayah kami, Ibrahim, yang berdiri di atas jalan yang lurus, muslim dan tidak tergolong orang-orang musyrik.`,
-    times: ["morning"],
-    repetition: 1,
-    footnoteIds: [14],
+    footnoteIds: [17],
   },
   {
     id: "subhanallah-adada-khalqihi",
@@ -189,9 +191,36 @@ const morningOnlyItems: DuaItem[] = [
     repetition: 1,
     footnoteIds: [19],
   },
+  {
+    id: "subhanallah-wa-bihamdihi-100",
+    title: "Subhanallah wa Bihamdihi",
+    arabic: `سُبْحَانَ اللهِ وَبِحَمْدِهِ`,
+    translation: `Mahasuci Allah, aku memuji-Nya.`,
+    times: ["morning", "evening"],
+    repetition: 100,
+    footnoteIds: [20],
+  },
+  {
+    id: "istighfar-100",
+    title: "Istighfar dan Taubat",
+    arabic: `أَسْتَغْفِرُ اللهَ وَأَتُوْبُ إِلَيْهِ`,
+    translation: `Aku memohon ampunan kepada Allah dan bertaubat kepada-Nya.`,
+    times: ["daily"],
+    repetition: 100,
+    footnoteIds: [21],
+  },
 ]
 
-const eveningOnlyItems: DuaItem[] = [
+/**
+ * DZIKIR PETANG - Urutkan doa di sini sesuai keinginan Anda
+ * Ubah urutan dengan memindahkan items ke posisi yang diinginkan
+ */
+const eveningDhikrItems: DuaItem[] = [
+  // Shared items (sama seperti pagi)
+  ...morningDhikrItems.filter((item) => item.times.includes("evening") && !item.times.includes("morning")),
+  ...morningDhikrItems.filter((item) => item.times.includes("evening") && item.times.includes("morning")),
+
+  // Evening only
   {
     id: "amsayna-wa-amsal-mulk",
     title: "Memasuki Waktu Sore",
@@ -225,9 +254,8 @@ const eveningOnlyItems: DuaItem[] = [
     repetition: 3,
     footnoteIds: [22],
   },
-]
 
-const dailyItems: DuaItem[] = [
+  // Daily items
   {
     id: "tahlil-100",
     title: "Tahlil 100 Kali",
@@ -248,77 +276,18 @@ const dailyItems: DuaItem[] = [
   },
 ]
 
-const dhikrItemsById = Object.fromEntries(
-  [...sharedItems, ...morningOnlyItems, ...eveningOnlyItems, ...dailyItems].map((item) => [item.id, item]),
-) as Record<string, DuaItem>
-
-const morningDhikrOrder = [
-  "istiadhah",
-  "ayat-kursi",
-  "al-ikhlas",
-  "al-falaq",
-  "an-naas",
-  "asbahna-wa-asbahal-mulk",
-  "allahumma-bika-asbahna",
-  "sayyidul-istighfar",
-  "afiyah-badan-pendengaran-penglihatan",
-  "afiyah-dunia-akhirat",
-  "alimul-ghaib",
-  "bismillahilladzi-la-yadhurru",
-  "radhitu-billah",
-  "ya-hayyu-ya-qayyum",
-  "fitrah-islam-pagi",
-  "tahlil-10",
-  "tahlil-100",
-  "subhanallah-adada-khalqihi",
-  "ilmu-rizki-amal",
-  "subhanallah-wa-bihamdihi-100",
-  "istighfar-100",
-]
-
-const eveningDhikrOrder = [
-  "istiadhah",
-  "ayat-kursi",
-  "al-ikhlas",
-  "al-falaq",
-  "an-naas",
-  "amsayna-wa-amsal-mulk",
-  "allahumma-bika-amsayna",
-  "sayyidul-istighfar",
-  "afiyah-badan-pendengaran-penglihatan",
-  "afiyah-dunia-akhirat",
-  "alimul-ghaib",
-  "bismillahilladzi-la-yadhurru",
-  "radhitu-billah",
-  "ya-hayyu-ya-qayyum",
-  "fitrah-islam-sore",
-  "tahlil-10",
-  "tahlil-100",
-  "subhanallah-wa-bihamdihi-100",
-  "istighfar-100",
-  "audzu-bikalimatillah",
-]
-
-function buildDhikrItems(order: string[]) {
-  return order.map((id) => {
-    const item = dhikrItemsById[id]
-    if (!item) throw new Error(`Missing dhikr item: ${id}`)
-    return item
-  })
-}
-
 export const morningDhikrCategory: DuaCategory = {
   id: "morning-dhikr",
   title: "Dzikir Pagi",
   description: "Bacaan dzikir pagi berdasarkan sumber Almanhaj.",
-  items: buildDhikrItems(morningDhikrOrder),
+  items: morningDhikrItems,
 }
 
 export const eveningDhikrCategory: DuaCategory = {
   id: "evening-dhikr",
   title: "Dzikir Petang",
   description: "Bacaan dzikir petang berdasarkan sumber Almanhaj.",
-  items: buildDhikrItems(eveningDhikrOrder),
+  items: eveningDhikrItems,
 }
 
 export const duaCategories: DuaCategory[] = [morningDhikrCategory, eveningDhikrCategory]
