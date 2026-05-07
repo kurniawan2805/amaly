@@ -1,9 +1,10 @@
-import { Play, Search, Sparkles, Star } from "lucide-react"
+import { Play, Search, Settings, Sparkles, Star } from "lucide-react"
 import { useMemo, useState } from "react"
 import { useSearchParams } from "react-router-dom"
 
 import { DuaCard } from "@/components/duas/dua-card"
 import { DuaFlowMode } from "@/components/duas/dua-flow-mode"
+import { DuaDisplaySettingsPanel } from "@/components/settings/dua-display-settings-panel"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { duaCategories, type DuaCategory, type DuaGroup, type DuaItem } from "@/data/duas"
@@ -128,6 +129,7 @@ export default function DuasPage({ language, onCompleteDhikrFlow }: DuasPageProp
   const [favorites, setFavorites] = useState(() => loadDuaFavorites())
   const [displaySettings, setDisplaySettings] = useState(() => loadDuaDisplaySettings())
   const [flowSessions, setFlowSessions] = useState(() => loadDuaFlowSessions())
+  const [settingsPanelOpen, setSettingsPanelOpen] = useState(false)
   const selectedCategory = selectedCategoryId === favoritesCategoryId ? null : duaCategories.find((category) => category.id === selectedCategoryId) ?? duaCategories[0]
   const initialFlowCategory = searchParams.get("flow") === "1" && selectedCategory?.items && isFlowCategory(selectedCategory.id) ? selectedCategory : null
   const [flowCategory, setFlowCategory] = useState<DuaCategory | null>(initialFlowCategory)
@@ -158,6 +160,10 @@ export default function DuasPage({ language, onCompleteDhikrFlow }: DuasPageProp
     saveDuaDisplaySettings(next)
   }
 
+  function handleSettingsChange(newSettings: typeof displaySettings) {
+    setDisplaySettings(newSettings)
+  }
+
   function closeFlow() {
     setFlowCategory(null)
     setFlowSessions(loadDuaFlowSessions())
@@ -165,6 +171,14 @@ export default function DuasPage({ language, onCompleteDhikrFlow }: DuasPageProp
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-4 px-6 py-5 pb-28">
+      <DuaDisplaySettingsPanel 
+        language={language} 
+        onClose={() => setSettingsPanelOpen(false)} 
+        onSettingsChange={handleSettingsChange}
+        open={settingsPanelOpen}
+        settings={displaySettings}
+      />
+
       {flowCategory?.items ? (
         <DuaFlowMode
           arabicSize={displaySettings.arabicSize}
@@ -240,23 +254,29 @@ export default function DuasPage({ language, onCompleteDhikrFlow }: DuasPageProp
           />
         </label>
 
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <span className="text-xs font-bold uppercase tracking-wide text-muted-foreground">{t.arabicSize}</span>
-          <div className="flex rounded-xl border border-sage/15 bg-background p-1">
-            {arabicSizeOptions.map((option) => (
-              <button
-                className={cn(
-                  "h-8 rounded-lg px-3 text-sm font-bold text-muted-foreground transition",
-                  displaySettings.arabicSize === option.value && "bg-sage text-white shadow-soft",
-                )}
-                key={option.value}
-                onClick={() => setArabicSize(option.value)}
-                type="button"
-              >
-                {option.label}
-              </button>
-            ))}
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-bold uppercase tracking-wide text-muted-foreground">{t.arabicSize}</span>
+            <div className="flex rounded-xl border border-sage/15 bg-background p-1">
+              {arabicSizeOptions.map((option) => (
+                <button
+                  className={cn(
+                    "h-8 rounded-lg px-3 text-sm font-bold text-muted-foreground transition",
+                    displaySettings.arabicSize === option.value && "bg-sage text-white shadow-soft",
+                  )}
+                  key={option.value}
+                  onClick={() => setArabicSize(option.value)}
+                  type="button"
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
           </div>
+          <Button onClick={() => setSettingsPanelOpen(true)} size="sm" type="button" variant="outline">
+            <Settings className="h-4 w-4" />
+            Display
+          </Button>
         </div>
 
         <div className="mt-3 flex flex-wrap gap-2">
@@ -293,6 +313,7 @@ export default function DuasPage({ language, onCompleteDhikrFlow }: DuasPageProp
         {visibleDuas.map(({ item, groupTitle }) => (
           <DuaCard
             arabicSize={displaySettings.arabicSize}
+            displaySettings={displaySettings}
             favorite={isDuaFavorite(favorites, item.id)}
             groupTitle={groupTitle}
             item={item}

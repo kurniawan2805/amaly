@@ -4,11 +4,12 @@ import { useState } from "react"
 import { Card } from "@/components/ui/card"
 import { duaFootnotes, type DuaItem } from "@/data/duas"
 import type { AppLanguage } from "@/lib/app-settings"
-import type { DuaArabicSize } from "@/lib/dua-display-settings"
+import type { DuaArabicSize, DuaTranslationSize, DuaDisplaySettings } from "@/lib/dua-display-settings"
 import { cn } from "@/lib/utils"
 
 type DuaCardProps = {
   arabicSize: DuaArabicSize
+  displaySettings?: DuaDisplaySettings
   favorite: boolean
   groupTitle?: string
   item: DuaItem
@@ -22,6 +23,13 @@ const arabicSizeClasses: Record<DuaArabicSize, string> = {
   md: "text-3xl leading-[2.5]",
   lg: "text-4xl leading-[2.6]",
   xl: "text-5xl leading-[2.7]",
+}
+
+const translationSizeClasses: Record<DuaTranslationSize, string> = {
+  xs: "text-xs leading-5",
+  sm: "text-sm leading-6",
+  md: "text-base leading-7",
+  lg: "text-lg leading-8",
 }
 
 const copy = {
@@ -43,12 +51,20 @@ const copy = {
   },
 }
 
-export function DuaCard({ arabicSize, favorite, groupTitle, item, language, onToggleFavorite }: DuaCardProps) {
+export function DuaCard({ arabicSize, displaySettings, favorite, groupTitle, item, language, onToggleFavorite }: DuaCardProps) {
   const [open, setOpen] = useState(false)
   const t = copy[language]
   const footnotes = item.footnoteIds
     ?.map((id) => duaFootnotes.find((footnote) => footnote.id === id))
     .filter((footnote): footnote is NonNullable<typeof footnote> => Boolean(footnote))
+
+  // Determine visibility based on settings
+  const showTranslation = displaySettings?.showTranslation ?? true
+  const showTransliteration = displaySettings?.showTransliteration ?? false
+  const showSource = displaySettings?.showSource ?? true
+  const showBenefit = displaySettings?.showBenefit ?? true
+  const showRepetition = displaySettings?.showRepetition ?? true
+  const translationSize = (displaySettings?.translationSize ?? "sm") as DuaTranslationSize
 
   return (
     <Card className="overflow-hidden p-0">
@@ -63,9 +79,11 @@ export function DuaCard({ arabicSize, favorite, groupTitle, item, language, onTo
         <span className="min-w-0 flex-1">
           {groupTitle ? <span className="text-xs font-bold uppercase tracking-wide text-muted-foreground">{groupTitle}</span> : null}
           <span className="block text-sm font-bold text-foreground">{item.title}</span>
-          <span className="mt-1 inline-flex rounded-full bg-surface-container-low px-2 py-1 text-xs font-bold text-primary">
-            {t.repetition(item.repetition)}
-          </span>
+          {showRepetition && (
+            <span className="mt-1 inline-flex rounded-full bg-surface-container-low px-2 py-1 text-xs font-bold text-primary">
+              {t.repetition(item.repetition)}
+            </span>
+          )}
         </span>
         <span className="flex shrink-0 items-center gap-1">
           <span
@@ -101,9 +119,13 @@ export function DuaCard({ arabicSize, favorite, groupTitle, item, language, onTo
               {item.arabic}
             </p>
           ) : null}
-          {item.transliteration ? <p className="mt-3 text-sm font-semibold italic leading-6 text-muted-foreground">{item.transliteration}</p> : null}
-          {item.translation ? <p className="mt-3 text-sm leading-6 text-foreground">{item.translation}</p> : null}
-          {item.benefit ? (
+          {showTransliteration && item.transliteration ? (
+            <p className="mt-3 text-sm font-semibold italic leading-6 text-muted-foreground">{item.transliteration}</p>
+          ) : null}
+          {showTranslation && item.translation ? (
+            <p className={cn("mt-3 text-foreground", translationSizeClasses[translationSize])}>{item.translation}</p>
+          ) : null}
+          {showBenefit && item.benefit ? (
             <div className="mt-3 rounded-xl bg-sage-pale/60 px-3 py-2 text-sm font-semibold leading-6 text-sage-deep">
               <span className="font-bold">{t.benefit}: </span>
               {item.benefit}
@@ -115,7 +137,7 @@ export function DuaCard({ arabicSize, favorite, groupTitle, item, language, onTo
               {item.note}
             </div>
           ) : null}
-          {item.source ? (
+          {showSource && item.source ? (
             <p className="mt-3 text-xs font-semibold leading-5 text-muted-foreground">
               <span className="font-bold text-foreground">{t.source}: </span>
               {item.source}
