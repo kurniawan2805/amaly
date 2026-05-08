@@ -362,16 +362,33 @@ export async function sendPartnerEvent(
   payload: Record<string, Json> = {},
 ) {
   const client = requireSupabase()
-  const { error } = await client.from("partner_events").insert({
-    sender_id: userId,
-    receiver_id: partnerId,
-    event_type: eventType,
-    payload,
-  })
-  if (error) throw error
+  try {
+    const { error } = await client.from("partner_events").insert({
+      sender_id: userId,
+      receiver_id: partnerId,
+      event_type: eventType,
+      payload,
+    })
+    if (error) throw error
+    return { success: true }
+  } catch (error) {
+    // If offline or network error, queue for retry
+    if (!navigator.onLine || (error instanceof Error && error.message.includes("Failed to fetch"))) {
+      const { nudgeQueue } = await import("@/lib/nudge-queue")
+      const queued = nudgeQueue.add({
+        partnerId,
+        type: eventType,
+        payload,
+        status: "pending",
+      })
+      console.warn("Nudge queued for offline retry:", queued.id)
+      return { success: false, queued: true, queuedId: queued.id }
+    }
+    throw error
+  }
 }
 
-export function subscribeToPartnerEvents(userId: string, onNotice: (notice: PartnerNotice) => void): RealtimeChannel | null {
+export function subscribeToPartnerEvents(userId: string, onNotice: (notice: PartnerNotice) => void, onConnectionChange?: (connected: boolean, error?: string) => void): RealtimeChannel | null {
   if (!supabase) {
     return null
   }
@@ -388,5 +405,25 @@ export function subscribeToPartnerEvents(userId: string, onNotice: (notice: Part
       },
       (payload) => onNotice(noticeFromEvent(payload.new as PartnerEventRow)),
     )
-    .subscribe()
+    .on("system", { event: "all" }, (message) => {
+      if (message.type === "CHANNEL_ERROR") {
+        console.error("Partner events channel error:", message)
+        onConnectionChange?.(false, message.error?.message || "Connection error")
+      } else if (message.type === "SUBSCRIBE") {
+        console.log("Partner events channel subscribed")
+        onConnectionChange?.(true)
+      } else if (message.type === "UNSUBSCRIBE") {
+        console.log("Partner events channel unsubscribed")
+        onConnectionChange?.(false, "Unsubscribed")
+      }
+    })
+    .subscribe((status) => {
+      if (status === "SUBSCRIBED") {
+        onConnectionChange?.(true)
+      } else if (status === "CHANNEL_ERROR") {
+        onConnectionChange?.(false, "Channel error")
+      } else if (status === "TIMED_OUT") {
+        onConnectionChange?.(false, "Connection timeout")
+      }
+    })
 }

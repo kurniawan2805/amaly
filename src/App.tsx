@@ -113,6 +113,14 @@ export default function App() {
     void initializeAuth()
   }, [initializeAuth])
 
+  // Auto-dismiss partner notice after 5 seconds
+  useEffect(() => {
+    if (partnerNotice) {
+      const timeout = setTimeout(() => clearPartnerNotice(), 5000)
+      return () => clearTimeout(timeout)
+    }
+  }, [partnerNotice, clearPartnerNotice])
+
   function openHabitSettings(initialSection: HabitSettingsInitialSection) {
     setHabitSettingsInitialSection(initialSection)
     openPanel("habits")

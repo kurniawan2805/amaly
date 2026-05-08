@@ -102,6 +102,8 @@ type StoreState = {
   partnerInvite: PartnerInvite | null
   partnerSnapshot: PartnerSnapshot | null
   partnerNotice: PartnerNotice | null
+  realtimeConnected: boolean
+  connectionError: string | null
   settingsOpen: boolean
   activePanel: ActivePanel
   quranBurst: QuranBurst | null
@@ -112,6 +114,7 @@ type StoreState = {
   signOut: () => Promise<void>
   updateDisplayName: (displayName: string) => Promise<void>
   clearPartnerNotice: () => void
+  setConnectionStatus: (connected: boolean, error?: string) => void
   hydrateFromSupabase: () => Promise<void>
   syncQuranProgress: () => Promise<void>
   syncCloudState: () => Promise<void>
@@ -242,17 +245,24 @@ function subscribeForUser(userId: string, set: (partial: Partial<StoreState>) =>
     void supabase.removeChannel(partnerEventsChannel)
   }
 
-  partnerEventsChannel = subscribeToPartnerEvents(userId, (notice) => {
-    set({ partnerNotice: notice })
-    if (notice.type === "nudge") {
-      void showBrowserNotification({
-        title: "Partner Nudge",
-        body: notice.message,
-        tag: `partner-nudge-${notice.id}`,
-        url: "/",
-      })
+  partnerEventsChannel = subscribeToPartnerEvents(
+    userId,
+    (notice) => {
+      set({ partnerNotice: notice })
+      // Show browser notification for both nudge and quran_goal types
+      if (notice.type === "nudge" || notice.type === "quran_goal") {
+        void showBrowserNotification({
+          title: notice.type === "nudge" ? "Partner Nudge" : "Partner Progress",
+          body: notice.message,
+          tag: `partner-${notice.type}-${notice.id}`,
+          url: "/",
+        })
+      }
+    },
+    (connected, error) => {
+      set({ realtimeConnected: connected, connectionError: error || null })
     }
-  })
+  )
 }
 
 function unsubscribePartnerEvents() {
@@ -282,6 +292,8 @@ export const useAppStore = create<StoreState>((set, get) => ({
   partnerInvite: null,
   partnerSnapshot: null,
   partnerNotice: null,
+  realtimeConnected: true,
+  connectionError: null,
   settingsOpen: false,
   activePanel: null,
   quranBurst: null,
@@ -406,6 +418,7 @@ export const useAppStore = create<StoreState>((set, get) => ({
     }
   },
   clearPartnerNotice: () => set({ partnerNotice: null }),
+  setConnectionStatus: (connected: boolean, error?: string) => set({ realtimeConnected: connected, connectionError: error || null }),
   hydrateFromSupabase: async () => {
     const current = get()
     if (!current.user) return
@@ -545,10 +558,14 @@ export const useAppStore = create<StoreState>((set, get) => ({
     }
 
     try {
-      await sendPartnerEvent(current.user.id, partnerId, "nudge", {
+      const result = await sendPartnerEvent(current.user.id, partnerId, "nudge", {
         senderName: senderName(current.user, current.profile),
       })
-      set({ syncMessage: "Nudge sent." })
+      if (result.queued) {
+        set({ syncMessage: "Nudge queued (offline). Will send when back online." })
+      } else {
+        set({ syncMessage: "Nudge sent." })
+      }
     } catch (error) {
       set({ syncMessage: error instanceof Error ? error.message : "Could not send nudge." })
     }
