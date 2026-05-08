@@ -1,6 +1,7 @@
 import { Menu, Moon, Sun, UserRound } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { NotificationCenter } from "@/components/notifications/notification-center"
 import { AppLanguage, AppTheme } from "@/lib/app-settings"
 import { cn } from "@/lib/utils"
 import { useAppStore } from "@/stores/app-store"
@@ -55,18 +56,15 @@ export function Header({ language, theme, onOpenAccount, onOpenHabits, onToggleL
         </div>
 
         <div className="flex items-center justify-end gap-1.5">
-          <button
-            aria-label={t.language}
-            className="grid h-10 w-[68px] grid-cols-2 rounded-full border border-sage/15 bg-muted p-1 text-[11px] font-bold text-muted-foreground transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            onClick={onToggleLanguage}
-            type="button"
-          >
-            <span className={cn("flex items-center justify-center rounded-full transition", language === "en" && "bg-sage text-white shadow-soft")}>EN</span>
-            <span className={cn("flex items-center justify-center rounded-full transition", language === "id" && "bg-sage text-white shadow-soft")}>ID</span>
-          </button>
+          <Button aria-label={t.language} className="transition active:scale-95" onClick={onToggleLanguage} size="icon" variant="ghost">
+            <span className="text-[11px] font-bold">
+              {language === "en" ? "EN" : "ID"}
+            </span>
+          </Button>
           <Button aria-label={t.theme} className="transition active:scale-95" onClick={onToggleTheme} size="icon" variant="ghost">
             {theme === "dark" ? <Moon className="h-5 w-5 rotate-[-8deg] transition" /> : <Sun className="h-5 w-5 transition" />}
           </Button>
+          <NotificationCenter />
           <Button aria-label={t.account} onClick={onOpenAccount} size="icon" variant="ghost">
           {user ? (
             avatarUrl ? (

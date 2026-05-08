@@ -388,7 +388,11 @@ export async function sendPartnerEvent(
   }
 }
 
-export function subscribeToPartnerEvents(userId: string, onNotice: (notice: PartnerNotice) => void, onConnectionChange?: (connected: boolean, error?: string) => void): RealtimeChannel | null {
+export function subscribeToPartnerEvents(
+  userId: string,
+  onNotice: (notice: PartnerNotice) => void,
+  onConnectionChange?: (connected: boolean, error?: string) => void,
+): RealtimeChannel | null {
   if (!supabase) {
     return null
   }
@@ -403,7 +407,37 @@ export function subscribeToPartnerEvents(userId: string, onNotice: (notice: Part
         table: "partner_events",
         filter: `receiver_id=eq.${userId}`,
       },
-      (payload) => onNotice(noticeFromEvent(payload.new as PartnerEventRow)),
+      async (payload) => {
+        const event = payload.new as PartnerEventRow
+        const notice = noticeFromEvent(event)
+
+        // Add to notification history
+        const { notificationHistory } = await import("@/lib/notification-history")
+        const { notificationPrefs } = await import("@/lib/notification-prefs")
+
+        const eventPayload = typeof event.payload === "object" && event.payload !== null && !Array.isArray(event.payload) ? event.payload : {}
+        const senderName = typeof eventPayload.senderName === "string" ? eventPayload.senderName : "Your partner"
+
+        notificationHistory.add({
+          type: event.event_type,
+          partnerId: event.sender_id,
+          senderName,
+          message: notice.message,
+          metadata:
+            event.event_type === "quran_goal"
+              ? {
+                  pages: typeof eventPayload.pagesReadToday === "number" ? eventPayload.pagesReadToday : undefined,
+                  goal: typeof eventPayload.dailyGoal === "number" ? eventPayload.dailyGoal : undefined,
+                }
+              : undefined,
+        })
+
+        // Trigger notification sound/vibration
+        notificationPrefs.notify()
+
+        // Call original handler
+        onNotice(notice)
+      },
     )
     .on("system", { event: "all" }, (message) => {
       if (message.type === "CHANNEL_ERROR") {

@@ -56,7 +56,7 @@ class NudgeQueue {
   /**
    * Add a nudge to the queue
    */
-  add(nudge: Omit<QueuedNudge, "id" | "timestamp">): QueuedNudge {
+  add(nudge: Omit<QueuedNudge, "id" | "timestamp" | "retries">): QueuedNudge {
     const id = `nudge-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
     const queued: QueuedNudge = {
       id,
@@ -141,6 +141,27 @@ class NudgeQueue {
   shouldRetry(id: string, maxRetries: number = 3): boolean {
     const nudge = this.queue.get(id)
     return nudge ? nudge.retries < maxRetries : false
+  }
+
+  /**
+   * Manually retry a failed nudge
+   */
+  retry(id: string): QueuedNudge | null {
+    const nudge = this.queue.get(id)
+    if (nudge && nudge.status === "failed") {
+      nudge.status = "pending"
+      nudge.error = undefined
+      this.save()
+      return nudge
+    }
+    return null
+  }
+
+  /**
+   * Get failed nudges that can be manually retried
+   */
+  getFailed(): QueuedNudge[] {
+    return Array.from(this.queue.values()).filter((n) => n.status === "failed")
   }
 }
 
