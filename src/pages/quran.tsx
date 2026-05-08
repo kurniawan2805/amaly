@@ -1,7 +1,7 @@
 import { ContinueReadingCard } from "@/components/quran/continue-reading-card"
 import { JuzGrid } from "@/components/quran/juz-grid"
 import type { AppLanguage, HijriOffset } from "@/lib/app-settings"
-import type { QuranProgressState } from "@/lib/quran-progress"
+import { formatQuranLogDate, type QuranProgressLog, type QuranProgressState } from "@/lib/quran-progress"
 
 type QuranPageProps = {
   language: AppLanguage
@@ -17,15 +17,45 @@ const copy = {
     title: "Quran Tracker",
     subtitle: "Salam. Nurture your soul with daily recitation.",
     juzGrid: "Juz Grid",
+    journeyLog: "Journey Log",
+    readPages: (pages: number) => `Read ${pages} page${pages === 1 ? "" : "s"}`,
+    reached: "reached",
+    completedJuzs: (juzs: number[]) => `Completed Juz ${juzs.join(", ")}.`,
   },
   id: {
     title: "Pelacak Quran",
     subtitle: "Salam. Rawat hati dengan tilawah harian.",
     juzGrid: "Grid Juz",
+    journeyLog: "Catatan Perjalanan",
+    readPages: (pages: number) => `Membaca ${pages} halaman`,
+    reached: "sampai",
+    completedJuzs: (juzs: number[]) => `Selesai Juz ${juzs.join(", ")}.`,
   },
 }
 
-export default function QuranPage({ language, progress, onQuickLog, onSetDailyGoal }: QuranPageProps) {
+function JourneyEntry({ hijriOffset, language, log }: { hijriOffset: HijriOffset; language: AppLanguage; log: QuranProgressLog }) {
+  const t = copy[language]
+  const completedJuzs = log.completed_juzs ?? (typeof log.completed_juz === "number" ? [log.completed_juz] : [])
+
+  return (
+    <li className="relative pl-9">
+      <span className="absolute left-0 top-1 flex h-6 w-6 items-center justify-center rounded-full border border-sage/20 bg-card text-xs">
+        {completedJuzs.length > 0 ? "💐" : ""}
+      </span>
+      <div className="rounded-xl border border-sage/15 bg-card p-4">
+        <p className="font-serif text-xl font-semibold text-primary">{formatQuranLogDate(log.date, language, hijriOffset)}</p>
+        <p className="mt-1 text-sm font-semibold text-foreground">
+          {t.readPages(log.pages)} ({t.reached} {log.surah_name}, Ayah {log.ayah})
+        </p>
+        {completedJuzs.length > 0 ? (
+          <p className="mt-2 text-sm font-bold text-primary">MashaAllah! {t.completedJuzs(completedJuzs)}</p>
+        ) : null}
+      </div>
+    </li>
+  )
+}
+
+export default function QuranPage({ language, hijriOffset, progress, onQuickLog, onSetDailyGoal }: QuranPageProps) {
   const t = copy[language]
 
   return (
@@ -42,6 +72,20 @@ export default function QuranPage({ language, progress, onQuickLog, onSetDailyGo
       <section className="space-y-2">
         <h3 className="font-serif text-xl font-medium text-primary">{t.juzGrid}</h3>
         <JuzGrid progress={progress} />
+      </section>
+
+      <section className="space-y-3">
+        <h3 className="font-serif text-xl font-medium text-primary">{t.journeyLog}</h3>
+        <ol className="space-y-3 border-l border-sage/15 pl-3">
+          {[...progress.logs].reverse().slice(0, 8).map((log) => (
+            <JourneyEntry hijriOffset={hijriOffset} key={log.date} language={language} log={log} />
+          ))}
+          {progress.logs.length === 0 ? (
+            <li className="rounded-xl border border-sage/15 bg-card p-4 text-sm font-semibold text-muted-foreground">
+              Salam. Your first Quran log will appear here.
+            </li>
+          ) : null}
+        </ol>
       </section>
     </div>
   )
