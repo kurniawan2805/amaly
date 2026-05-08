@@ -3,6 +3,7 @@ import { lazy, Suspense, type CSSProperties, useEffect, useState } from "react"
 
 import { BottomNav } from "@/components/layout/bottom-nav"
 import { Header } from "@/components/layout/header"
+import { OfflineIndicator } from "@/components/offline-indicator"
 import { AccountSettingsPanel } from "@/components/settings/account-settings-panel"
 import { HabitSettingsPanel, type HabitSettingsInitialSection } from "@/components/settings/habit-settings-panel"
 import { type AppSettings } from "@/lib/app-settings"
@@ -230,6 +231,7 @@ export default function App() {
         </Suspense>
       </main>
       {focusMode ? null : <BottomNav cycleModeActive={Boolean(cycleState.activePeriod)} dhikrReminderActive={dhikrReminderActive} language={settings.language} />}
+      <OfflineIndicator />
       <Suspense fallback={null}>
         {activePanel === "habits" ? <HabitSettingsPanel initialSection={habitSettingsInitialSection} onClose={closePanel} open /> : null}
         {activePanel === "account" ? <AccountSettingsPanel onClose={closePanel} open /> : null}

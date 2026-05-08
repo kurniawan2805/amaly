@@ -13,11 +13,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   </React.StrictMode>,
 )
 
-if (import.meta.env.PROD && "serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    void navigator.serviceWorker.register("/service-worker.js")
-  })
-}
+// Service Worker registered by vite-plugin-pwa in production
 
 window.addEventListener("error", (event) => {
   const error = event.error as Error & { code: string }
