@@ -185,7 +185,7 @@ export default function QuranReaderPage({ language, onSetPage }: QuranReaderPage
     const deltaX = event.clientX - start.x
     const deltaY = event.clientY - start.y
     if (Math.abs(deltaX) < 44 || Math.abs(deltaX) < Math.abs(deltaY) * 1.08) return
-    goToPage(deltaX < 0 ? page + 1 : page - 1)
+    goToPage(deltaX < 0 ? page - 1 : page + 1)
   }
 
   function toggleBookmark() {
