@@ -6,11 +6,14 @@ import type { DailyTrackerState } from "@/lib/daily-tracker"
 import type { Database, Json } from "@/lib/database.types"
 import type { FastingState } from "@/lib/fasting-progress"
 import { getQuranPageDetails, updateProgress, type QuranProgressLog, type QuranProgressState } from "@/lib/quran-progress"
+import type { QuranLabel, QuranReaderBookmark, QuranReaderBookmarkState } from "@/lib/quran-reader-bookmarks"
 import { isSupabaseConfigured, supabase } from "@/lib/supabase"
 
 type QuranProgressRow = Database["public"]["Tables"]["quran_progress"]["Row"]
 type PartnerEventRow = Database["public"]["Tables"]["partner_events"]["Row"]
 type UserSettingsRow = Database["public"]["Tables"]["user_settings"]["Row"]
+type QuranLabelRow = Database["public"]["Tables"]["quran_labels"]["Row"]
+type QuranBookmarkRow = Database["public"]["Tables"]["quran_bookmarks"]["Row"]
 
 export type AuthStateSnapshot = {
   session: Session | null
@@ -278,6 +281,71 @@ export async function upsertCloudState(
     { onConflict: "user_id" },
   )
   if (error) throw error
+}
+
+export async function loadOwnQuranBookmarks(userId: string): Promise<QuranReaderBookmarkState | null> {
+  const client = requireSupabase()
+  const [{ data: labels, error: labelsError }, { data: bookmarks, error: bookmarksError }] = await Promise.all([
+    client.from("quran_labels").select("*").eq("user_id", userId),
+    client.from("quran_bookmarks").select("*").eq("user_id", userId).order("position", { ascending: true }),
+  ])
+
+  if (labelsError) throw labelsError
+  if (bookmarksError) throw bookmarksError
+
+  if (!labels?.length && !bookmarks?.length) return null
+
+  return {
+    labels: labels.map((l) => ({ id: l.id, name: l.name, color: l.color })),
+    bookmarks: bookmarks.map((b) => ({
+      id: b.id,
+      ayah: b.ayah,
+      createdAt: b.created_at,
+      page: b.page,
+      surah: b.surah,
+      surahName: getQuranPageDetails(b.page).surah_name,
+      labelId: b.label_id,
+      note: b.note,
+      position: b.position,
+      isPrivate: b.is_private,
+    })),
+  }
+}
+
+export async function upsertQuranBookmarks(userId: string, state: QuranReaderBookmarkState) {
+  const client = requireSupabase()
+
+  // Labels first (since bookmarks reference them)
+  const { error: labelsError } = await client.from("quran_labels").upsert(
+    state.labels.map((l) => ({
+      id: l.id.length > 20 ? l.id : undefined, // only use id if it's a UUID, not a default string id like 'hifz'
+      user_id: userId,
+      name: l.name,
+      color: l.color,
+    })),
+    { onConflict: "user_id, name" }
+  )
+  if (labelsError) throw labelsError
+
+  // Re-fetch labels to get real IDs for default labels
+  const { data: realLabels } = await client.from("quran_labels").select("id, name").eq("user_id", userId)
+  const labelMap = new Map(realLabels?.map((l) => [l.name.toLowerCase(), l.id]))
+
+  const { error: bookmarksError } = await client.from("quran_bookmarks").upsert(
+    state.bookmarks.map((b) => ({
+      user_id: userId,
+      label_id: b.labelId ? (labelMap.get(b.labelId) || b.labelId) : null,
+      surah: b.surah,
+      ayah: b.ayah,
+      page: b.page,
+      note: b.note,
+      position: b.position,
+      is_private: b.isPrivate,
+      updated_at: new Date().toISOString(),
+    })),
+    { onConflict: "user_id, surah, ayah" }
+  )
+  if (bookmarksError) throw bookmarksError
 }
 
 export async function createPartnerInvite(userId: string, role: PartnerRole): Promise<PartnerInvite> {

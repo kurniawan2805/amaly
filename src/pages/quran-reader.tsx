@@ -1,17 +1,23 @@
-import { Bookmark, Check, ChevronLeft, ChevronRight, Home, Loader2 } from "lucide-react"
+import { Bookmark, Check, ChevronLeft, ChevronRight, Home, Loader2, Save } from "lucide-react"
 import { Fragment, useEffect, useRef, useState, type FormEvent, type PointerEvent } from "react"
 import { useNavigate, useSearchParams } from "react-router-dom"
 
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet"
+import { Badge } from "@/components/ui/badge"
 import type { AppLanguage } from "@/lib/app-settings"
-import { loadQuranReaderBookmarks, saveQuranReaderBookmarks, toggleQuranReaderBookmark, isQuranVerseBookmarked } from "@/lib/quran-reader-bookmarks"
+import { loadQuranReaderBookmarks, saveQuranReaderBookmarks, upsertQuranReaderBookmark, removeQuranReaderBookmark, isQuranVerseBookmarked, getVerseBookmark, type QuranLabel } from "@/lib/quran-reader-bookmarks"
 import { getMushafFontName, getQuranReaderJuzNavigation, getQuranReaderPage, getQuranReaderSurahNavigation, loadBismillahFont, loadChapterHeaderFont, loadMushafFont, QURAN_BISMILLAH_CODES, QURAN_CHAPTER_HEADER_CODES, type QuranReaderNavigationItem, type QuranReaderPage, type QuranReaderVerse } from "@/lib/quran-reader-data"
 import { cn } from "@/lib/utils"
+import { type QuranReaderBookmarkState } from "@/lib/quran-reader-bookmarks"
 
 type QuranReaderPageProps = {
   language: AppLanguage
   onSetPage: (page: number) => void
+  onUpsertBookmark: (verse: QuranReaderVerse, data: any) => void
+  onRemoveBookmark: (verse: QuranReaderVerse) => void
+  bookmarks: QuranReaderBookmarkState
 }
 
 const copy = {
@@ -28,6 +34,11 @@ const copy = {
     markDone: "Mark read until this page",
     done: "Reading progress updated.",
     close: "Close",
+    label: "Category",
+    note: "Note",
+    private: "Private",
+    saveAndLog: "Save & Log Progress",
+    saved: "Bookmark saved",
   },
   id: {
     home: "Kembali ke tracker Quran",
@@ -42,6 +53,11 @@ const copy = {
     markDone: "Tandai selesai baca sampai halaman ini",
     done: "Progress bacaan diperbarui.",
     close: "Tutup",
+    label: "Kategori",
+    note: "Catatan",
+    private: "Privat",
+    saveAndLog: "Simpan & Log Progress",
+    saved: "Bookmark disimpan",
   },
 }
 
@@ -69,7 +85,7 @@ function RevelationIcon({ revelation }: { revelation: 1 | 2 }) {
   return revelation === 1 ? <MeccaIcon /> : <MadinahIcon />
 }
 
-export default function QuranReaderPage({ language, onSetPage }: QuranReaderPageProps) {
+export default function QuranReaderPage({ language, onSetPage, onUpsertBookmark, onRemoveBookmark, bookmarks }: QuranReaderPageProps) {
   const t = copy[language]
   const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
@@ -83,10 +99,22 @@ export default function QuranReaderPage({ language, onSetPage }: QuranReaderPage
   const [pageInputValue, setPageInputValue] = useState(String(page))
   const [navigationPicker, setNavigationPicker] = useState<"surah" | "juz" | null>(null)
   const [selectedVerse, setSelectedVerse] = useState<QuranReaderVerse | null>(null)
+  const [bookmarkLabel, setBookmarkLabel] = useState<string | null>(null)
+  const [bookmarkNote, setBookmarkNote] = useState("")
+  const [bookmarkPrivate, setBookmarkPrivate] = useState(true)
   const [notice, setNotice] = useState<string | null>(null)
-  const [bookmarks, setBookmarks] = useState(() => loadQuranReaderBookmarks())
   const longPressTimerRef = useRef<number | null>(null)
   const pointerStartRef = useRef<{ x: number; y: number } | null>(null)
+
+  useEffect(() => {
+    if (selectedVerse) {
+      const existing = getVerseBookmark(bookmarks, selectedVerse)
+      setBookmarkLabel(existing?.labelId || null)
+      setBookmarkNote(existing?.note || "")
+      setBookmarkPrivate(existing?.isPrivate ?? true)
+    }
+  }, [selectedVerse, bookmarks])
+
   const pageSurahs = readerPage
     ? Array.from(new Map(readerPage.verses.map((verse) => [verse.surah, { name: verse.surahName, revelation: verse.revelation, surah: verse.surah }])).values())
     : []
@@ -190,10 +218,32 @@ export default function QuranReaderPage({ language, onSetPage }: QuranReaderPage
 
   function toggleBookmark() {
     if (!selectedVerse) return
-    const next = toggleQuranReaderBookmark(bookmarks, selectedVerse)
-    setBookmarks(next)
-    saveQuranReaderBookmarks(next)
+    onUpsertBookmark(selectedVerse, {
+      labelId: bookmarkLabel,
+      note: bookmarkNote,
+      isPrivate: bookmarkPrivate,
+    })
+    
+    if ("vibrate" in navigator) {
+      navigator.vibrate(50)
+    }
+    
+    setNotice(t.saved)
     setSelectedVerse(null)
+    window.setTimeout(() => setNotice(null), 2000)
+  }
+
+  function removeBookmark() {
+    if (!selectedVerse) return
+    onRemoveBookmark(selectedVerse)
+    setSelectedVerse(null)
+  }
+
+  function saveAndLog() {
+    if (!selectedVerse) return
+    toggleBookmark()
+    onSetPage(selectedVerse.page)
+    setNotice(t.done)
   }
 
   function markDone() {
@@ -202,6 +252,12 @@ export default function QuranReaderPage({ language, onSetPage }: QuranReaderPage
     setNotice(t.done)
     setSelectedVerse(null)
     window.setTimeout(() => setNotice(null), 2400)
+  }
+
+  function getLabelColor(labelId: string | null) {
+    if (!labelId) return "sage"
+    const label = bookmarks.labels.find((l) => l.id === labelId)
+    return label?.color || "sage"
   }
 
   function getBismillahCode(surah: number) {
@@ -324,13 +380,13 @@ export default function QuranReaderPage({ language, onSetPage }: QuranReaderPage
                     ) : null}
                     <div className={cn("flex flex-nowrap px-2 text-center", line.centered ? "justify-center" : "justify-between")}>
                       {line.words.map((word) => {
-                        const bookmarked = isQuranVerseBookmarked(bookmarks, word.verse)
+                        const bookmark = getVerseBookmark(bookmarks, word.verse)
                         return (
                           <button
                             className={cn(
-                              "m-0 inline-flex appearance-none items-center justify-center border-0 bg-transparent p-0 text-inherit leading-none transition hover:bg-amber-50/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:hover:bg-amber-300/10",
+                              "relative m-0 inline-flex appearance-none items-center justify-center border-0 bg-transparent p-0 text-inherit leading-none transition hover:bg-amber-50/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:hover:bg-amber-300/10",
                               word.isEndMarker ? "rounded-lg px-0.5 text-amber-700 dark:text-amber-200" : "rounded-md",
-                              bookmarked && !word.isEndMarker && "bg-amber-50 text-amber-900 dark:bg-amber-300/10 dark:text-amber-100",
+                              bookmark && !word.isEndMarker && "bg-sage-pale/20 text-amber-900 dark:bg-sage-pale/10 dark:text-amber-100",
                             )}
                             key={word.key}
                             onPointerCancel={clearLongPress}
@@ -339,6 +395,14 @@ export default function QuranReaderPage({ language, onSetPage }: QuranReaderPage
                             onPointerUp={clearLongPress}
                             type="button"
                           >
+                            {bookmark && word.isEndMarker ? (
+                              <span className={cn(
+                                "absolute -top-1 -right-1 h-2 w-2 rounded-full shadow-sm",
+                                bookmark.labelId === "hifz" ? "bg-sage" :
+                                bookmark.labelId === "tadabbur" ? "bg-blush" :
+                                bookmark.labelId === "ruqyah" ? "bg-amber-500" : "bg-sage"
+                              )} />
+                            ) : null}
                             <span
                               className={cn("inline-block leading-normal", mushafFontReady && (word.isEndMarker ? "amaly-v4-word amaly-v4-ayah" : "amaly-v4-word"))}
                               style={mushafFontReady ? { fontFamily: getMushafFontName(page) } : undefined}
@@ -412,24 +476,99 @@ export default function QuranReaderPage({ language, onSetPage }: QuranReaderPage
         </div>
       ) : null}
 
-      {selectedVerse ? (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/30 px-4 pb-4 sm:items-center sm:pb-0">
-          <Card className="w-full max-w-sm p-4 shadow-2xl">
-            <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">{selectedVerse.surahName} {selectedVerse.ayah}</p>
-            <div className="mt-4 grid gap-2">
-              <Button onClick={toggleBookmark} type="button" variant="outline">
-                <Bookmark className="h-4 w-4" />
-                {isQuranVerseBookmarked(bookmarks, selectedVerse) ? t.removeBookmark : t.bookmark}
-              </Button>
-              <Button onClick={markDone} type="button">
-                <Check className="h-4 w-4" />
-                {t.markDone}
-              </Button>
-              <Button onClick={() => setSelectedVerse(null)} type="button" variant="ghost">{t.close}</Button>
+      <Sheet open={Boolean(selectedVerse)} onOpenChange={(open) => !open && setSelectedVerse(null)}>
+        <SheetContent className="rounded-t-[32px] md:rounded-l-[32px] md:rounded-tr-none">
+          <SheetHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <SheetTitle>{selectedVerse?.surahName} {selectedVerse?.ayah}</SheetTitle>
+                <SheetDescription>{t.page} {selectedVerse?.page}</SheetDescription>
+              </div>
+              {isQuranVerseBookmarked(bookmarks, selectedVerse!) && (
+                <Button onClick={removeBookmark} size="sm" variant="ghost" className="text-destructive hover:bg-destructive/10 hover:text-destructive">
+                  {t.removeBookmark}
+                </Button>
+              )}
             </div>
-          </Card>
-        </div>
-      ) : null}
+          </SheetHeader>
+          <div className="grid gap-6 px-6 py-4">
+            <div className="grid gap-3">
+              <label className="text-sm font-bold text-primary">{t.label}</label>
+              <div className="flex flex-wrap gap-2">
+                {bookmarks.labels.map((label) => (
+                  <button
+                    key={label.id}
+                    onClick={() => setBookmarkLabel(label.id)}
+                    className={cn(
+                      "rounded-full px-4 py-2 text-sm font-bold transition-all border-2",
+                      bookmarkLabel === label.id 
+                        ? `bg-${label.color} border-${label.color} text-white` 
+                        : `bg-background border-sage/20 text-muted-foreground hover:border-sage/40`
+                    )}
+                  >
+                    {label.name}
+                  </button>
+                ))}
+                <button
+                  onClick={() => setBookmarkLabel(null)}
+                  className={cn(
+                    "rounded-full px-4 py-2 text-sm font-bold transition-all border-2",
+                    bookmarkLabel === null 
+                      ? "bg-primary border-primary text-white" 
+                      : "bg-background border-sage/20 text-muted-foreground hover:border-sage/40"
+                  )}
+                >
+                  None
+                </button>
+              </div>
+            </div>
+
+            <div className="grid gap-3">
+              <label className="text-sm font-bold text-primary" htmlFor="bookmark-note">{t.note}</label>
+              <textarea
+                id="bookmark-note"
+                className="min-h-[100px] w-full rounded-2xl border border-sage/20 bg-sage-pale/5 p-4 text-sm outline-none focus:ring-2 focus:ring-ring dark:bg-sage-pale/10"
+                placeholder="..."
+                value={bookmarkNote}
+                onChange={(e) => setBookmarkNote(e.target.value)}
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-bold text-primary">{t.private}</label>
+              <button
+                onClick={() => setBookmarkPrivate(!bookmarkPrivate)}
+                className={cn(
+                  "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+                  bookmarkPrivate ? "bg-primary" : "bg-muted"
+                )}
+              >
+                <span className={cn(
+                  "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-background shadow ring-0 transition duration-200 ease-in-out",
+                  bookmarkPrivate ? "translate-x-5" : "translate-x-0"
+                )} />
+              </button>
+            </div>
+
+            <div className="grid gap-3 pt-2">
+              <Button onClick={saveAndLog} className="h-14 rounded-2xl text-lg font-bold shadow-lg shadow-primary/20">
+                <Save className="mr-2 h-5 w-5" />
+                {t.saveAndLog}
+              </Button>
+              <div className="grid grid-cols-2 gap-3">
+                <Button onClick={toggleBookmark} variant="outline" className="h-12 rounded-2xl border-sage/20">
+                  <Bookmark className="mr-2 h-4 w-4" />
+                  {t.bookmark}
+                </Button>
+                <Button onClick={markDone} variant="ghost" className="h-12 rounded-2xl">
+                  <Check className="mr-2 h-4 w-4" />
+                  {t.markDone}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   )
 }

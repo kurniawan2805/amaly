@@ -1,7 +1,10 @@
+import { Bookmark } from "lucide-react"
 import { ContinueReadingCard } from "@/components/quran/continue-reading-card"
 import { JuzGrid } from "@/components/quran/juz-grid"
+import { Button } from "@/components/ui/button"
 import type { AppLanguage, HijriOffset } from "@/lib/app-settings"
 import { formatQuranLogDate, type QuranProgressLog, type QuranProgressState } from "@/lib/quran-progress"
+import { useAppStore } from "@/stores/app-store"
 
 type QuranPageProps = {
   language: AppLanguage
@@ -57,13 +60,24 @@ function JourneyEntry({ hijriOffset, language, log }: { hijriOffset: HijriOffset
 
 export default function QuranPage({ language, hijriOffset, progress, onQuickLog, onSetDailyGoal }: QuranPageProps) {
   const t = copy[language]
+  const openPanel = useAppStore((s) => s.openPanel)
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-3 px-6 py-4 pb-28">
-      <section className="space-y-1 text-center">
+      <header className="relative flex flex-col items-center gap-1 text-center">
         <h2 className="font-serif text-3xl font-semibold leading-tight text-primary">{t.title}</h2>
         <p className="text-sm leading-6 text-muted-foreground">{t.subtitle}</p>
-      </section>
+        
+        <Button 
+          onClick={() => openPanel("quran-marks")}
+          size="sm" 
+          variant="outline" 
+          className="absolute right-0 top-0 rounded-full border-sage/20 bg-sage-pale/10 text-sage-deep hover:bg-sage-pale/20"
+        >
+          <Bookmark className="mr-2 h-4 w-4" />
+          Marks
+        </Button>
+      </header>
 
       <section>
         <ContinueReadingCard language={language} onQuickLog={onQuickLog} onSetDailyGoal={onSetDailyGoal} progress={progress} />

@@ -265,6 +265,73 @@ export type Database = {
         }
         Relationships: []
       }
+      quran_labels: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          color: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          name: string
+          color: string
+          created_at?: string
+        }
+        Update: {
+          name?: string
+          color?: string
+        }
+        Relationships: []
+      }
+      quran_bookmarks: {
+        Row: {
+          id: string
+          user_id: string
+          label_id: string | null
+          surah: number
+          ayah: number
+          page: number
+          note: string | null
+          position: number
+          is_private: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          label_id?: string | null
+          surah: number
+          ayah: number
+          page: number
+          note?: string | null
+          position?: number
+          is_private?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          label_id?: string | null
+          surah?: number
+          ayah?: number
+          page?: number
+          note?: string | null
+          position?: number
+          is_private?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quran_bookmarks_label_id_fkey"
+            columns: ["label_id"]
+            referencedRelation: "quran_labels"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: Record<string, never>
     Functions: {

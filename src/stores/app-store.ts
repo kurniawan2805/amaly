@@ -59,12 +59,23 @@ import {
   type QuranProgressState,
 } from "@/lib/quran-progress"
 import {
+  loadQuranReaderBookmarks,
+  saveQuranReaderBookmarks,
+  upsertQuranReaderBookmark,
+  removeQuranReaderBookmark,
+  updateQuranLabel,
+  reorderBookmarks,
+  type QuranReaderBookmarkState,
+  type QuranLabel,
+} from "@/lib/quran-reader-bookmarks"
+import {
   acceptPartnerInvite as acceptSupabasePartnerInvite,
   createPartnerInvite as createSupabasePartnerInvite,
   getAuthSnapshot,
   isSupabaseConfigured,
   loadOwnCloudState,
   loadOwnQuranProgress,
+  loadOwnQuranBookmarks,
   loadOwnProfile,
   loadPartnerSnapshot,
   sendPartnerEvent,
@@ -76,6 +87,7 @@ import {
   updateOwnDisplayName,
   upsertCloudState,
   upsertQuranProgress,
+  upsertQuranBookmarks,
   type PartnerInvite,
   type PartnerNotice,
   type PartnerProfile,
@@ -84,11 +96,12 @@ import {
 import { supabase } from "@/lib/supabase"
 
 export type QuranBurst = { type: "juz"; juz: number } | { type: "goal" }
-export type ActivePanel = "habits" | "account" | null
+export type ActivePanel = "habits" | "account" | "quran-marks" | null
 
 type StoreState = {
   settings: AppSettings
   quranProgress: QuranProgressState
+  quranBookmarks: QuranReaderBookmarkState
   fastingState: FastingState
   cycleState: CycleState
   dailyTrackerState: DailyTrackerState
@@ -117,6 +130,7 @@ type StoreState = {
   setConnectionStatus: (connected: boolean, error?: string) => void
   hydrateFromSupabase: () => Promise<void>
   syncQuranProgress: () => Promise<void>
+  syncQuranBookmarks: () => Promise<void>
   syncCloudState: () => Promise<void>
   createPartnerInvite: (role: PartnerRole) => Promise<void>
   acceptPartnerInvite: (code: string, role: PartnerRole) => Promise<void>
@@ -138,6 +152,10 @@ type StoreState = {
   quickLogQuran: (increment: number) => void
   setQuranPage: (page: number) => void
   setQuranDailyGoal: (goal: number) => void
+  upsertQuranBookmark: (verse: any, data: any) => void
+  removeQuranBookmark: (verse: any) => void
+  updateQuranLabel: (labelId: string, updates: Partial<QuranLabel>) => void
+  reorderQuranBookmarks: (labelId: string | null, bookmarkIds: string[]) => void
   addQadhaDebt: (days?: number) => void
   markQadhaPaid: () => void
   toggleSahurReminder: (dateKey: string) => void
@@ -279,6 +297,7 @@ const initialFastingState = loadFastingState()
 export const useAppStore = create<StoreState>((set, get) => ({
   settings: initialSettings,
   quranProgress: loadQuranProgress(initialSettings.language, initialSettings.hijriOffset),
+  quranBookmarks: loadQuranReaderBookmarks(),
   fastingState: initialFastingState,
   cycleState: loadCycleState(initialFastingState.cycleLogs),
   dailyTrackerState: loadDailyTrackerState(),
@@ -467,6 +486,19 @@ export const useAppStore = create<StoreState>((set, get) => ({
         await upsertQuranProgress(synced.quranProgress, userId)
       }
 
+      // Sync bookmarks
+      const cloudBookmarks = await loadOwnQuranBookmarks(userId)
+      if (cloudBookmarks) {
+        if (cloudBookmarks.bookmarks.length >= synced.quranBookmarks.bookmarks.length) {
+          saveQuranReaderBookmarks(cloudBookmarks)
+          set({ quranBookmarks: cloudBookmarks })
+        } else {
+          await upsertQuranBookmarks(userId, synced.quranBookmarks)
+        }
+      } else {
+        await upsertQuranBookmarks(userId, synced.quranBookmarks)
+      }
+
       await get().loadPartnerSnapshot()
       set({ syncLoading: false })
     } catch (error) {
@@ -499,6 +531,16 @@ export const useAppStore = create<StoreState>((set, get) => ({
       await get().loadPartnerSnapshot()
     } catch (error) {
       set({ syncMessage: error instanceof Error ? error.message : "Could not save Quran progress to Supabase." })
+    }
+  },
+  syncQuranBookmarks: async () => {
+    const current = get()
+    if (!current.user) return
+
+    try {
+      await upsertQuranBookmarks(current.user.id, current.quranBookmarks)
+    } catch (error) {
+      set({ syncMessage: error instanceof Error ? error.message : "Could not save Quran bookmarks to Supabase." })
     }
   },
   createPartnerInvite: async (role) => {
@@ -701,6 +743,30 @@ export const useAppStore = create<StoreState>((set, get) => ({
     saveQuranProgress(progress)
     set({ quranProgress: progress })
     void get().syncQuranProgress()
+  },
+  upsertQuranBookmark: (verse, data) => {
+    const next = upsertQuranReaderBookmark(get().quranBookmarks, verse, data)
+    saveQuranReaderBookmarks(next)
+    set({ quranBookmarks: next })
+    void get().syncQuranBookmarks()
+  },
+  removeQuranBookmark: (verse) => {
+    const next = removeQuranReaderBookmark(get().quranBookmarks, verse)
+    saveQuranReaderBookmarks(next)
+    set({ quranBookmarks: next })
+    void get().syncQuranBookmarks()
+  },
+  updateQuranLabel: (labelId, updates) => {
+    const next = updateQuranLabel(get().quranBookmarks, labelId, updates)
+    saveQuranReaderBookmarks(next)
+    set({ quranBookmarks: next })
+    void get().syncQuranBookmarks()
+  },
+  reorderQuranBookmarks: (labelId, bookmarkIds) => {
+    const next = reorderBookmarks(get().quranBookmarks, labelId, bookmarkIds)
+    saveQuranReaderBookmarks(next)
+    set({ quranBookmarks: next })
+    void get().syncQuranBookmarks()
   },
   addQadhaDebt: (days = 1) => {
     const fastingState = addQadhaDebt(get().fastingState, days)

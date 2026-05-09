@@ -6,9 +6,11 @@ import { Header } from "@/components/layout/header"
 import { OfflineIndicator } from "@/components/offline-indicator"
 import { AccountSettingsPanel } from "@/components/settings/account-settings-panel"
 import { HabitSettingsPanel, type HabitSettingsInitialSection } from "@/components/settings/habit-settings-panel"
+import { QuranBookmarkSettingsPanel } from "@/components/settings/quran-bookmark-settings-panel"
 import { type AppSettings } from "@/lib/app-settings"
 import { getActiveDhikrWindow } from "@/lib/prayer-windows"
 import DuasPage from "@/pages/duas"
+import { cn } from "@/lib/utils"
 import { useAppStore } from "@/stores/app-store"
 
 const CyclePage = lazy(() => import("@/pages/cycle"))
@@ -17,6 +19,18 @@ const FastingPage = lazy(() => import("@/pages/fasting"))
 const QuranPage = lazy(() => import("@/pages/quran"))
 const QuranReaderPage = lazy(() => import("@/pages/quran-reader"))
 const ReportPage = lazy(() => import("@/pages/report"))
+
+const flowerEmojis = ["💐", "🌸", "🌷", "🌹", "🌺", "🌼", "🪷", "🌸", "🌷", "🌹", "🌺", "🌼", "💐", "🪷"]
+const flowerConfetti = Array.from({ length: 64 }, (_, index) => ({
+  emoji: flowerEmojis[index % flowerEmojis.length],
+  left: (index * 37) % 100,
+  top: (index * 23) % 100,
+  delay: (index % 16) * 42,
+  drift: ((index % 9) - 4) * 18,
+  fall: 70 + (index % 7) * 18,
+  rotate: ((index % 11) - 5) * 18,
+  size: index % 4 === 0 ? "text-4xl sm:text-5xl" : "text-3xl sm:text-4xl",
+}))
 
 const titles: Record<AppSettings["language"], Record<string, string>> = {
   en: {
@@ -39,71 +53,55 @@ const titles: Record<AppSettings["language"], Record<string, string>> = {
   },
 }
 
-const flowerEmojis = ["💐", "🌸", "🌷", "🌹", "🌺", "🌼", "🪷", "🌸", "🌷", "🌹", "🌺", "🌼", "💐", "🪷"]
-const flowerConfetti = Array.from({ length: 56 }, (_, index) => ({
-  emoji: flowerEmojis[index % flowerEmojis.length],
-  left: (index * 37) % 100,
-  top: (index * 23) % 100,
-  delay: (index % 14) * 42,
-  drift: ((index % 9) - 4) * 18,
-  fall: 70 + (index % 7) * 18,
-  rotate: ((index % 11) - 5) * 18,
-  size: index % 4 === 0 ? "text-4xl sm:text-5xl" : "text-3xl sm:text-4xl",
-}))
-
 function AppLoading() {
   return (
-    <div className="flex min-h-[50vh] items-center justify-center px-6 text-center">
-      <div className="h-10 w-10 animate-spin rounded-full border-2 border-sage/20 border-t-sage" aria-label="Loading" />
+    <div className="flex h-[60vh] items-center justify-center">
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
     </div>
   )
 }
 
 export default function App() {
-  const location = useLocation()
-  const settings = useAppStore((state) => state.settings)
-  const user = useAppStore((state) => state.user)
-  const profile = useAppStore((state) => state.profile)
-  const quranProgress = useAppStore((state) => state.quranProgress)
-  const fastingState = useAppStore((state) => state.fastingState)
-  const cycleState = useAppStore((state) => state.cycleState)
-  const dailyTrackerState = useAppStore((state) => state.dailyTrackerState)
-  const activePanel = useAppStore((state) => state.activePanel)
-  const quranBurst = useAppStore((state) => state.quranBurst)
-  const partnerNotice = useAppStore((state) => state.partnerNotice)
+  const settings = useAppStore((s) => s.settings)
+  const quranProgress = useAppStore((s) => s.quranProgress)
+  const fastingState = useAppStore((s) => s.fastingState)
+  const cycleState = useAppStore((s) => s.cycleState)
+  const dailyTrackerState = useAppStore((s) => s.dailyTrackerState)
+  const initializeAuth = useAppStore((s) => s.initializeAuth)
+  const displayName = useAppStore((s) => s.profile?.displayName || "")
+  const partnerNotice = useAppStore((s) => s.partnerNotice)
+  const clearPartnerNotice = useAppStore((s) => s.clearPartnerNotice)
+  const activePanel = useAppStore((s) => s.activePanel)
+  const closePanel = useAppStore((s) => s.closePanel)
+  const openPanel = useAppStore((s) => s.openPanel)
+  const quranBurst = useAppStore((s) => s.quranBurst)
+  const dismissQuranBurst = useAppStore((s) => s.dismissQuranBurst)
+  const setLanguage = useAppStore((s) => s.setLanguage)
+  const setTheme = useAppStore((s) => s.setTheme)
+  const quickLogQuran = useAppStore((s) => s.quickLogQuran)
+  const setQuranPage = useAppStore((s) => s.setQuranPage)
+  const setQuranDailyGoal = useAppStore((s) => s.setQuranDailyGoal)
+  const addQadhaDebt = useAppStore((s) => s.addQadhaDebt)
+  const markQadhaPaid = useAppStore((s) => s.markQadhaPaid)
+  const setHijriOffset = useAppStore((s) => s.setHijriOffset)
+  const toggleSahurReminder = useAppStore((s) => s.toggleSahurReminder)
+  const setPrayerCompleted = useAppStore((s) => s.setPrayerCompleted)
+  const toggleSunnahSelection = useAppStore((s) => s.toggleSunnahSelection)
+  const setHabitCompleted = useAppStore((s) => s.setHabitCompleted)
+  const startPeriod = useAppStore((s) => s.startPeriod)
+  const endPeriod = useAppStore((s) => s.endPeriod)
+  const saveCycleRange = useAppStore((s) => s.saveCycleRange)
+  const confirmCycleQadha = useAppStore((s) => s.confirmCycleQadha)
+  const ignoreCycleQadha = useAppStore((s) => s.ignoreCycleQadha)
+  const toggleCyclePrivacy = useAppStore((s) => s.toggleCyclePrivacy)
+  const toggleCycleSymptom = useAppStore((s) => s.toggleCycleSymptom)
+
   const [habitSettingsInitialSection, setHabitSettingsInitialSection] = useState<HabitSettingsInitialSection>("all")
-  const initializeAuth = useAppStore((state) => state.initializeAuth)
-  const openPanel = useAppStore((state) => state.openPanel)
-  const closePanel = useAppStore((state) => state.closePanel)
-  const setLanguage = useAppStore((state) => state.setLanguage)
-  const setTheme = useAppStore((state) => state.setTheme)
-  const dismissQuranBurst = useAppStore((state) => state.dismissQuranBurst)
-  const clearPartnerNotice = useAppStore((state) => state.clearPartnerNotice)
-  const quickLogQuran = useAppStore((state) => state.quickLogQuran)
-  const setQuranPage = useAppStore((state) => state.setQuranPage)
-  const setQuranDailyGoal = useAppStore((state) => state.setQuranDailyGoal)
-  const setHijriOffset = useAppStore((state) => state.setHijriOffset)
-  const addQadhaDebt = useAppStore((state) => state.addQadhaDebt)
-  const markQadhaPaid = useAppStore((state) => state.markQadhaPaid)
-  const toggleSahurReminder = useAppStore((state) => state.toggleSahurReminder)
-  const setPrayerCompleted = useAppStore((state) => state.setPrayerCompleted)
-  const toggleSunnahSelection = useAppStore((state) => state.toggleSunnahSelection)
-  const setHabitCompleted = useAppStore((state) => state.setHabitCompleted)
-  const startPeriod = useAppStore((state) => state.startPeriod)
-  const endPeriod = useAppStore((state) => state.endPeriod)
-  const saveCycleRange = useAppStore((state) => state.saveCycleRange)
-  const confirmCycleQadha = useAppStore((state) => state.confirmCycleQadha)
-  const ignoreCycleQadha = useAppStore((state) => state.ignoreCycleQadha)
-  const toggleCyclePrivacy = useAppStore((state) => state.toggleCyclePrivacy)
-  const toggleCycleSymptom = useAppStore((state) => state.toggleCycleSymptom)
-  const title = titles[settings.language][location.pathname] ?? "Amaly"
+  const location = useLocation()
+  const title = titles[settings.language][location.pathname] || "Amaly"
   const focusMode = location.pathname === "/quran/read"
-  const displayName =
-    profile?.displayName ||
-    (typeof user?.user_metadata?.display_name === "string" ? user.user_metadata.display_name : "") ||
-    user?.email ||
-    ""
-  const dhikrReminderActive = getActiveDhikrWindow(new Date()) !== null
+  const now = new Date()
+  const dhikrReminderActive = Boolean(getActiveDhikrWindow(now))
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", settings.theme === "dark")
@@ -113,7 +111,6 @@ export default function App() {
     void initializeAuth()
   }, [initializeAuth])
 
-  // Auto-dismiss partner notice after 5 seconds
   useEffect(() => {
     if (partnerNotice) {
       const timeout = setTimeout(() => clearPartnerNotice(), 5000)
@@ -168,6 +165,7 @@ export default function App() {
                   dailyTrackerState={dailyTrackerState}
                   displayName={displayName}
                   quranProgress={quranProgress}
+                  quranBookmarks={useAppStore((s) => s.quranBookmarks)}
                   settings={settings}
                 />
               }
@@ -187,7 +185,15 @@ export default function App() {
               path="/quran"
             />
             <Route
-              element={<QuranReaderPage language={settings.language} onSetPage={setQuranPage} />}
+              element={
+                <QuranReaderPage 
+                  language={settings.language} 
+                  onSetPage={setQuranPage}
+                  onUpsertBookmark={useAppStore((s) => s.upsertQuranBookmark)}
+                  onRemoveBookmark={useAppStore((s) => s.removeQuranBookmark)}
+                  bookmarks={useAppStore((s) => s.quranBookmarks)}
+                />
+              }
               path="/quran/read"
             />
             <Route
@@ -242,25 +248,25 @@ export default function App() {
       <OfflineIndicator />
       <Suspense fallback={null}>
         {activePanel === "habits" ? <HabitSettingsPanel initialSection={habitSettingsInitialSection} onClose={closePanel} open /> : null}
+        {activePanel === "quran-marks" ? <QuranBookmarkSettingsPanel onClose={closePanel} open /> : null}
         {activePanel === "account" ? <AccountSettingsPanel onClose={closePanel} open /> : null}
       </Suspense>
       {partnerNotice ? (
         <div className="fixed inset-x-4 top-20 z-[75] mx-auto max-w-sm rounded-2xl border border-sage/20 bg-card p-4 text-card-foreground shadow-2xl">
           <p className="text-xs font-bold uppercase tracking-wide text-primary">
-            {partnerNotice.type === "quran_goal" ? "Partner Progress" : "Partner Nudge"}
+            Partner Notice
           </p>
-          <p className="mt-1 text-sm font-semibold leading-6 text-foreground">{partnerNotice.message}</p>
-          <button className="mt-3 text-sm font-bold text-primary" onClick={clearPartnerNotice} type="button">
-            Close
-          </button>
+          <p className="mt-1 text-sm font-semibold leading-5 text-foreground">
+            {partnerNotice.message}
+          </p>
         </div>
       ) : null}
       {quranBurst ? (
-        <div className="pointer-events-none fixed inset-0 z-[80] overflow-hidden">
+        <div className="pointer-events-none fixed inset-0 z-[100] flex items-center justify-center bg-foreground/20 backdrop-blur-sm transition-opacity duration-1000">
           {flowerConfetti.map((flower, index) => (
             <span
-              className={`animate-flower-burst fixed ${flower.size}`}
               key={index}
+              className={cn("animate-flower-burst fixed", flower.size)}
               style={
                 {
                   left: `${flower.left}vw`,

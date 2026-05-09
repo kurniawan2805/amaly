@@ -182,10 +182,18 @@ Daily page should answer: "What should I do now?"
 Recommended order:
 1. Hijri/Gregorian date
 2. Greeting
-3. Prayer Check
-4. Quran quick card
-5. Daily Habits
-6. Optional cycle/fasting preview
+3. Contextual Banner (Smart Access)
+4. Prayer Check
+5. Quran quick card
+6. Daily Habits
+7. Optional cycle/fasting preview
+
+Contextual Banner:
+- Location: Dashboard, below greeting.
+- Behavior: Automatically detects time/day context.
+- Examples: Friday (Al-Kahfi), Night (Al-Mulk).
+- UI: Gradient card with prominent icon and "Zap" action button.
+- Interaction: Single tap navigates to the first verse of the relevant surah in Mushaf.
 
 Prayer Check:
 - Dominant daily card
@@ -253,6 +261,28 @@ Dhikr habits:
 - Tapping the habit row opens the correct dhikr flow.
 - Manual completion can remain as a small secondary fallback, not the primary path.
 - Dhikr flow session freshness should use the same broad fallback windows.
+
+## Quran Bookmarks & Notes
+
+The Mushaf experience should be tactile and distraction-free.
+
+Interaction:
+- Long press (Tap & Hold) on any verse to open the bookmark drawer.
+- Haptic feedback ("Magic Buzz") on successful save.
+
+Smart Labels:
+- Categories: Hifz, Tadabbur, Ruqyah.
+- Custom Labels: Users can rename labels and choose theme colors (Sage, Blush, Amber, etc.).
+- Visuals: Subtle colored dots next to verses instead of heavy highlights.
+
+Secret Cave Notes:
+- Privacy: Notes are private by default.
+- Storage: Bidirectional sync with Supabase with RLS protection.
+- Sheet UI: Bottom Drawer (Sheet) for non-blocking note entry.
+
+Management:
+- Reading Settings panel for renaming labels and choosing colors.
+- Tactile reordering of bookmarked verses via up/down controls.
 
 ## Quran Page Pattern
 
@@ -406,3 +436,15 @@ Requirements:
 - Add heavy animation or persistent celebration effects.
 - Show sensitive cycle data without privacy controls.
 - Duplicate the same information across multiple cards.
+
+## Features Log
+
+### 2026-05-09: Quran Log & Bookmark Refinement
+- **Tactile Interaction:** Long-press to bookmark, haptic buzz on save.
+- **Subtle Visuals:** Replaced heavy highlights with soft colored dots for categories.
+- **Smart Labels:** Custom categories (Hifz, Tadabbur, Ruqyah) with editable names/colors.
+- **Private Notes:** Secure "Secret Cave" notes in a non-blocking bottom sheet.
+- **Contextual Dashboard:** Smart banners for Al-Kahfi (Friday) and Al-Mulk (Night).
+- **Auto-Sync:** "Save & Log Progress" combines bookmarking and daily tracking.
+- **Management Panel:** New "Quran Marks" settings for label editing and list reordering.
+- **Architecture:** Root `@/` directory cleanup, unused package removal, and Supabase schema migration.

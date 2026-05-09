@@ -1,6 +1,6 @@
-import { BookOpen, Check, Clock, Lock, Moon, Plus, Quote, Settings, Sparkles, Sun } from "lucide-react"
+import { BookOpen, Check, Clock, Lock, Moon, Plus, Quote, Settings, Sparkles, Sun, Zap } from "lucide-react"
 import { CSSProperties, FormEvent, PointerEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 
 import { PartnerWidget } from "@/components/partner/partner-widget"
 import { Badge } from "@/components/ui/badge"
@@ -13,6 +13,7 @@ import { getDailyTrackerDay, localDailyTrackerKey, type DailyTrackerState } from
 import { formatHijriDate } from "@/lib/hijri-date"
 import { getActiveDhikrWindow, getNowMinutes, prayers, timeToMinutes } from "@/lib/prayer-windows"
 import { shouldShowQuranEveningNudge, type QuranProgressState } from "@/lib/quran-progress"
+import { type QuranReaderBookmarkState } from "@/lib/quran-reader-bookmarks"
 import { cn } from "@/lib/utils"
 
 type Habit = {
@@ -358,6 +359,7 @@ type DailyPageProps = {
   dailyTrackerState: DailyTrackerState
   displayName?: string
   quranProgress: QuranProgressState
+  quranBookmarks: QuranReaderBookmarkState
   onQuickLog: (increment: number) => void
   onSetQuranDailyGoal: (goal: number) => void
   onSetPrayerCompleted: (prayer: string, completed: boolean, dateKey?: string) => void
@@ -373,6 +375,7 @@ export default function DailyPage({
   dailyTrackerState,
   displayName = "",
   quranProgress,
+  quranBookmarks,
   onQuickLog,
   onSetQuranDailyGoal,
   onSetPrayerCompleted,
@@ -387,6 +390,34 @@ export default function DailyPage({
   const [quranTargetOpen, setQuranTargetOpen] = useState(false)
   const [quranTargetInput, setQuranTargetInput] = useState(String(quranProgress.daily_goal))
   const t = copy[settings.language]
+  const navigate = useNavigate()
+
+  const contextualReading = useMemo(() => {
+    const isFriday = now.getDay() === 5
+    const hour = now.getHours()
+    const isNight = hour >= 20 || hour < 4
+
+    if (isFriday) {
+      return { 
+        id: "kahf",
+        name: "Al-Kahf", 
+        surah: 18, 
+        page: 293, 
+        reason: settings.language === "id" ? "Waktunya membaca Al-Kahfi" : "Time for Al-Kahf" 
+      }
+    }
+    if (isNight) {
+      return { 
+        id: "mulk",
+        name: "Al-Mulk", 
+        surah: 67, 
+        page: 562, 
+        reason: settings.language === "id" ? "Waktunya membaca Al-Mulk" : "Time for Al-Mulk" 
+      }
+    }
+    return null
+  }, [now, settings.language])
+
   const todayKey = localDailyTrackerKey(now)
   const todayTracker = useMemo(() => getDailyTrackerDay(dailyTrackerState, todayKey), [dailyTrackerState, todayKey])
   const completedPrayers = todayTracker.completedPrayers
@@ -598,6 +629,27 @@ export default function DailyPage({
         </div>
         <h2 className="font-serif text-4xl font-semibold leading-tight text-primary">{t.morning(displayName)}</h2>
         <p className="max-w-lg text-lg leading-8 text-muted-foreground">{t.intro}</p>
+
+        {contextualReading && (
+          <button
+            onClick={() => navigate(`/quran/read?page=${contextualReading.page}`)}
+            className="group relative mt-2 overflow-hidden rounded-3xl border border-sage/20 bg-gradient-to-br from-sage-pale/60 to-white p-5 text-left transition-all hover:border-sage/40 hover:shadow-xl hover:shadow-sage/5 dark:from-sage/5 dark:to-sage/10"
+          >
+            <div className="absolute right-0 top-0 translate-x-4 -translate-y-4 text-sage/5 transition-transform group-hover:scale-110">
+              <BookOpen className="h-24 w-24" />
+            </div>
+            <div className="relative z-10 flex items-center gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-sage text-white shadow-lg shadow-sage/20">
+                <Zap className="h-6 w-6 fill-current" />
+              </div>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-sage-deep/60">{contextualReading.reason}</p>
+                <h4 className="font-serif text-xl font-bold text-sage-deep">Surah {contextualReading.name}</h4>
+              </div>
+            </div>
+          </button>
+        )}
+
         {activeDhikrWindow ? (
           <Card className="mt-2 overflow-hidden border-sage/20 bg-gradient-to-br from-sage-pale/80 to-card p-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
