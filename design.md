@@ -447,4 +447,5 @@ Requirements:
 - **Contextual Dashboard:** Smart banners for Al-Kahfi (Friday) and Al-Mulk (Night).
 - **Auto-Sync:** "Save & Log Progress" combines bookmarking and daily tracking.
 - **Management Panel:** New "Quran Marks" settings for label editing and list reordering.
+- **UX Improvement:** Moved Offline Indicator to the top as a centered pill to avoid blocking navigation.
 - **Architecture:** Root `@/` directory cleanup, unused package removal, and Supabase schema migration.

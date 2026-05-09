@@ -43,22 +43,22 @@ export function OfflineIndicator({ className }: OfflineIndicatorProps) {
   return (
     <div
       className={cn(
-        "fixed bottom-4 left-4 right-4 flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg transition-all duration-300 z-50",
+        "fixed top-20 left-1/2 -translate-x-1/2 flex items-center gap-2 px-4 py-2 rounded-full shadow-lg border transition-all duration-500 z-[60] animate-in fade-in slide-in-from-top-4",
         isOnline
-          ? "bg-emerald-50 border border-emerald-200 text-emerald-700"
-          : "bg-amber-50 border border-amber-200 text-amber-700",
+          ? "bg-emerald-50 border-emerald-200 text-emerald-700"
+          : "bg-amber-50 border-amber-200 text-amber-700",
         className,
       )}
     >
       {isOnline ? (
         <>
-          <Wifi className="w-4 h-4 flex-shrink-0" />
-          <span className="text-sm font-medium">Back online • Changes will sync</span>
+          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="text-xs font-bold uppercase tracking-wide">Online</span>
         </>
       ) : (
         <>
-          <WifiOff className="w-4 h-4 flex-shrink-0" />
-          <span className="text-sm font-medium">Offline • Changes saved locally</span>
+          <WifiOff className="w-3.5 h-3.5 flex-shrink-0" />
+          <span className="text-xs font-bold uppercase tracking-wide">Offline Mode</span>
         </>
       )}
     </div>
