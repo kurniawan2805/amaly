@@ -150,7 +150,7 @@ type StoreState = {
   deleteHabit: (id: string) => void
   setHabitFrequency: (id: string, plannedDays: boolean[]) => void
   quickLogQuran: (increment: number) => void
-  setQuranPage: (page: number) => void
+  setQuranPage: (page: number, ayahDetails?: { surah: number; ayah: number; surahName: string }) => void
   setQuranDailyGoal: (goal: number) => void
   upsertQuranBookmark: (verse: any, data: any) => void
   removeQuranBookmark: (verse: any) => void
@@ -715,7 +715,7 @@ export const useAppStore = create<StoreState>((set, get) => ({
       })
     }
   },
-  setQuranPage: (page) => {
+  setQuranPage: (page, ayahDetails) => {
     const current = get()
     const progress = setProgressToPage(
       current.quranProgress.last_page_read,
@@ -724,6 +724,7 @@ export const useAppStore = create<StoreState>((set, get) => ({
       current.settings.language,
       current.quranProgress.daily_goal,
       current.settings.hijriOffset,
+      ayahDetails,
     )
     saveQuranProgress(progress)
     set({ quranProgress: progress })

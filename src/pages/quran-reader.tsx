@@ -264,7 +264,12 @@ export default function QuranReaderPage({ language, onSetPage, onUpsertBookmark,
   function saveAndLog() {
     if (!selectedVerse) return
     toggleBookmark()
-    onSetPage(selectedVerse.page)
+    // Pass ayah details if available from long-press
+    onSetPage(selectedVerse.page, {
+      surah: selectedVerse.surah,
+      ayah: selectedVerse.ayah,
+      surahName: selectedVerse.surahName,
+    })
     setNotice(t.done)
   }
 

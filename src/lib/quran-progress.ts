@@ -22,6 +22,12 @@ export type QuranProgressLog = {
   juz: number
   completed_juz?: number
   completed_juzs?: number[]
+  
+  // NEW - for tracking specific ayah when bookmarked
+  specific_ayah?: number
+  specific_surah?: number
+  specific_surah_name?: string
+  last_ayah_in_session?: number
 }
 
 export type QuranProgressState = {
@@ -127,6 +133,7 @@ function mergeTodayLog(
   toPage: number,
   completedJuzs: number[],
   language: AppLanguage,
+  ayahDetails?: { surah: number; ayah: number; surahName: string },
 ) {
   const today = getRiyadhDateKey()
   const existing = logs.find((log) => log.date === today)
@@ -147,6 +154,10 @@ function mergeTodayLog(
             juz: details.juz,
             completed_juz: latestCompletedJuz ?? log.completed_juz,
             completed_juzs: mergeCompletedJuzs(log.completed_juzs, completedJuzs),
+            specific_ayah: ayahDetails?.ayah,
+            specific_surah: ayahDetails?.surah,
+            specific_surah_name: ayahDetails?.surahName,
+            last_ayah_in_session: ayahDetails?.ayah,
           }
         : log,
     )
@@ -165,6 +176,10 @@ function mergeTodayLog(
       juz: details.juz,
       completed_juz: latestCompletedJuz,
       completed_juzs: completedJuzs.length > 0 ? completedJuzs : undefined,
+      specific_ayah: ayahDetails?.ayah,
+      specific_surah: ayahDetails?.surah,
+      specific_surah_name: ayahDetails?.surahName,
+      last_ayah_in_session: ayahDetails?.ayah,
     },
   ]
 }
@@ -359,6 +374,7 @@ export function setProgressToPage(
   language: AppLanguage = "en",
   dailyGoal: number = QURAN_DAILY_GOAL,
   hijriOffset: HijriOffset = 0,
+  ayahDetails?: { surah: number; ayah: number; surahName: string },
 ): QuranProgressState {
   const previousPage = Math.max(0, Math.min(QURAN_TOTAL_PAGES, lastPage))
   const hasReadingProgress = previousPage > 0 || targetPage > 0
@@ -371,7 +387,7 @@ export function setProgressToPage(
   const safeDailyGoal = normalizeDailyGoal(dailyGoal)
   const previousTodayPages = getTodayPages(normalizedLogs)
   const nextLogs =
-    pagesAdded > 0 ? mergeTodayLog(normalizedLogs, pagesAdded, previousPage, newPage, completedJuzsThisUpdate, language) : normalizedLogs
+    pagesAdded > 0 ? mergeTodayLog(normalizedLogs, pagesAdded, previousPage, newPage, completedJuzsThisUpdate, language, ayahDetails) : normalizedLogs
   const pagesReadToday = getTodayPages(nextLogs)
   const details = getQuranPageDetails(detailPage, language)
   const streak = calculateStreak(nextLogs, language)

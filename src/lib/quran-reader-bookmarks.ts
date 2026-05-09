@@ -2,6 +2,8 @@ import type { QuranReaderVerse } from "@/lib/quran-reader-data"
 
 export const QURAN_READER_BOOKMARKS_KEY = "amaly.quran-reader-bookmarks.v2"
 export const QURAN_READER_LABELS_KEY = "amaly.quran-labels.v1"
+export const QURAN_MAIN_BOOKMARK_KEY = "amaly.quran-main-bookmark.v1"
+export const QURAN_CONTEXT_BOOKMARKS_KEY = "amaly.quran-context-bookmarks.v1"
 
 export type QuranLabel = {
   id: string
@@ -22,7 +24,30 @@ export type QuranReaderBookmark = {
   isPrivate: boolean
 }
 
+// Main bookmark for khatm progress tracking
+export type QuranMainBookmark = {
+  page: number              // Current page (mandatory)
+  surah?: number            // Optional - if set from mushaf
+  ayah?: number             // Optional - if set from mushaf
+  surahName?: string        // Optional - for display
+  lastUpdated: string       // ISO timestamp
+}
+
+// Optional context bookmarks (shortcuts)
+export type QuranContextBookmark = {
+  id: string                // Unique identifier
+  label: string             // Display label "Surat Al-Kahfi Reading"
+  page: number              // Starting page
+  toPage?: number           // Optional - for ranges
+  context: "habit" | "daily" | "hifz" | "murojaah" | "custom"
+  linkedId?: string         // Reference to habit ID, daily goal ID, etc
+  createdAt: string
+  position: number          // For sorting in UI
+}
+
 export type QuranReaderBookmarkState = {
+  mainBookmark: QuranMainBookmark | null
+  contextBookmarks: QuranContextBookmark[]
   bookmarks: QuranReaderBookmark[]
   labels: QuranLabel[]
 }
@@ -50,30 +75,71 @@ function normalizeBookmark(value: Partial<QuranReaderBookmark>): QuranReaderBook
   }
 }
 
+function normalizeMainBookmark(value: Partial<QuranMainBookmark> | null): QuranMainBookmark | null {
+  if (!value || typeof value.page !== "number") return null
+
+  return {
+    page: value.page,
+    surah: typeof value.surah === "number" ? value.surah : undefined,
+    ayah: typeof value.ayah === "number" ? value.ayah : undefined,
+    surahName: typeof value.surahName === "string" ? value.surahName : undefined,
+    lastUpdated: typeof value.lastUpdated === "string" ? value.lastUpdated : new Date().toISOString(),
+  }
+}
+
+function normalizeContextBookmark(value: Partial<QuranContextBookmark>): QuranContextBookmark | null {
+  if (!value.id || !value.label || typeof value.page !== "number") return null
+
+  return {
+    id: value.id,
+    label: value.label,
+    page: value.page,
+    toPage: typeof value.toPage === "number" ? value.toPage : undefined,
+    context: ["habit", "daily", "hifz", "murojaah", "custom"].includes(value.context || "") ? value.context as any : "custom",
+    linkedId: typeof value.linkedId === "string" ? value.linkedId : undefined,
+    createdAt: typeof value.createdAt === "string" ? value.createdAt : new Date().toISOString(),
+    position: typeof value.position === "number" ? value.position : 0,
+  }
+}
+
 export function loadQuranReaderBookmarks(): QuranReaderBookmarkState {
-  if (typeof window === "undefined") return { bookmarks: [], labels: DEFAULT_LABELS }
+  if (typeof window === "undefined") return { mainBookmark: null, contextBookmarks: [], bookmarks: [], labels: DEFAULT_LABELS }
 
   try {
     const storedBookmarks = window.localStorage.getItem(QURAN_READER_BOOKMARKS_KEY)
     const storedLabels = window.localStorage.getItem(QURAN_READER_LABELS_KEY)
+    const storedMainBookmark = window.localStorage.getItem(QURAN_MAIN_BOOKMARK_KEY)
+    const storedContextBookmarks = window.localStorage.getItem(QURAN_CONTEXT_BOOKMARKS_KEY)
     
     const parsedBookmarks = storedBookmarks ? JSON.parse(storedBookmarks) as Partial<QuranReaderBookmarkState> : null
     const parsedLabels = storedLabels ? JSON.parse(storedLabels) as QuranLabel[] : null
+    const parsedMainBookmark = storedMainBookmark ? JSON.parse(storedMainBookmark) as Partial<QuranMainBookmark> : null
+    const parsedContextBookmarks = storedContextBookmarks ? JSON.parse(storedContextBookmarks) as Partial<QuranContextBookmark>[] : null
 
     return {
+      mainBookmark: normalizeMainBookmark(parsedMainBookmark),
+      contextBookmarks: Array.isArray(parsedContextBookmarks)
+        ? parsedContextBookmarks.map((b) => normalizeContextBookmark(b)).filter((b): b is QuranContextBookmark => Boolean(b))
+        : [],
       bookmarks: Array.isArray(parsedBookmarks?.bookmarks)
         ? parsedBookmarks.bookmarks.map((bookmark) => normalizeBookmark(bookmark)).filter((bookmark): bookmark is QuranReaderBookmark => Boolean(bookmark))
         : [],
       labels: Array.isArray(parsedLabels) ? parsedLabels : DEFAULT_LABELS,
     }
   } catch {
-    return { bookmarks: [], labels: DEFAULT_LABELS }
+    return { mainBookmark: null, contextBookmarks: [], bookmarks: [], labels: DEFAULT_LABELS }
   }
 }
 
 export function saveQuranReaderBookmarks(state: QuranReaderBookmarkState) {
   window.localStorage.setItem(QURAN_READER_BOOKMARKS_KEY, JSON.stringify({ bookmarks: state.bookmarks }))
   window.localStorage.setItem(QURAN_READER_LABELS_KEY, JSON.stringify(state.labels))
+  if (state.mainBookmark) {
+    window.localStorage.setItem(QURAN_MAIN_BOOKMARK_KEY, JSON.stringify(state.mainBookmark))
+  }
+  if (state.contextBookmarks.length > 0) {
+    window.localStorage.setItem(QURAN_CONTEXT_BOOKMARKS_KEY, JSON.stringify(state.contextBookmarks))
+  }
 }
 
 export function getVerseBookmark(state: QuranReaderBookmarkState, verse: QuranReaderVerse) {
@@ -140,5 +206,66 @@ export function reorderBookmarks(state: QuranReaderBookmarkState, labelId: strin
   return {
     ...state,
     bookmarks: updatedBookmarks.sort((a, b) => a.position - b.position),
+  }
+}
+
+// Main Bookmark Management
+export function updateMainBookmark(state: QuranReaderBookmarkState, bookmark: Partial<QuranMainBookmark>): QuranReaderBookmarkState {
+  const current = state.mainBookmark || { page: 1, lastUpdated: new Date().toISOString() }
+  return {
+    ...state,
+    mainBookmark: {
+      page: bookmark.page !== undefined ? bookmark.page : current.page,
+      surah: bookmark.surah !== undefined ? bookmark.surah : current.surah,
+      ayah: bookmark.ayah !== undefined ? bookmark.ayah : current.ayah,
+      surahName: bookmark.surahName !== undefined ? bookmark.surahName : current.surahName,
+      lastUpdated: new Date().toISOString(),
+    },
+  }
+}
+
+export function getMainBookmark(state: QuranReaderBookmarkState): QuranMainBookmark | null {
+  return state.mainBookmark
+}
+
+// Context Bookmark Management
+export function addContextBookmark(state: QuranReaderBookmarkState, bookmark: Omit<QuranContextBookmark, "position">): QuranReaderBookmarkState {
+  const normalized = normalizeContextBookmark({
+    ...bookmark,
+    position: state.contextBookmarks.length,
+  })
+  if (!normalized) return state
+
+  return {
+    ...state,
+    contextBookmarks: [normalized, ...state.contextBookmarks],
+  }
+}
+
+export function removeContextBookmark(state: QuranReaderBookmarkState, bookmarkId: string): QuranReaderBookmarkState {
+  return {
+    ...state,
+    contextBookmarks: state.contextBookmarks.filter((b) => b.id !== bookmarkId),
+  }
+}
+
+export function updateContextBookmark(state: QuranReaderBookmarkState, bookmarkId: string, updates: Partial<QuranContextBookmark>): QuranReaderBookmarkState {
+  return {
+    ...state,
+    contextBookmarks: state.contextBookmarks.map((b) =>
+      b.id === bookmarkId ? { ...b, ...updates, id: b.id, createdAt: b.createdAt } : b
+    ),
+  }
+}
+
+export function reorderContextBookmarks(state: QuranReaderBookmarkState, bookmarkIds: string[]): QuranReaderBookmarkState {
+  return {
+    ...state,
+    contextBookmarks: state.contextBookmarks
+      .map((bookmark) => ({
+        ...bookmark,
+        position: bookmarkIds.indexOf(bookmark.id),
+      }))
+      .sort((a, b) => a.position - b.position),
   }
 }
