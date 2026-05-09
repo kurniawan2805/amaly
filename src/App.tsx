@@ -192,6 +192,7 @@ export default function App() {
                   onUpsertBookmark={useAppStore((s) => s.upsertQuranBookmark)}
                   onRemoveBookmark={useAppStore((s) => s.removeQuranBookmark)}
                   bookmarks={useAppStore((s) => s.quranBookmarks)}
+                  lastBookmarkedAyah={useAppStore((s) => s.quranBookmarks.mainBookmark ? { surah: s.quranBookmarks.mainBookmark.surah || 1, ayah: s.quranBookmarks.mainBookmark.ayah || 1 } : undefined)}
                 />
               }
               path="/quran/read"

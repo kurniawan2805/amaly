@@ -151,4 +151,18 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
+  /* Ayah highlighting for last read position */
+  .ayah-last-read {
+    @apply bg-amber-100/30 dark:bg-amber-900/20 transition-colors;
+  }
+
+  .ayah-last-read button {
+    @apply relative;
+  }
+
+  .ayah-last-read button::after {
+    @apply absolute inset-0 bg-amber-200/20 dark:bg-amber-800/20 rounded pointer-events-none;
+    content: "";
+  }
 }

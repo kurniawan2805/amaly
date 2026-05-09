@@ -14,10 +14,11 @@ import { type QuranReaderBookmarkState } from "@/lib/quran-reader-bookmarks"
 
 type QuranReaderPageProps = {
   language: AppLanguage
-  onSetPage: (page: number) => void
+  onSetPage: (page: number, ayahDetails?: { surah: number; ayah: number; surahName: string }) => void
   onUpsertBookmark: (verse: QuranReaderVerse, data: any) => void
   onRemoveBookmark: (verse: QuranReaderVerse) => void
   bookmarks: QuranReaderBookmarkState
+  lastBookmarkedAyah?: { surah: number; ayah: number }
 }
 
 const copy = {
@@ -408,12 +409,14 @@ export default function QuranReaderPage({ language, onSetPage, onUpsertBookmark,
                     <div className={cn("flex flex-nowrap px-2 text-center", line.centered ? "justify-center" : "justify-between")}>
                       {line.words.map((word) => {
                         const bookmark = getVerseBookmark(bookmarks, word.verse)
+                        const isLastBookmarkedAyah = lastBookmarkedAyah && word.verse.surah === lastBookmarkedAyah.surah && word.verse.ayah === lastBookmarkedAyah.ayah
                         return (
                           <button
                             className={cn(
                               "relative m-0 inline-flex appearance-none items-center justify-center border-0 bg-transparent p-0 text-inherit leading-none transition hover:bg-amber-50/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:hover:bg-amber-300/10",
                               word.isEndMarker ? "rounded-lg px-0.5 text-amber-700 dark:text-amber-200" : "rounded-md",
                               bookmark && !word.isEndMarker && "bg-sage-pale/20 text-amber-900 dark:bg-sage-pale/10 dark:text-amber-100",
+                              isLastBookmarkedAyah && "ayah-last-read",
                             )}
                             key={word.key}
                             onPointerCancel={clearLongPress}
