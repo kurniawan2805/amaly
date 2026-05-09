@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
+import { trackContinueReadingClick } from "@/lib/analytics"
 import type { AppLanguage } from "@/lib/app-settings"
 import type { QuranProgressState } from "@/lib/quran-progress"
 
@@ -66,9 +67,10 @@ export function ContinueReadingCard({ language, progress, onQuickLog, onSetDaily
     setGoalOpen(false)
   }
 
-  function openReadingPage() {
-    navigate(progress.continue_url)
-  }
+   function openReadingPage() {
+     trackContinueReadingClick(progress.page, progress.surah, progress.ayah)
+     navigate(progress.continue_url)
+   }
 
   return (
     <>

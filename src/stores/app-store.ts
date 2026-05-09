@@ -1,6 +1,7 @@
 import { create } from "zustand"
 import type { Session, User } from "@supabase/supabase-js"
 
+import { trackMainBookmarkUpdate } from "@/lib/analytics"
 import {
   type AppLanguage,
   type AppSettings,
@@ -714,30 +715,33 @@ export const useAppStore = create<StoreState>((set, get) => ({
         dailyGoal: progress.daily_goal,
       })
     }
-  },
-  setQuranPage: (page, ayahDetails) => {
-    const current = get()
-    const progress = setProgressToPage(
-      current.quranProgress.last_page_read,
-      page,
-      current.quranProgress.logs,
-      current.settings.language,
-      current.quranProgress.daily_goal,
-      current.settings.hijriOffset,
-      ayahDetails,
-    )
-    saveQuranProgress(progress)
-    set({ quranProgress: progress })
-    maybeShowQuranBurst(set, progress)
-    void get().syncQuranProgress()
-    if (progress.goal_burst && get().user && get().partnerSnapshot) {
-      void sendPartnerEvent(get().user!.id, get().partnerSnapshot!.profile.id, "quran_goal", {
-        senderName: senderName(get().user, get().profile),
-        pagesReadToday: progress.pages_read_today,
-        dailyGoal: progress.daily_goal,
-      })
-    }
-  },
+   },
+   setQuranPage: (page, ayahDetails) => {
+     const current = get()
+     const progress = setProgressToPage(
+       current.quranProgress.last_page_read,
+       page,
+       current.quranProgress.logs,
+       current.settings.language,
+       current.quranProgress.daily_goal,
+       current.settings.hijriOffset,
+       ayahDetails,
+     )
+     // Track main bookmark update
+     trackMainBookmarkUpdate(page, ayahDetails?.surah, ayahDetails?.ayah, ayahDetails?.surahName)
+     
+     saveQuranProgress(progress)
+     set({ quranProgress: progress })
+     maybeShowQuranBurst(set, progress)
+     void get().syncQuranProgress()
+     if (progress.goal_burst && get().user && get().partnerSnapshot) {
+       void sendPartnerEvent(get().user!.id, get().partnerSnapshot!.profile.id, "quran_goal", {
+         senderName: senderName(get().user, get().profile),
+         pagesReadToday: progress.pages_read_today,
+         dailyGoal: progress.daily_goal,
+       })
+     }
+   },
   setQuranDailyGoal: (goal) => {
     const current = get()
     const progress = updateQuranDailyGoal(current.quranProgress, goal, current.settings.language, current.settings.hijriOffset)

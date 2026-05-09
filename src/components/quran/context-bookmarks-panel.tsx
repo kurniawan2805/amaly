@@ -3,6 +3,7 @@ import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
+import { trackContextBookmarkNavigate, trackContextBookmarkRemove } from "@/lib/analytics"
 import type { QuranContextBookmark } from "@/lib/quran-reader-bookmarks"
 import { cn } from "@/lib/utils"
 
@@ -89,7 +90,10 @@ export function ContextBookmarksPanel({
             className="group flex items-center justify-between rounded-lg border border-border bg-card p-3 transition hover:bg-card/80"
           >
             <button
-              onClick={() => onNavigate(bookmark.page)}
+              onClick={() => {
+                trackContextBookmarkNavigate(bookmark.id, bookmark.context, bookmark.page)
+                onNavigate(bookmark.page)
+              }}
               className="flex-1 flex items-center justify-between text-left transition hover:text-primary"
             >
               <div className="min-w-0 flex-1">
@@ -105,6 +109,7 @@ export function ContextBookmarksPanel({
               <Button
                 onClick={() => {
                   if (deletingId === bookmark.id) {
+                    trackContextBookmarkRemove(bookmark.id, bookmark.context)
                     onRemove(bookmark.id)
                     setDeletingId(null)
                   } else {

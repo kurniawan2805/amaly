@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet"
 import { Badge } from "@/components/ui/badge"
+import { trackAyahHighlighted } from "@/lib/analytics"
 import type { AppLanguage } from "@/lib/app-settings"
 import { loadQuranReaderBookmarks, saveQuranReaderBookmarks, upsertQuranReaderBookmark, removeQuranReaderBookmark, isQuranVerseBookmarked, getVerseBookmark, type QuranLabel } from "@/lib/quran-reader-bookmarks"
 import { getMushafFontName, getQuranReaderJuzNavigation, getQuranReaderPage, getQuranReaderSurahNavigation, loadBismillahFont, loadChapterHeaderFont, loadMushafFont, QURAN_BISMILLAH_CODES, QURAN_CHAPTER_HEADER_CODES, type QuranReaderNavigationItem, type QuranReaderPage, type QuranReaderVerse } from "@/lib/quran-reader-data"
@@ -92,7 +93,7 @@ function RevelationIcon({ revelation }: { revelation: 1 | 2 }) {
   return revelation === 1 ? <MeccaIcon /> : <MadinahIcon />
 }
 
-export default function QuranReaderPage({ language, onSetPage, onUpsertBookmark, onRemoveBookmark, bookmarks }: QuranReaderPageProps) {
+export default function QuranReaderPage({ language, onSetPage, onUpsertBookmark, onRemoveBookmark, bookmarks, lastBookmarkedAyah }: QuranReaderPageProps) {
   const t = copy[language]
   const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
@@ -111,8 +112,8 @@ export default function QuranReaderPage({ language, onSetPage, onUpsertBookmark,
   const [bookmarkPrivate, setBookmarkPrivate] = useState(true)
   const [notice, setNotice] = useState<string | null>(null)
   const [notesExpanded, setNotesExpanded] = useState(false)
-  const longPressTimerRef = useRef<number | null>(null)
-  const pointerStartRef = useRef<{ x: number; y: number } | null>(null)
+   const longPressTimerRef = useRef<number | null>(null)
+   const pointerStartRef = useRef<{ x: number; y: number; time: number } | null>(null)
 
   useEffect(() => {
     if (selectedVerse) {
@@ -166,23 +167,36 @@ export default function QuranReaderPage({ language, onSetPage, onUpsertBookmark,
 
   useEffect(() => {
     if (pageInputOpen) setPageInputValue(String(page))
-  }, [page, pageInputOpen])
+   }, [page, pageInputOpen])
 
-  useEffect(() => {
-    function handleKey(event: KeyboardEvent) {
-      if (event.key === "ArrowLeft") {
-        event.preventDefault()
-        goToPage(page + 1)
-      }
-      if (event.key === "ArrowRight") {
-        event.preventDefault()
-        goToPage(page - 1)
-      }
-    }
+   // Track when ayah is first highlighted on page load
+   useEffect(() => {
+     if (lastBookmarkedAyah && readerPage) {
+       // Only track if the ayah is actually on this page
+       const isAyahOnPage = readerPage.verses.some(
+         (v) => v.surah === lastBookmarkedAyah.surah && v.ayah === lastBookmarkedAyah.ayah
+       )
+       if (isAyahOnPage) {
+         trackAyahHighlighted(lastBookmarkedAyah.surah, lastBookmarkedAyah.ayah)
+       }
+     }
+   }, [lastBookmarkedAyah, readerPage])
 
-    window.addEventListener("keydown", handleKey)
-    return () => window.removeEventListener("keydown", handleKey)
-  })
+   useEffect(() => {
+     function handleKey(event: KeyboardEvent) {
+       if (event.key === "ArrowLeft") {
+         event.preventDefault()
+         goToPage(page + 1)
+       }
+       if (event.key === "ArrowRight") {
+         event.preventDefault()
+         goToPage(page - 1)
+       }
+     }
+
+     window.addEventListener("keydown", handleKey)
+     return () => window.removeEventListener("keydown", handleKey)
+   }, [page])
 
   function goToPage(nextPage: number) {
     const safePage = Math.max(1, Math.min(604, nextPage))
@@ -211,7 +225,22 @@ export default function QuranReaderPage({ language, onSetPage, onUpsertBookmark,
 
   function startLongPress(verse: QuranReaderVerse) {
     clearLongPress()
-    longPressTimerRef.current = window.setTimeout(() => setSelectedVerse(verse), 520)
+    // Long-press now auto-logs to main bookmark (no UI)
+    longPressTimerRef.current = window.setTimeout(() => autoLogToMainBookmark(verse), 520)
+  }
+
+  function autoLogToMainBookmark(verse: QuranReaderVerse) {
+    // Auto-log with ayah details (no confirmation UI)
+    onSetPage(verse.page, {
+      surah: verse.surah,
+      ayah: verse.ayah,
+      surahName: verse.surahName,
+    })
+    setNotice(t.done)
+    window.setTimeout(() => setNotice(null), 2000)
+    if ("vibrate" in navigator) {
+      navigator.vibrate(50)
+    }
   }
 
   function handlePointerUp(event: PointerEvent<HTMLDivElement>) {
@@ -351,7 +380,7 @@ export default function QuranReaderPage({ language, onSetPage, onUpsertBookmark,
         {error ? <Card className="p-4 text-sm font-semibold text-muted-foreground">{error}</Card> : null}
 
         {readerPage ? (
-          <div className="mt-2 mb-14 overflow-x-hidden overflow-y-hidden text-center text-xl" onPointerCancel={clearLongPress} onPointerDown={(event) => (pointerStartRef.current = { x: event.clientX, y: event.clientY })} onPointerUp={handlePointerUp} style={{ touchAction: "pan-y" }}>
+           <div className="mt-2 mb-14 overflow-x-hidden overflow-y-hidden text-center text-xl" onPointerCancel={clearLongPress} onPointerDown={(event) => (pointerStartRef.current = { x: event.clientX, y: event.clientY, time: Date.now() })} onPointerUp={handlePointerUp} style={{ touchAction: "pan-y" }}>
             {mushafFontReady ? (
               <style>{`
                 @font-palette-values --amaly-mushaf-words-${page}{font-family:p${page};base-palette:3;}
@@ -422,7 +451,20 @@ export default function QuranReaderPage({ language, onSetPage, onUpsertBookmark,
                             onPointerCancel={clearLongPress}
                             onPointerDown={() => startLongPress(word.verse)}
                             onPointerLeave={clearLongPress}
-                            onPointerUp={clearLongPress}
+                            onPointerUp={(e) => {
+                              clearLongPress()
+                              // Short tap (click) - show bookmark UI
+                              const start = pointerStartRef.current
+                              if (start) {
+                                const deltaX = e.clientX - start.x
+                                const deltaY = e.clientY - start.y
+                                const deltaTime = Date.now() - start.time
+                                // If minimal movement and quick release, it's a tap/click
+                                if (Math.abs(deltaX) < 10 && Math.abs(deltaY) < 10 && deltaTime < 500) {
+                                  setSelectedVerse(word.verse)
+                                }
+                              }
+                            }}
                             type="button"
                           >
                             {bookmark && word.isEndMarker ? (

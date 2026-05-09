@@ -1,4 +1,5 @@
 import type { AppLanguage, HijriOffset } from "@/lib/app-settings"
+import { trackMainBookmarkAyahLogged, trackMainBookmarkUpdate } from "@/lib/analytics"
 import { dateFromGregorianKey, formatHijriDate } from "@/lib/hijri-date"
 import { findQuranJuz, getAyahId, getQuranJuzFirstKey, getQuranJuzLastKey, getQuranPageEnd, getQuranPageStart, getSurahEnglishName, getSurahName, QURAN_TOTAL_PAGES as STATIC_QURAN_TOTAL_PAGES } from "@/lib/quran-static-meta"
 
@@ -139,6 +140,11 @@ function mergeTodayLog(
   const existing = logs.find((log) => log.date === today)
   const details = getQuranPageDetails(toPage, language)
   const latestCompletedJuz = completedJuzs[completedJuzs.length - 1]
+
+  // Track ayah-level logging when available
+  if (ayahDetails) {
+    trackMainBookmarkAyahLogged(toPage, ayahDetails.surah, ayahDetails.ayah, ayahDetails.surahName)
+  }
 
   if (existing) {
     return logs.map((log) =>

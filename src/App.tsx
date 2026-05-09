@@ -192,7 +192,14 @@ export default function App() {
                   onUpsertBookmark={useAppStore((s) => s.upsertQuranBookmark)}
                   onRemoveBookmark={useAppStore((s) => s.removeQuranBookmark)}
                   bookmarks={useAppStore((s) => s.quranBookmarks)}
-                  lastBookmarkedAyah={useAppStore((s) => s.quranBookmarks.mainBookmark ? { surah: s.quranBookmarks.mainBookmark.surah || 1, ayah: s.quranBookmarks.mainBookmark.ayah || 1 } : undefined)}
+                  lastBookmarkedAyah={useAppStore((s) => {
+                    const mb = s.quranBookmarks.mainBookmark
+                    // Only pass if both surah and ayah are explicitly set (not 0 or undefined)
+                    if (mb && typeof mb.surah === 'number' && typeof mb.ayah === 'number' && mb.surah > 0 && mb.ayah > 0) {
+                      return { surah: mb.surah, ayah: mb.ayah }
+                    }
+                    return undefined
+                  })}
                 />
               }
               path="/quran/read"

@@ -309,6 +309,8 @@ export async function loadOwnQuranBookmarks(userId: string): Promise<QuranReader
       position: b.position,
       isPrivate: b.is_private,
     })),
+    mainBookmark: null,
+    contextBookmarks: [],
   }
 }
 
