@@ -1,4 +1,4 @@
-import { Bookmark, Check, ChevronLeft, ChevronRight, Home, Loader2, Save } from "lucide-react"
+import { Bookmark, Check, ChevronDown, ChevronLeft, ChevronRight, Home, Loader2, Save, ChevronUp } from "lucide-react"
 import { Fragment, useEffect, useRef, useState, type FormEvent, type PointerEvent } from "react"
 import { useNavigate, useSearchParams } from "react-router-dom"
 
@@ -39,6 +39,9 @@ const copy = {
     private: "Private",
     saveAndLog: "Save & Log Progress",
     saved: "Bookmark saved",
+    moreOptions: "More Options",
+    showNotes: "Show notes",
+    hideNotes: "Hide notes",
   },
   id: {
     home: "Kembali ke tracker Quran",
@@ -58,6 +61,9 @@ const copy = {
     private: "Privat",
     saveAndLog: "Simpan & Log Progress",
     saved: "Bookmark disimpan",
+    moreOptions: "Opsi Lanjut",
+    showNotes: "Tampilkan catatan",
+    hideNotes: "Sembunyikan catatan",
   },
 }
 
@@ -103,6 +109,7 @@ export default function QuranReaderPage({ language, onSetPage, onUpsertBookmark,
   const [bookmarkNote, setBookmarkNote] = useState("")
   const [bookmarkPrivate, setBookmarkPrivate] = useState(true)
   const [notice, setNotice] = useState<string | null>(null)
+  const [notesExpanded, setNotesExpanded] = useState(false)
   const longPressTimerRef = useRef<number | null>(null)
   const pointerStartRef = useRef<{ x: number; y: number } | null>(null)
 
@@ -112,6 +119,7 @@ export default function QuranReaderPage({ language, onSetPage, onUpsertBookmark,
       setBookmarkLabel(existing?.labelId || null)
       setBookmarkNote(existing?.note || "")
       setBookmarkPrivate(existing?.isPrivate ?? true)
+      setNotesExpanded(false)
     }
   }, [selectedVerse, bookmarks])
 
@@ -231,6 +239,20 @@ export default function QuranReaderPage({ language, onSetPage, onUpsertBookmark,
     setNotice(t.saved)
     setSelectedVerse(null)
     window.setTimeout(() => setNotice(null), 2000)
+  }
+
+  function autoSaveLabel(labelId: string | null) {
+    if (!selectedVerse) return
+    setBookmarkLabel(labelId)
+    onUpsertBookmark(selectedVerse, {
+      labelId: labelId,
+      note: bookmarkNote,
+      isPrivate: bookmarkPrivate,
+    })
+    
+    if ("vibrate" in navigator) {
+      navigator.vibrate(50)
+    }
   }
 
   function removeBookmark() {
@@ -477,7 +499,7 @@ export default function QuranReaderPage({ language, onSetPage, onUpsertBookmark,
       ) : null}
 
       <Sheet open={Boolean(selectedVerse)} onOpenChange={(open) => !open && setSelectedVerse(null)}>
-        <SheetContent className="rounded-t-[32px] md:rounded-l-[32px] md:rounded-tr-none">
+        <SheetContent className="rounded-t-[32px] max-h-[70vh] w-full overflow-y-auto md:rounded-l-[32px] md:rounded-tr-none">
           <SheetHeader>
             <div className="flex items-center justify-between">
               <div>
@@ -491,14 +513,15 @@ export default function QuranReaderPage({ language, onSetPage, onUpsertBookmark,
               )}
             </div>
           </SheetHeader>
-          <div className="grid gap-6 px-6 py-4">
-            <div className="grid gap-3">
+          <div className="grid gap-4 px-6 py-4">
+            {/* Labels - Always visible */}
+            <div className="grid gap-2">
               <label className="text-sm font-bold text-primary">{t.label}</label>
               <div className="flex flex-wrap gap-2">
                 {bookmarks.labels.map((label) => (
                   <button
                     key={label.id}
-                    onClick={() => setBookmarkLabel(label.id)}
+                    onClick={() => autoSaveLabel(label.id)}
                     className={cn(
                       "rounded-full px-4 py-2 text-sm font-bold transition-all border-2",
                       bookmarkLabel === label.id 
@@ -510,7 +533,7 @@ export default function QuranReaderPage({ language, onSetPage, onUpsertBookmark,
                   </button>
                 ))}
                 <button
-                  onClick={() => setBookmarkLabel(null)}
+                  onClick={() => autoSaveLabel(null)}
                   className={cn(
                     "rounded-full px-4 py-2 text-sm font-bold transition-all border-2",
                     bookmarkLabel === null 
@@ -523,17 +546,7 @@ export default function QuranReaderPage({ language, onSetPage, onUpsertBookmark,
               </div>
             </div>
 
-            <div className="grid gap-3">
-              <label className="text-sm font-bold text-primary" htmlFor="bookmark-note">{t.note}</label>
-              <textarea
-                id="bookmark-note"
-                className="min-h-[100px] w-full rounded-2xl border border-sage/20 bg-sage-pale/5 p-4 text-sm outline-none focus:ring-2 focus:ring-ring dark:bg-sage-pale/10"
-                placeholder="..."
-                value={bookmarkNote}
-                onChange={(e) => setBookmarkNote(e.target.value)}
-              />
-            </div>
-
+            {/* Private toggle */}
             <div className="flex items-center justify-between">
               <label className="text-sm font-bold text-primary">{t.private}</label>
               <button
@@ -550,6 +563,26 @@ export default function QuranReaderPage({ language, onSetPage, onUpsertBookmark,
               </button>
             </div>
 
+            {/* Collapsible Notes */}
+            <div className="grid gap-2">
+              <button
+                onClick={() => setNotesExpanded(!notesExpanded)}
+                className="flex items-center justify-between text-sm font-bold text-primary hover:text-primary/80 transition"
+              >
+                <span>{t.note}</span>
+                {notesExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </button>
+              {notesExpanded && (
+                <textarea
+                  className="min-h-[100px] w-full rounded-2xl border border-sage/20 bg-sage-pale/5 p-4 text-sm outline-none focus:ring-2 focus:ring-ring dark:bg-sage-pale/10"
+                  placeholder="..."
+                  value={bookmarkNote}
+                  onChange={(e) => setBookmarkNote(e.target.value)}
+                />
+              )}
+            </div>
+
+            {/* Action buttons */}
             <div className="grid gap-3 pt-2">
               <Button onClick={saveAndLog} className="h-14 rounded-2xl text-lg font-bold shadow-lg shadow-primary/20">
                 <Save className="mr-2 h-5 w-5" />
