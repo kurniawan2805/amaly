@@ -506,7 +506,7 @@ export default function QuranReaderPage({ language, onSetPage, onUpsertBookmark,
                 <SheetTitle>{selectedVerse?.surahName} {selectedVerse?.ayah}</SheetTitle>
                 <SheetDescription>{t.page} {selectedVerse?.page}</SheetDescription>
               </div>
-              {isQuranVerseBookmarked(bookmarks, selectedVerse!) && (
+              {selectedVerse && isQuranVerseBookmarked(bookmarks, selectedVerse) && (
                 <Button onClick={removeBookmark} size="sm" variant="ghost" className="text-destructive hover:bg-destructive/10 hover:text-destructive">
                   {t.removeBookmark}
                 </Button>
