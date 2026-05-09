@@ -5,16 +5,9 @@ import { JuzGrid } from "@/components/quran/juz-grid"
 import { Button } from "@/components/ui/button"
 import type { AppLanguage, HijriOffset } from "@/lib/app-settings"
 import { formatQuranLogDate, type QuranProgressLog, type QuranProgressState } from "@/lib/quran-progress"
-import { useAppStore } from "@/stores/app-store"
+import { useAppStore, type StoreState } from "@/stores/app-store"
+import { useShallow } from "zustand/react/shallow"
 
-type QuranPageProps = {
-  language: AppLanguage
-  hijriOffset: HijriOffset
-  progress: QuranProgressState
-  onQuickLog: (increment: number) => void
-  onSetPage: (page: number) => void
-  onSetDailyGoal: (goal: number) => void
-}
 
 const copy = {
   en: {
@@ -59,11 +52,22 @@ function JourneyEntry({ hijriOffset, language, log }: { hijriOffset: HijriOffset
   )
 }
 
-export default function QuranPage({ language, hijriOffset, progress, onQuickLog, onSetDailyGoal }: QuranPageProps) {
+export default function QuranPage() {
+  const language = useAppStore((s: StoreState) => s.settings.language)
+  const hijriOffset = useAppStore((s: StoreState) => s.settings.hijriOffset)
+  const progress = useAppStore((s: StoreState) => s.quranProgress)
+  const quranBookmarks = useAppStore((s: StoreState) => s.quranBookmarks)
+  
+  const { onQuickLog, onSetDailyGoal, onSetPage, openPanel } = useAppStore(
+    useShallow((s: StoreState) => ({
+      onQuickLog: s.quickLogQuran,
+      onSetDailyGoal: s.setQuranDailyGoal,
+      onSetPage: s.setQuranPage,
+      openPanel: s.openPanel,
+    }))
+  )
+  
   const t = copy[language]
-  const openPanel = useAppStore((s) => s.openPanel)
-  const quranBookmarks = useAppStore((s) => s.quranBookmarks)
-  const setQuranPage = useAppStore((s) => s.setQuranPage)
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-3 px-6 py-4 pb-28">
@@ -91,7 +95,7 @@ export default function QuranPage({ language, hijriOffset, progress, onQuickLog,
           <ContextBookmarksPanel
             bookmarks={quranBookmarks.contextBookmarks}
             language={language}
-            onNavigate={(page) => setQuranPage(page)}
+            onNavigate={(page) => onSetPage(page)}
           />
         </section>
       )}

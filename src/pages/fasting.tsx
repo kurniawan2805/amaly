@@ -7,16 +7,9 @@ import type { AppLanguage, HijriOffset } from "@/lib/app-settings"
 import { type FastingState, getUpcomingSunnahFasts, isNextRamadanWithinDays } from "@/lib/fasting-progress"
 import { formatHijriDate } from "@/lib/hijri-date"
 import { cn } from "@/lib/utils"
+import { useAppStore, type StoreState } from "@/stores/app-store"
+import { useShallow } from "zustand/react/shallow"
 
-type FastingPageProps = {
-  fastingState: FastingState
-  language: AppLanguage
-  hijriOffset: HijriOffset
-  onAddQadhaDebt: (days?: number) => void
-  onMarkQadhaPaid: () => void
-  onSetHijriOffset: (offset: HijriOffset) => void
-  onToggleSahurReminder: (dateKey: string) => void
-}
 
 const offsetOptions: HijriOffset[] = [-2, -1, 0, 1, 2]
 
@@ -32,15 +25,20 @@ function formatGregorian(date: Date) {
   }).format(date)
 }
 
-export default function FastingPage({
-  fastingState,
-  language,
-  hijriOffset,
-  onAddQadhaDebt,
-  onMarkQadhaPaid,
-  onSetHijriOffset,
-  onToggleSahurReminder,
-}: FastingPageProps) {
+export default function FastingPage() {
+  const language = useAppStore((s: StoreState) => s.settings.language)
+  const hijriOffset = useAppStore((s: StoreState) => s.settings.hijriOffset)
+  const fastingState = useAppStore((s: StoreState) => s.fastingState)
+  
+  const { onAddQadhaDebt, onMarkQadhaPaid, onSetHijriOffset, onToggleSahurReminder } = useAppStore(
+    useShallow((s: StoreState) => ({
+      onAddQadhaDebt: s.addQadhaDebt,
+      onMarkQadhaPaid: s.markQadhaPaid,
+      onSetHijriOffset: s.setHijriOffset,
+      onToggleSahurReminder: s.toggleSahurReminder,
+    }))
+  )
+
   const circumference = 283
   const paidProgress = fastingState.totalQadhaDebt > 0 ? fastingState.paidQadha / fastingState.totalQadhaDebt : 1
   const progressOffset = circumference - Math.min(1, paidProgress) * circumference

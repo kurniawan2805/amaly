@@ -11,16 +11,10 @@ import type { AppLanguage } from "@/lib/app-settings"
 import { loadQuranReaderBookmarks, saveQuranReaderBookmarks, upsertQuranReaderBookmark, removeQuranReaderBookmark, isQuranVerseBookmarked, getVerseBookmark, type QuranLabel } from "@/lib/quran-reader-bookmarks"
 import { getMushafFontName, getQuranReaderJuzNavigation, getQuranReaderPage, getQuranReaderSurahNavigation, loadBismillahFont, loadChapterHeaderFont, loadMushafFont, QURAN_BISMILLAH_CODES, QURAN_CHAPTER_HEADER_CODES, type QuranReaderNavigationItem, type QuranReaderPage, type QuranReaderVerse } from "@/lib/quran-reader-data"
 import { cn } from "@/lib/utils"
+import { useAppStore, type StoreState } from "@/stores/app-store"
+import { useShallow } from "zustand/react/shallow"
 import { type QuranReaderBookmarkState } from "@/lib/quran-reader-bookmarks"
 
-type QuranReaderPageProps = {
-  language: AppLanguage
-  onSetPage: (page: number, ayahDetails?: { surah: number; ayah: number; surahName: string }) => void
-  onUpsertBookmark: (verse: QuranReaderVerse, data: any) => void
-  onRemoveBookmark: (verse: QuranReaderVerse) => void
-  bookmarks: QuranReaderBookmarkState
-  lastBookmarkedAyah?: { surah: number; ayah: number }
-}
 
 const copy = {
   en: {
@@ -93,7 +87,25 @@ function RevelationIcon({ revelation }: { revelation: 1 | 2 }) {
   return revelation === 1 ? <MeccaIcon /> : <MadinahIcon />
 }
 
-export default function QuranReaderPage({ language, onSetPage, onUpsertBookmark, onRemoveBookmark, bookmarks, lastBookmarkedAyah }: QuranReaderPageProps) {
+export default function QuranReaderPage() {
+  const language = useAppStore((s: StoreState) => s.settings.language)
+  const bookmarks = useAppStore((s: StoreState) => s.quranBookmarks)
+  const lastBookmarkedAyah = useAppStore((s: StoreState) => {
+    const mb = s.quranBookmarks.mainBookmark
+    if (mb && typeof mb.surah === 'number' && typeof mb.ayah === 'number' && mb.surah > 0 && mb.ayah > 0) {
+      return { surah: mb.surah, ayah: mb.ayah }
+    }
+    return undefined
+  })
+
+  const { onSetPage, onUpsertBookmark, onRemoveBookmark } = useAppStore(
+    useShallow((s: StoreState) => ({
+      onSetPage: s.setQuranPage,
+      onUpsertBookmark: s.upsertQuranBookmark,
+      onRemoveBookmark: s.removeQuranBookmark,
+    }))
+  )
+
   const t = copy[language]
   const navigate = useNavigate()
   const [params, setParams] = useSearchParams()

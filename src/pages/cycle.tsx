@@ -1,27 +1,18 @@
 import { CalendarDays, Droplets, Eye, EyeOff, FileText, Heart, Moon, Sparkles, Sun } from "lucide-react"
 import { type FormEvent, useMemo, useState } from "react"
+import { useShallow } from "zustand/react/shallow"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import {
   type CycleLog,
-  type CycleState,
   formatCycleMonthMarkdown,
   getCycleSummary,
 } from "@/lib/cycle-progress"
 import { cn } from "@/lib/utils"
+import { useAppStore } from "@/stores/app-store"
 
-type CyclePageProps = {
-  cycleState: CycleState
-  onStartPeriod: (date?: string) => void
-  onEndPeriod: (date?: string) => void
-  onSaveCycleRange: (input: { startDate: string; endDate: string }) => void
-  onConfirmCycleQadha: (logId: string) => void
-  onIgnoreCycleQadha: (logId: string) => void
-  onToggleCyclePrivacy: () => void
-  onToggleCycleSymptom: (symptomId: string) => void
-}
 
 const symptomOptions = [
   { id: "cramps-low", label: "Cramps Low", icon: Droplets },
@@ -92,16 +83,29 @@ function CycleRing({ dayInCycle, phase, privateView }: { dayInCycle: number | nu
   )
 }
 
-export default function CyclePage({
-  cycleState,
-  onStartPeriod,
-  onEndPeriod,
-  onSaveCycleRange,
-  onConfirmCycleQadha,
-  onIgnoreCycleQadha,
-  onToggleCyclePrivacy,
-  onToggleCycleSymptom,
-}: CyclePageProps) {
+export default function CyclePage() {
+  const cycleState = useAppStore((s) => s.cycleState)
+  
+  const {
+    onStartPeriod,
+    onEndPeriod,
+    onSaveCycleRange,
+    onConfirmCycleQadha,
+    onIgnoreCycleQadha,
+    onToggleCyclePrivacy,
+    onToggleCycleSymptom,
+  } = useAppStore(
+    useShallow((s) => ({
+      onStartPeriod: s.startPeriod,
+      onEndPeriod: s.endPeriod,
+      onSaveCycleRange: s.saveCycleRange,
+      onConfirmCycleQadha: s.confirmCycleQadha,
+      onIgnoreCycleQadha: s.ignoreCycleQadha,
+      onToggleCyclePrivacy: s.toggleCyclePrivacy,
+      onToggleCycleSymptom: s.toggleCycleSymptom,
+    }))
+  )
+
   const [startDate, setStartDate] = useState("")
   const [endDate, setEndDate] = useState("")
   const [revealed, setRevealed] = useState(false)
@@ -110,7 +114,7 @@ export default function CyclePage({
   const phase = summary.phase
   const dayInCycle = summary.dayInCycle
   const privateView = cycleState.settings.privacyEnabled && !revealed
-  const pendingQadhaLog = cycleState.logs.find((log) => log.qadhaUpdateStatus === "pending")
+  const pendingQadhaLog = cycleState.logs.find((log: CycleLog) => log.qadhaUpdateStatus === "pending")
   const markdown = useMemo(() => formatCycleMonthMarkdown(cycleState), [cycleState])
   const phaseProgress = dayInCycle ? Math.round((dayInCycle / cycleState.settings.avgCycleLength) * 100) : 0
 

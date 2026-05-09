@@ -99,7 +99,7 @@ import { supabase } from "@/lib/supabase"
 export type QuranBurst = { type: "juz"; juz: number } | { type: "goal" }
 export type ActivePanel = "habits" | "account" | "quran-marks" | null
 
-type StoreState = {
+export type StoreState = {
   settings: AppSettings
   quranProgress: QuranProgressState
   quranBookmarks: QuranReaderBookmarkState

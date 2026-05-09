@@ -10,16 +10,10 @@ import type { AppSettings } from "@/lib/app-settings"
 import type { CycleState } from "@/lib/cycle-progress"
 import type { DailyTrackerState } from "@/lib/daily-tracker"
 import type { FastingState } from "@/lib/fasting-progress"
-import type { QuranProgressState } from "@/lib/quran-progress"
+import type { QuranProgressLog, QuranProgressState } from "@/lib/quran-progress"
 import { cn } from "@/lib/utils"
+import { useAppStore, type StoreState } from "@/stores/app-store"
 
-type ReportPageProps = {
-  cycleState: CycleState
-  dailyTrackerState: DailyTrackerState
-  fastingState: FastingState
-  quranProgress: QuranProgressState
-  settings: AppSettings
-}
 
 type DayReport = {
   dateKey: string
@@ -104,12 +98,19 @@ function isCycleDay(cycleState: CycleState, dateKey: string) {
   return cycleState.logs.some((log) => isBetween(dateKey, log.startDate, log.endDate))
 }
 
-function reportForDay(date: Date, input: ReportPageProps): DayReport {
+interface ReportData {
+  cycleState: CycleState
+  dailyTrackerState: DailyTrackerState
+  fastingState: FastingState
+  quranProgress: QuranProgressState
+}
+
+function reportForDay(date: Date, input: ReportData): DayReport {
   const dateKey = localDateKey(date)
   const daily = input.dailyTrackerState.days[dateKey]
-  const quranPages = input.quranProgress.logs.find((log) => log.date === dateKey)?.pages ?? 0
+  const quranPages = input.quranProgress.logs.find((log: QuranProgressLog) => log.date === dateKey)?.pages ?? 0
   const prayerCompleted = daily?.completedPrayers.length ?? 0
-  const habitCompleted = daily ? Object.values(daily.habitCompletions).filter((item) => item.completed).length : 0
+  const habitCompleted = daily ? Object.values(daily.habitCompletions).filter((item: any) => item.completed).length : 0
   const sahurReminder = input.fastingState.sahurReminderDates.includes(dateKey)
   const cycleDay = isCycleDay(input.cycleState, dateKey)
   const score = Math.min(4, Number(quranPages > 0) + Math.min(2, Math.ceil(prayerCompleted / 3)) + Number(habitCompleted > 0) + Number(sahurReminder))
@@ -135,16 +136,22 @@ function intensityClass(day: DayReport) {
   return "bg-surface-container-low text-muted-foreground"
 }
 
-export default function ReportPage({ cycleState, dailyTrackerState, fastingState, quranProgress, settings }: ReportPageProps) {
-  const t = copy[settings.language]
+export default function ReportPage() {
+  const language = useAppStore((s: StoreState) => s.settings.language)
+  const cycleState = useAppStore((s: StoreState) => s.cycleState)
+  const dailyTrackerState = useAppStore((s: StoreState) => s.dailyTrackerState)
+  const fastingState = useAppStore((s: StoreState) => s.fastingState)
+  const quranProgress = useAppStore((s: StoreState) => s.quranProgress)
+  
+  const t = copy[language]
   const days = useMemo(() => monthDays(), [])
   const reports = useMemo(
-    () => days.map((day) => reportForDay(day, { cycleState, dailyTrackerState, fastingState, quranProgress, settings })),
-    [cycleState, dailyTrackerState, days, fastingState, quranProgress, settings],
+    () => days.map((day) => reportForDay(day, { cycleState, dailyTrackerState, fastingState, quranProgress })),
+    [cycleState, dailyTrackerState, days, fastingState, quranProgress],
   )
   const [selectedDateKey, setSelectedDateKey] = useState(() => localDateKey(new Date()))
   const selectedDay = reports.find((day) => day.dateKey === selectedDateKey) ?? reports[reports.length - 1]
-  const monthLabel = new Intl.DateTimeFormat(settings.language === "id" ? "id-ID" : "en-US", { month: "long", year: "numeric" }).format(new Date())
+  const monthLabel = new Intl.DateTimeFormat(language === "id" ? "id-ID" : "en-US", { month: "long", year: "numeric" }).format(new Date())
   const totalQuranPages = reports.reduce((total, day) => total + day.quranPages, 0)
   const prayerProgress = Math.round((reports.reduce((total, day) => total + day.prayerCompleted, 0) / (reports.length * prayersPerDay)) * 100)
   const activeDays = reports.filter((day) => day.score > 0 || day.isCycleDay).length

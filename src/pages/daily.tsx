@@ -1,6 +1,7 @@
 import { BookOpen, Check, Clock, Lock, Moon, Plus, Quote, Settings, Sparkles, Sun, Zap } from "lucide-react"
 import { CSSProperties, FormEvent, PointerEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
+import { useShallow } from "zustand/react/shallow"
 
 import { PartnerWidget } from "@/components/partner/partner-widget"
 import { Badge } from "@/components/ui/badge"
@@ -15,6 +16,7 @@ import { getActiveDhikrWindow, getNowMinutes, prayers, timeToMinutes } from "@/l
 import { shouldShowQuranEveningNudge, type QuranProgressState } from "@/lib/quran-progress"
 import { type QuranReaderBookmarkState } from "@/lib/quran-reader-bookmarks"
 import { cn } from "@/lib/utils"
+import { useAppStore, type StoreState } from "@/stores/app-store"
 
 type Habit = {
   id: string
@@ -354,43 +356,59 @@ function getHabitSummary(habit: Habit, nowMinutes: number): HabitSummary {
 }
 
 type DailyPageProps = {
-  settings: AppSettings
-  cycleState: CycleState
-  dailyTrackerState: DailyTrackerState
-  displayName?: string
-  quranProgress: QuranProgressState
-  quranBookmarks: QuranReaderBookmarkState
-  onQuickLog: (increment: number) => void
-  onSetQuranDailyGoal: (goal: number) => void
-  onSetPrayerCompleted: (prayer: string, completed: boolean, dateKey?: string) => void
-  onToggleSunnahSelection: (prayer: string, dateKey?: string) => void
-  onSetHabitCompleted: (habitId: string, completed: boolean, completedAt: string | null, dateKey?: string) => void
   onOpenHabitSettings: () => void
   onOpenSunnahSettings: () => void
 }
 
 export default function DailyPage({
-  settings,
-  cycleState,
-  dailyTrackerState,
-  displayName = "",
-  quranProgress,
-  quranBookmarks,
-  onQuickLog,
-  onSetQuranDailyGoal,
-  onSetPrayerCompleted,
-  onToggleSunnahSelection,
-  onSetHabitCompleted,
   onOpenHabitSettings,
   onOpenSunnahSettings,
 }: DailyPageProps) {
+  const language = useAppStore((s: StoreState) => s.settings.language)
+  const hijriOffset = useAppStore((s: StoreState) => s.settings.hijriOffset)
+  const habitDefinitions = useAppStore((s: StoreState) => s.settings.habits)
+  const sunnahPrayers = useAppStore((s: StoreState) => s.settings.sunnahPrayers)
+  const cycleState = useAppStore((s: StoreState) => s.cycleState)
+  const dailyTrackerState = useAppStore((s: StoreState) => s.dailyTrackerState)
+  const quranProgress = useAppStore((s: StoreState) => s.quranProgress)
+  const displayName = useAppStore((s: StoreState) => s.profile?.displayName || "")
+
+  const {
+    onQuickLog,
+    onSetQuranDailyGoal,
+    onSetPrayerCompleted,
+    onToggleSunnahSelection,
+    onSetHabitCompleted,
+  } = useAppStore(
+    useShallow((s: StoreState) => ({
+      onQuickLog: s.quickLogQuran,
+      onSetQuranDailyGoal: s.setQuranDailyGoal,
+      onSetPrayerCompleted: s.setPrayerCompleted,
+      onToggleSunnahSelection: s.toggleSunnahSelection,
+      onSetHabitCompleted: s.setHabitCompleted,
+    }))
+  )
+
   const [flowerBursts, setFlowerBursts] = useState<FlowerBurst[]>([])
   const [cycleRevealed, setCycleRevealed] = useState(false)
   const [now, setNow] = useState(() => new Date())
   const [quranTargetOpen, setQuranTargetOpen] = useState(false)
   const [quranTargetInput, setQuranTargetInput] = useState(String(quranProgress.daily_goal))
-  const t = copy[settings.language]
+  const t = copy[language]
   const navigate = useNavigate()
+
+  const flowerConfetti = useMemo(() => {
+    return Array.from({ length: 64 }, (_, index) => ({
+      emoji: flowerEmojis[index % flowerEmojis.length],
+      left: (index * 37) % 100,
+      top: (index * 23) % 100,
+      delay: (index % 16) * 42,
+      drift: ((index % 9) - 4) * 18,
+      fall: 70 + (index % 7) * 18,
+      rotate: ((index % 11) - 5) * 18,
+      size: index % 4 === 0 ? "text-4xl sm:text-5xl" : "text-3xl sm:text-4xl",
+    }))
+  }, [])
 
   const contextualReading = useMemo(() => {
     const isFriday = now.getDay() === 5
@@ -403,7 +421,7 @@ export default function DailyPage({
         name: "Al-Kahf", 
         surah: 18, 
         page: 293, 
-        reason: settings.language === "id" ? "Waktunya membaca Al-Kahfi" : "Time for Al-Kahf" 
+        reason: language === "id" ? "Waktunya membaca Al-Kahfi" : "Time for Al-Kahf" 
       }
     }
     if (isNight) {
@@ -412,22 +430,24 @@ export default function DailyPage({
         name: "Al-Mulk", 
         surah: 67, 
         page: 562, 
-        reason: settings.language === "id" ? "Waktunya membaca Al-Mulk" : "Time for Al-Mulk" 
+        reason: language === "id" ? "Waktunya membaca Al-Mulk" : "Time for Al-Mulk" 
       }
     }
     return null
-  }, [now, settings.language])
+  }, [now, language])
 
   const todayKey = localDailyTrackerKey(now)
   const todayTracker = useMemo(() => getDailyTrackerDay(dailyTrackerState, todayKey), [dailyTrackerState, todayKey])
   const completedPrayers = todayTracker.completedPrayers
   const selectedSunnah = todayTracker.selectedSunnah
-  const gregorianDate = formatGregorianDate(now, settings.language)
-  const hijriDate = formatHijriDate(now, settings.hijriOffset, settings.language)
+  const gregorianDate = formatGregorianDate(now, language)
+  const hijriDate = formatHijriDate(now, hijriOffset, language)
+  
   const visibleHabitDefinitions = useMemo(() => {
     const todayIndex = now.getDay()
-    return settings.habits.filter((habit) => habit.enabled && habit.plannedDays[todayIndex])
-  }, [now, settings.habits])
+    return habitDefinitions.filter((habit) => habit.enabled && habit.plannedDays[todayIndex])
+  }, [now, habitDefinitions])
+
   const habits = useMemo(
     () =>
       visibleHabitDefinitions.map((habit) => {
@@ -506,7 +526,7 @@ export default function DailyPage({
   }
 
   function completeHabit(id: string) {
-    onSetHabitCompleted(id, true, formatTime(new Date(), settings.language), todayKey)
+    onSetHabitCompleted(id, true, formatTime(new Date(), language), todayKey)
   }
 
   function uncompleteHabit(id: string) {
@@ -620,7 +640,7 @@ export default function DailyPage({
           )}
         </div>
       ) : null}
-        <PartnerWidget language={settings.language} />
+        <PartnerWidget language={language} />
 
         <section className="flex flex-col gap-3">
         <div className="flex flex-col gap-1">
@@ -761,7 +781,7 @@ export default function DailyPage({
               </Button>
               <h4 className="text-base font-bold tracking-wide">{t.sunnah}</h4>
             </div>
-            {settings.sunnahPrayers.map((prayer) => {
+            {sunnahPrayers.map((prayer: string) => {
               const isSelected = selectedSunnah.includes(prayer)
 
               return (

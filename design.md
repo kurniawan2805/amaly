@@ -225,8 +225,8 @@ Creates log entry with:
 
 ## Version History
 
-- **v1.0** (2026-05-09): Initial two-tier bookmark system with enhanced logging
-  - Main bookmark for khatm tracking
-  - Optional context bookmarks for quick access
-  - Ayah-level logging when determined
-  - Soft highlight for last reading position
+- **v1.1** (2026-05-10): Performance & Architectural Optimization
+  - **Selective Store Subscriptions:** Refactored all pages to subscribe directly to domain-specific state slices using Zustand selectors and `useShallow`, significantly reducing unnecessary `App.tsx` re-renders.
+  - **Prop-Drilling Elimination:** Removed large state object passing from `App.tsx` to child components, improving component isolation and maintainability.
+  - **Memoized Heavy Operations:** Extracted complex animations (flower confetti) into a standalone `QuranBurst` component and used `useMemo` for static array generation.
+  - **Atomic State Updates:** Optimized store interactions to ensure only relevant UI segments update during frequent user actions (e.g., logging progress).
