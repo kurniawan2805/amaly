@@ -1,5 +1,6 @@
 import { Bookmark } from "lucide-react"
 import { ContinueReadingCard } from "@/components/quran/continue-reading-card"
+import { ContextBookmarksPanel } from "@/components/quran/context-bookmarks-panel"
 import { JuzGrid } from "@/components/quran/juz-grid"
 import { Button } from "@/components/ui/button"
 import type { AppLanguage, HijriOffset } from "@/lib/app-settings"
@@ -61,6 +62,8 @@ function JourneyEntry({ hijriOffset, language, log }: { hijriOffset: HijriOffset
 export default function QuranPage({ language, hijriOffset, progress, onQuickLog, onSetDailyGoal }: QuranPageProps) {
   const t = copy[language]
   const openPanel = useAppStore((s) => s.openPanel)
+  const quranBookmarks = useAppStore((s) => s.quranBookmarks)
+  const setQuranPage = useAppStore((s) => s.setQuranPage)
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-3 px-6 py-4 pb-28">
@@ -82,6 +85,16 @@ export default function QuranPage({ language, hijriOffset, progress, onQuickLog,
       <section>
         <ContinueReadingCard language={language} onQuickLog={onQuickLog} onSetDailyGoal={onSetDailyGoal} progress={progress} />
       </section>
+
+      {quranBookmarks.contextBookmarks.length > 0 && (
+        <section>
+          <ContextBookmarksPanel
+            bookmarks={quranBookmarks.contextBookmarks}
+            language={language}
+            onNavigate={(page) => setQuranPage(page)}
+          />
+        </section>
+      )}
 
       <section className="space-y-2">
         <h3 className="font-serif text-xl font-medium text-primary">{t.juzGrid}</h3>
