@@ -205,6 +205,13 @@ export default function QuranReaderPage() {
      }
    }, [highlightedAyah, readerPage, mushafFontReady])
 
+  const goToPage = useMemo(() => (nextPage: number) => {
+    const safePage = Math.max(1, Math.min(604, nextPage))
+    setParams({ page: String(safePage) })
+    setSelectedVerse(null)
+    window.scrollTo({ top: 0, behavior: "smooth" })
+  }, [setParams])
+
    useEffect(() => {
      function handleKey(event: KeyboardEvent) {
        if (event.key === "ArrowLeft") {
@@ -220,13 +227,6 @@ export default function QuranReaderPage() {
      window.addEventListener("keydown", handleKey)
      return () => window.removeEventListener("keydown", handleKey)
    }, [page, goToPage])
-
-  const goToPage = useMemo(() => (nextPage: number) => {
-    const safePage = Math.max(1, Math.min(604, nextPage))
-    setParams({ page: String(safePage) })
-    setSelectedVerse(null)
-    window.scrollTo({ top: 0, behavior: "smooth" })
-  }, [setParams])
 
   function submitPageInput(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
