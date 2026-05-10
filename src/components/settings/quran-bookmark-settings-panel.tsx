@@ -1,11 +1,11 @@
-import { Bookmark, ChevronDown, ChevronUp, GripVertical, Plus, Save, Trash2, X } from "lucide-react"
-import { useEffect, useState } from "react"
+import { ChevronDown, ChevronUp, Trash2 } from "lucide-react"
+import { useState } from "react"
+import { useNavigate } from "react-router-dom"
 
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { cn } from "@/lib/utils"
 import { useAppStore } from "@/stores/app-store"
-import { type QuranLabel, type QuranReaderBookmark } from "@/lib/quran-reader-bookmarks"
 
 type QuranBookmarkSettingsPanelProps = {
   open: boolean
@@ -15,7 +15,7 @@ type QuranBookmarkSettingsPanelProps = {
 const copy = {
   en: {
     title: "Quran Marks",
-    subtitle: "Manage your spiritual bookmarks and labels.",
+    subtitle: "Manage your spiritual bookmarks and labels. Click to open.",
     labels: "Labels",
     addLabel: "Add Label",
     bookmarks: "Bookmarks",
@@ -28,7 +28,7 @@ const copy = {
   },
   id: {
     title: "Tanda Quran",
-    subtitle: "Kelola label dan tanda bacaan spiritualmu.",
+    subtitle: "Kelola label dan tanda bacaan spiritualmu. Klik untuk buka.",
     labels: "Label",
     addLabel: "Tambah Label",
     bookmarks: "Daftar Ayat",
@@ -55,6 +55,7 @@ export function QuranBookmarkSettingsPanel({ open, onClose }: QuranBookmarkSetti
   const updateLabel = useAppStore((s) => s.updateQuranLabel)
   const reorderBookmarks = useAppStore((s) => s.reorderQuranBookmarks)
   const removeBookmark = useAppStore((s) => s.removeQuranBookmark)
+  const navigate = useNavigate()
   
   const [activeLabelId, setActiveLabelId] = useState<string | null>(bookmarksState.labels[0]?.id || null)
   const t = copy[language]
@@ -77,6 +78,11 @@ export function QuranBookmarkSettingsPanel({ open, onClose }: QuranBookmarkSetti
     const item = newOrder.splice(index, 1)[0]
     newOrder.splice(index + 1, 0, item)
     reorderBookmarks(activeLabelId, newOrder.map(b => b.id))
+  }
+
+  function handleNavigate(page: number, surah: number, ayah: number) {
+    onClose()
+    navigate(`/quran/read?page=${page}&surah=${surah}&ayah=${ayah}`)
   }
 
   return (
@@ -180,10 +186,13 @@ export function QuranBookmarkSettingsPanel({ open, onClose }: QuranBookmarkSetti
                         <ChevronDown className="h-4 w-4" />
                       </button>
                     </div>
-                    <div className="min-w-0 flex-1">
+                    <button 
+                      onClick={() => handleNavigate(bookmark.page, bookmark.surah, bookmark.ayah)}
+                      className="min-w-0 flex-1 text-left transition hover:opacity-70"
+                    >
                       <p className="text-sm font-bold text-foreground">{bookmark.surahName} {bookmark.ayah}</p>
                       <p className="truncate text-xs font-semibold text-muted-foreground">Page {bookmark.page}</p>
-                    </div>
+                    </button>
                     <Button
                       onClick={() => removeBookmark({ surah: bookmark.surah, ayah: bookmark.ayah } as any)}
                       size="icon"
@@ -208,3 +217,4 @@ export function QuranBookmarkSettingsPanel({ open, onClose }: QuranBookmarkSetti
     </Sheet>
   )
 }
+

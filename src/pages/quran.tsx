@@ -1,10 +1,11 @@
 import { Bookmark } from "lucide-react"
+import { useNavigate } from "react-router-dom"
 import { ContinueReadingCard } from "@/components/quran/continue-reading-card"
 import { ContextBookmarksPanel } from "@/components/quran/context-bookmarks-panel"
 import { JuzGrid } from "@/components/quran/juz-grid"
 import { Button } from "@/components/ui/button"
 import type { AppLanguage, HijriOffset } from "@/lib/app-settings"
-import { formatQuranLogDate, type QuranProgressLog, type QuranProgressState } from "@/lib/quran-progress"
+import { formatQuranLogDate, type QuranProgressLog } from "@/lib/quran-progress"
 import { useAppStore, type StoreState } from "@/stores/app-store"
 import { useShallow } from "zustand/react/shallow"
 
@@ -57,12 +58,12 @@ export default function QuranPage() {
   const hijriOffset = useAppStore((s: StoreState) => s.settings.hijriOffset)
   const progress = useAppStore((s: StoreState) => s.quranProgress)
   const quranBookmarks = useAppStore((s: StoreState) => s.quranBookmarks)
+  const navigate = useNavigate()
   
-  const { onQuickLog, onSetDailyGoal, onSetPage, openPanel } = useAppStore(
+  const { onQuickLog, onSetDailyGoal, openPanel } = useAppStore(
     useShallow((s: StoreState) => ({
       onQuickLog: s.quickLogQuran,
       onSetDailyGoal: s.setQuranDailyGoal,
-      onSetPage: s.setQuranPage,
       openPanel: s.openPanel,
     }))
   )
@@ -95,10 +96,11 @@ export default function QuranPage() {
           <ContextBookmarksPanel
             bookmarks={quranBookmarks.contextBookmarks}
             language={language}
-            onNavigate={(page) => onSetPage(page)}
+            onNavigate={(page) => navigate(`/quran/read?page=${page}`)}
           />
         </section>
       )}
+
 
       <section className="space-y-2">
         <h3 className="font-serif text-xl font-medium text-primary">{t.juzGrid}</h3>

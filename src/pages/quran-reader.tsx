@@ -1,19 +1,16 @@
 import { Bookmark, Check, ChevronDown, ChevronLeft, ChevronRight, Home, Loader2, Save, ChevronUp } from "lucide-react"
-import { Fragment, useEffect, useRef, useState, type FormEvent, type PointerEvent } from "react"
+import { Fragment, useEffect, useRef, useState, useMemo, type FormEvent, type PointerEvent } from "react"
 import { useNavigate, useSearchParams } from "react-router-dom"
 
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet"
-import { Badge } from "@/components/ui/badge"
 import { trackAyahHighlighted } from "@/lib/analytics"
-import type { AppLanguage } from "@/lib/app-settings"
-import { loadQuranReaderBookmarks, saveQuranReaderBookmarks, upsertQuranReaderBookmark, removeQuranReaderBookmark, isQuranVerseBookmarked, getVerseBookmark, type QuranLabel } from "@/lib/quran-reader-bookmarks"
+import { isQuranVerseBookmarked, getVerseBookmark } from "@/lib/quran-reader-bookmarks"
 import { getMushafFontName, getQuranReaderJuzNavigation, getQuranReaderPage, getQuranReaderSurahNavigation, loadBismillahFont, loadChapterHeaderFont, loadMushafFont, QURAN_BISMILLAH_CODES, QURAN_CHAPTER_HEADER_CODES, type QuranReaderNavigationItem, type QuranReaderPage, type QuranReaderVerse } from "@/lib/quran-reader-data"
 import { cn } from "@/lib/utils"
 import { useAppStore, type StoreState } from "@/stores/app-store"
 import { useShallow } from "zustand/react/shallow"
-import { type QuranReaderBookmarkState } from "@/lib/quran-reader-bookmarks"
 
 
 const copy = {
@@ -110,6 +107,9 @@ export default function QuranReaderPage() {
   const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
   const page = pageFromParams(params.get("page"))
+  const urlSurah = Number(params.get("surah"))
+  const urlAyah = Number(params.get("ayah"))
+
   const [readerPage, setReaderPage] = useState<QuranReaderPage | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -126,6 +126,10 @@ export default function QuranReaderPage() {
   const [notesExpanded, setNotesExpanded] = useState(false)
    const longPressTimerRef = useRef<number | null>(null)
    const pointerStartRef = useRef<{ x: number; y: number; time: number } | null>(null)
+
+  const highlightedAyah = useMemo(() => 
+    urlSurah && urlAyah ? { surah: urlSurah, ayah: urlAyah } : lastBookmarkedAyah,
+  [urlSurah, urlAyah, lastBookmarkedAyah])
 
   useEffect(() => {
     if (selectedVerse) {
@@ -181,18 +185,25 @@ export default function QuranReaderPage() {
     if (pageInputOpen) setPageInputValue(String(page))
    }, [page, pageInputOpen])
 
-   // Track when ayah is first highlighted on page load
    useEffect(() => {
-     if (lastBookmarkedAyah && readerPage) {
-       // Only track if the ayah is actually on this page
+     if (highlightedAyah && readerPage && mushafFontReady) {
+       // Only track and scroll if the ayah is actually on this page
        const isAyahOnPage = readerPage.verses.some(
-         (v) => v.surah === lastBookmarkedAyah.surah && v.ayah === lastBookmarkedAyah.ayah
+         (v) => v.surah === highlightedAyah.surah && v.ayah === highlightedAyah.ayah
        )
        if (isAyahOnPage) {
-         trackAyahHighlighted(lastBookmarkedAyah.surah, lastBookmarkedAyah.ayah)
+         trackAyahHighlighted(highlightedAyah.surah, highlightedAyah.ayah)
+         
+         // Scroll to highlighted ayah after a short delay
+         setTimeout(() => {
+           const element = document.querySelector(".ayah-last-read")
+           if (element) {
+             element.scrollIntoView({ behavior: "smooth", block: "center" })
+           }
+         }, 300)
        }
      }
-   }, [lastBookmarkedAyah, readerPage])
+   }, [highlightedAyah, readerPage, mushafFontReady])
 
    useEffect(() => {
      function handleKey(event: KeyboardEvent) {
@@ -208,14 +219,14 @@ export default function QuranReaderPage() {
 
      window.addEventListener("keydown", handleKey)
      return () => window.removeEventListener("keydown", handleKey)
-   }, [page])
+   }, [page, goToPage])
 
-  function goToPage(nextPage: number) {
+  const goToPage = useMemo(() => (nextPage: number) => {
     const safePage = Math.max(1, Math.min(604, nextPage))
     setParams({ page: String(safePage) })
     setSelectedVerse(null)
     window.scrollTo({ top: 0, behavior: "smooth" })
-  }
+  }, [setParams])
 
   function submitPageInput(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -321,12 +332,6 @@ export default function QuranReaderPage() {
     setNotice(t.done)
     setSelectedVerse(null)
     window.setTimeout(() => setNotice(null), 2400)
-  }
-
-  function getLabelColor(labelId: string | null) {
-    if (!labelId) return "sage"
-    const label = bookmarks.labels.find((l) => l.id === labelId)
-    return label?.color || "sage"
   }
 
   function getBismillahCode(surah: number) {
@@ -450,14 +455,14 @@ export default function QuranReaderPage() {
                     <div className={cn("flex flex-nowrap px-2 text-center", line.centered ? "justify-center" : "justify-between")}>
                       {line.words.map((word) => {
                         const bookmark = getVerseBookmark(bookmarks, word.verse)
-                        const isLastBookmarkedAyah = lastBookmarkedAyah && word.verse.surah === lastBookmarkedAyah.surah && word.verse.ayah === lastBookmarkedAyah.ayah
+                        const isHighlighted = highlightedAyah && word.verse.surah === highlightedAyah.surah && word.verse.ayah === highlightedAyah.ayah
                         return (
                           <button
                             className={cn(
                               "relative m-0 inline-flex appearance-none items-center justify-center border-0 bg-transparent p-0 text-inherit leading-none transition hover:bg-amber-50/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:hover:bg-amber-300/10",
                               word.isEndMarker ? "rounded-lg px-0.5 text-amber-700 dark:text-amber-200" : "rounded-md",
                               bookmark && !word.isEndMarker && "bg-sage-pale/20 text-amber-900 dark:bg-sage-pale/10 dark:text-amber-100",
-                              isLastBookmarkedAyah && "ayah-last-read",
+                              isHighlighted && "ayah-last-read",
                             )}
                             key={word.key}
                             onPointerCancel={clearLongPress}

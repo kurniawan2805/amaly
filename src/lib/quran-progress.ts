@@ -1,5 +1,5 @@
 import type { AppLanguage, HijriOffset } from "@/lib/app-settings"
-import { trackMainBookmarkAyahLogged, trackMainBookmarkUpdate } from "@/lib/analytics"
+import { trackMainBookmarkAyahLogged } from "@/lib/analytics"
 import { dateFromGregorianKey, formatHijriDate } from "@/lib/hijri-date"
 import { findQuranJuz, getAyahId, getQuranJuzFirstKey, getQuranJuzLastKey, getQuranPageEnd, getQuranPageStart, getSurahEnglishName, getSurahName, QURAN_TOTAL_PAGES as STATIC_QURAN_TOTAL_PAGES } from "@/lib/quran-static-meta"
 
@@ -8,8 +8,12 @@ export const QURAN_TOTAL_PAGES = STATIC_QURAN_TOTAL_PAGES
 export const QURAN_DAILY_GOAL = 5
 export const QURAN_STREAK_GRACE_PAGES = QURAN_DAILY_GOAL * 2
 
-function quranReadingUrl(page: number) {
-  return `/quran/read?page=${clampPage(page || 1)}`
+function quranReadingUrl(page: number, surah?: number, ayah?: number) {
+  const base = `/quran/read?page=${clampPage(page || 1)}`
+  if (surah && ayah) {
+    return `${base}&surah=${surah}&ayah=${ayah}`
+  }
+  return base
 }
 
 export type QuranProgressLog = {
@@ -415,7 +419,7 @@ export function setProgressToPage(
     goal_completed_today: goalCompletedToday,
     goal_burst: goalBurst,
     completed_juzs_this_update: completedJuzsThisUpdate,
-    continue_url: quranReadingUrl(newPage || 1),
+    continue_url: quranReadingUrl(newPage || 1, ayahDetails?.surah, ayahDetails?.ayah),
     barakah_burst: completedJuzsThisUpdate.length > 0,
     is_khatm_complete: newPage >= QURAN_TOTAL_PAGES,
   }
