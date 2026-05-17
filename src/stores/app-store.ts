@@ -158,6 +158,8 @@ export type StoreState = {
   upsertQuranBookmark: (verse: any, data: any) => void
   removeQuranBookmark: (verse: any) => void
   updateQuranLabel: (labelId: string, updates: Partial<QuranLabel>) => void
+  addQuranLabel: (name: string, color: string) => void
+  deleteQuranLabel: (labelId: string) => void
   reorderQuranBookmarks: (labelId: string | null, bookmarkIds: string[]) => void
   addQadhaDebt: (days?: number) => void
   markQadhaPaid: () => void
@@ -769,13 +771,13 @@ export const useAppStore = create<StoreState>((set, get) => ({
     set({ quranBookmarks: next })
     void get().syncQuranBookmarks()
   },
-  addQuranLabel: (name, color) => {
+  addQuranLabel: (name: string, color: string) => {
     const next = addQuranLabel(get().quranBookmarks, name, color)
     saveQuranReaderBookmarks(next)
     set({ quranBookmarks: next })
     void get().syncQuranBookmarks()
   },
-  deleteQuranLabel: (labelId) => {
+  deleteQuranLabel: (labelId: string) => {
     const next = deleteQuranLabel(get().quranBookmarks, labelId)
     saveQuranReaderBookmarks(next)
     set({ quranBookmarks: next })
