@@ -45,6 +45,27 @@
     --blush: 0 70% 86%;
     --blush-pale: 1 100% 93%;
     --blush-muted: 0 61% 83%;
+    --amber: 38 92% 50%;
+    --amber-pale: 37 100% 92%;
+    --amber-muted: 38 78% 70%;
+    --indigo: 239 84% 67%;
+    --indigo-pale: 226 100% 94%;
+    --indigo-muted: 234 55% 73%;
+    --rose: 350 89% 60%;
+    --rose-pale: 357 100% 95%;
+    --rose-muted: 349 71% 79%;
+    --violet: 271 76% 53%;
+    --violet-pale: 264 100% 95%;
+    --violet-muted: 270 58% 75%;
+    --teal: 173 80% 40%;
+    --teal-pale: 167 70% 88%;
+    --teal-muted: 172 47% 67%;
+    --orange: 24 95% 53%;
+    --orange-pale: 33 100% 92%;
+    --orange-muted: 25 80% 72%;
+    --emerald: 142 71% 45%;
+    --emerald-pale: 140 70% 90%;
+    --emerald-muted: 142 47% 73%;
   }
 
   .dark {
@@ -86,6 +107,27 @@
     --blush: 0 46% 73%;
     --blush-pale: 355 20% 25%;
     --blush-muted: 0 29% 55%;
+    --amber: 38 60% 72%;
+    --amber-pale: 37 30% 28%;
+    --amber-muted: 38 40% 48%;
+    --indigo: 234 60% 75%;
+    --indigo-pale: 226 25% 22%;
+    --indigo-muted: 234 35% 50%;
+    --rose: 350 60% 72%;
+    --rose-pale: 357 20% 25%;
+    --rose-muted: 349 35% 50%;
+    --violet: 271 53% 70%;
+    --violet-pale: 264 20% 22%;
+    --violet-muted: 270 30% 48%;
+    --teal: 173 55% 60%;
+    --teal-pale: 167 25% 25%;
+    --teal-muted: 172 30% 48%;
+    --orange: 24 80% 60%;
+    --orange-pale: 33 25% 25%;
+    --orange-muted: 25 40% 48%;
+    --emerald: 142 50% 50%;
+    --emerald-pale: 140 25% 25%;
+    --emerald-muted: 142 30% 48%;
   }
 
   * {

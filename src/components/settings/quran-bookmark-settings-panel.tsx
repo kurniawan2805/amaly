@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronUp, Trash2 } from "lucide-react"
+import { ChevronDown, ChevronUp, Plus, Trash2, X } from "lucide-react"
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 
@@ -43,10 +43,15 @@ const copy = {
 
 const colorOptions = [
   { name: "Sage", value: "sage" },
+  { name: "Sky", value: "sky" },
   { name: "Blush", value: "blush" },
   { name: "Amber", value: "amber" },
-  { name: "Sky", value: "sky" },
   { name: "Indigo", value: "indigo" },
+  { name: "Rose", value: "rose" },
+  { name: "Violet", value: "violet" },
+  { name: "Teal", value: "teal" },
+  { name: "Orange", value: "orange" },
+  { name: "Emerald", value: "emerald" },
 ]
 
 export function QuranBookmarkSettingsPanel({ open, onClose }: QuranBookmarkSettingsPanelProps) {
@@ -55,10 +60,32 @@ export function QuranBookmarkSettingsPanel({ open, onClose }: QuranBookmarkSetti
   const updateLabel = useAppStore((s) => s.updateQuranLabel)
   const reorderBookmarks = useAppStore((s) => s.reorderQuranBookmarks)
   const removeBookmark = useAppStore((s) => s.removeQuranBookmark)
+  const addLabel = useAppStore((s) => s.addQuranLabel)
+  const deleteLabel = useAppStore((s) => s.deleteQuranLabel)
   const navigate = useNavigate()
   
   const [activeLabelId, setActiveLabelId] = useState<string | null>(bookmarksState.labels[0]?.id || null)
+  const [addingLabel, setAddingLabel] = useState(false)
+  const [newLabelName, setNewLabelName] = useState("")
   const t = copy[language]
+
+  function handleAddLabel() {
+    const name = newLabelName.trim()
+    if (!name) return
+    addLabel(name, colorOptions[0].value)
+    setNewLabelName("")
+    setAddingLabel(false)
+  }
+
+  function handleDeleteLabel(labelId: string, labelName: string) {
+    if (window.confirm(`Delete label "${labelName}"? Bookmarks in this category will become uncategorized.`)) {
+      deleteLabel(labelId)
+      if (activeLabelId === labelId) {
+        const remaining = bookmarksState.labels.filter((l) => l.id !== labelId)
+        setActiveLabelId(remaining[0]?.id || null)
+      }
+    }
+  }
 
   const filteredBookmarks = bookmarksState.bookmarks
     .filter((b) => b.labelId === activeLabelId)
@@ -95,21 +122,54 @@ export function QuranBookmarkSettingsPanel({ open, onClose }: QuranBookmarkSetti
 
         <div className="flex-1 overflow-y-auto px-6 py-4">
           <section className="mb-8">
-            <h4 className="mb-4 text-xs font-bold uppercase tracking-wider text-muted-foreground">{t.labels}</h4>
+            <div className="mb-4 flex items-center justify-between">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{t.labels}</h4>
+              <button
+                onClick={() => setAddingLabel(true)}
+                className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-bold text-primary transition hover:bg-sage-pale/30"
+              >
+                <Plus className="h-3 w-3" />
+                {t.addLabel}
+              </button>
+            </div>
+            {addingLabel ? (
+              <div className="mb-4 flex items-center gap-2 rounded-2xl border border-sage/20 bg-sage-pale/5 p-3">
+                <input
+                  autoFocus
+                  className="h-9 flex-1 rounded-xl border border-sage/20 bg-background px-3 text-sm font-bold outline-none focus:ring-2 focus:ring-ring"
+                  value={newLabelName}
+                  onChange={(e) => setNewLabelName(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleAddLabel()}
+                  placeholder={t.name}
+                />
+                <Button onClick={handleAddLabel} size="sm" className="h-9 rounded-xl">{t.save}</Button>
+                <button onClick={() => { setAddingLabel(false); setNewLabelName("") }} className="h-9 w-9 rounded-xl text-muted-foreground hover:text-primary">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ) : null}
             <div className="flex flex-wrap gap-2">
               {bookmarksState.labels.map((label) => (
-                <button
-                  key={label.id}
-                  onClick={() => setActiveLabelId(label.id)}
-                  className={cn(
-                    "group relative rounded-2xl border-2 px-4 py-2 text-sm font-bold transition-all",
-                    activeLabelId === label.id
-                      ? `bg-${label.color} border-${label.color} text-white shadow-lg shadow-${label.color}/20`
-                      : "border-sage/10 bg-background text-muted-foreground hover:border-sage/30"
-                  )}
-                >
-                  {label.name}
-                </button>
+                <div key={label.id} className="relative group">
+                  <button
+                    onClick={() => setActiveLabelId(label.id)}
+                    className={cn(
+                      "rounded-2xl border-2 px-4 py-2 text-sm font-bold transition-all",
+                      activeLabelId === label.id
+                        ? `bg-${label.color} border-${label.color} text-white shadow-lg shadow-${label.color}/20`
+                        : "border-sage/10 bg-background text-muted-foreground hover:border-sage/30"
+                    )}
+                  >
+                    {label.name}
+                  </button>
+                  <button
+                    onClick={() => handleDeleteLabel(label.id, label.name)}
+                    className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground opacity-0 shadow transition group-hover:opacity-100 hover:scale-110"
+                    title={t.delete}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
               ))}
               <button
                 onClick={() => setActiveLabelId(null)}

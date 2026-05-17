@@ -403,9 +403,15 @@ export default function QuranReaderPage() {
                 @font-palette-values --amaly-mushaf-words-${page}{font-family:p${page};base-palette:3;}
                 @font-palette-values --amaly-mushaf-ayah-${page}{font-family:p${page};base-palette:0;override-colors:10 #008000,11 #b78b14,12 #f8efd3,13 #000000;}
                 @font-palette-values --amaly-header-palette{font-family:chapter-headers;base-palette:7;}
+                @font-palette-values --amaly-mushaf-words-dark-${page}{font-family:p${page};base-palette:3;override-colors:0 #e8dcc5,1 #e8dcc5;}
+                @font-palette-values --amaly-mushaf-ayah-dark-${page}{font-family:p${page};base-palette:0;override-colors:10 #4caf50,11 #ffb300,12 #1e293b,13 #e8dcc5;}
+                @font-palette-values --amaly-header-palette-dark{font-family:chapter-headers;base-palette:7;override-colors:0 #e8dcc5,1 #e8dcc5,2 #e8dcc5;}
                 .amaly-mushaf-page-${page} .amaly-v4-word{font-family:p${page};font-palette:--amaly-mushaf-words-${page};}
                 .amaly-mushaf-page-${page} .amaly-v4-ayah{font-family:p${page};font-palette:--amaly-mushaf-ayah-${page};}
                 .amaly-mushaf-page-${page} .amaly-chapter-header{font-palette:--amaly-header-palette;}
+                .dark .amaly-mushaf-page-${page} .amaly-v4-word{font-palette:--amaly-mushaf-words-dark-${page};}
+                .dark .amaly-mushaf-page-${page} .amaly-v4-ayah{font-palette:--amaly-mushaf-ayah-dark-${page};}
+                .dark .amaly-mushaf-page-${page} .amaly-chapter-header{font-palette:--amaly-header-palette-dark;}
               `}</style>
             ) : null}
             <div className="relative mt-1 space-y-2 overflow-hidden pb-2">
@@ -487,9 +493,7 @@ export default function QuranReaderPage() {
                             {bookmark && word.isEndMarker ? (
                               <span className={cn(
                                 "absolute -top-1 -right-1 h-2 w-2 rounded-full shadow-sm",
-                                bookmark.labelId === "hifz" ? "bg-sage" :
-                                bookmark.labelId === "tadabbur" ? "bg-blush" :
-                                bookmark.labelId === "ruqyah" ? "bg-amber-500" : "bg-sage"
+                                `bg-${bookmarks.labels.find(l => l.id === bookmark.labelId)?.color || "sage"}`
                               )} />
                             ) : null}
                             <span

@@ -194,6 +194,30 @@ export function updateQuranLabel(state: QuranReaderBookmarkState, labelId: strin
   }
 }
 
+function generateId(): string {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID()
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`
+}
+
+export function addQuranLabel(state: QuranReaderBookmarkState, name: string, color: string): QuranReaderBookmarkState {
+  const newLabel: QuranLabel = {
+    id: generateId(),
+    name,
+    color,
+  }
+  return { ...state, labels: [...state.labels, newLabel] }
+}
+
+export function deleteQuranLabel(state: QuranReaderBookmarkState, labelId: string): QuranReaderBookmarkState {
+  return {
+    ...state,
+    labels: state.labels.filter((l) => l.id !== labelId),
+    bookmarks: state.bookmarks.map((b) =>
+      b.labelId === labelId ? { ...b, labelId: null } : b
+    ),
+  }
+}
+
 export function reorderBookmarks(state: QuranReaderBookmarkState, labelId: string | null, bookmarkIds: string[]): QuranReaderBookmarkState {
   const updatedBookmarks = state.bookmarks.map((bookmark) => {
     const newIndex = bookmarkIds.indexOf(bookmark.id)

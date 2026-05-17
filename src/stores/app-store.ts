@@ -62,6 +62,8 @@ import {
 import {
   loadQuranReaderBookmarks,
   saveQuranReaderBookmarks,
+  addQuranLabel,
+  deleteQuranLabel,
   upsertQuranReaderBookmark,
   removeQuranReaderBookmark,
   updateQuranLabel,
@@ -763,6 +765,18 @@ export const useAppStore = create<StoreState>((set, get) => ({
   },
   updateQuranLabel: (labelId, updates) => {
     const next = updateQuranLabel(get().quranBookmarks, labelId, updates)
+    saveQuranReaderBookmarks(next)
+    set({ quranBookmarks: next })
+    void get().syncQuranBookmarks()
+  },
+  addQuranLabel: (name, color) => {
+    const next = addQuranLabel(get().quranBookmarks, name, color)
+    saveQuranReaderBookmarks(next)
+    set({ quranBookmarks: next })
+    void get().syncQuranBookmarks()
+  },
+  deleteQuranLabel: (labelId) => {
+    const next = deleteQuranLabel(get().quranBookmarks, labelId)
     saveQuranReaderBookmarks(next)
     set({ quranBookmarks: next })
     void get().syncQuranBookmarks()
